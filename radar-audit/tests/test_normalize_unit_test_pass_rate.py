@@ -4,7 +4,7 @@ from radar_audit.normalizers.unit_test_pass_rate import normalize_unit_test_pass
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import FindingSeverity
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -99,6 +99,11 @@ def test_sums_ratio_across_subprojects_and_adds_finding_for_failures(db_session)
     descriptions = [f.description for f in findings]
     assert any("Failing test" in d for d in descriptions)
     assert any("below the 50.0% floor" in d for d in descriptions)
+    for finding in findings:
+        recommendations = db_session.exec(
+            select(Recommendation).where(Recommendation.finding_id == finding.id)
+        ).all()
+        assert len(recommendations) == 1
 
 
 def test_returns_none_when_zero_tests_collected(db_session):
@@ -176,6 +181,10 @@ def test_rescues_a_crashed_pytest_run_and_pools_it_with_a_healthy_vitest_run(db_
     assert crash_findings[0].severity == FindingSeverity.HIGH
     assert "exit code 2" in crash_findings[0].description
     assert "58 tests" in crash_findings[0].description
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == crash_findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_still_excludes_a_crashed_run_that_produced_no_usable_junit_data(db_session):
