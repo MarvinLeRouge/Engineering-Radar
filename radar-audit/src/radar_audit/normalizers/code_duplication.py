@@ -7,11 +7,14 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 # Bands: <=3%->10, 3-5%->6, 5-10%->4, >10%->2 (spec §3.2). Resolved during
 # design but provisional -- not yet calibrated against real portfolio data
 # (spec §11), same discipline as 2.1's 30-line/400-LOC thresholds.
 _BANDS: tuple[tuple[float, float], ...] = ((3.0, 10.0), (5.0, 6.0), (10.0, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
+_RECOMMENDATION_TEXT = "Extract the duplicated block into a shared function or module."
 
 
 def normalize_code_duplication(
@@ -32,7 +35,8 @@ def normalize_code_duplication(
     for duplicate in tool_result.raw_output.get("duplicates", []):
         first = duplicate["firstFile"]
         second = duplicate["secondFile"]
-        session.add(
+        add_finding_with_recommendation(
+            session,
             Finding(
                 scoring_run_id=scoring_run.id,
                 criterion_id=criterion.id,
@@ -47,7 +51,8 @@ def normalize_code_duplication(
                 confidence=Confidence.MEDIUM,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,
-            )
+            ),
+            _RECOMMENDATION_TEXT,
         )
 
     score = Score(

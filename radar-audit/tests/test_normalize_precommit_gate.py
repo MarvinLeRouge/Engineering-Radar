@@ -5,7 +5,7 @@ from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -93,6 +93,10 @@ def test_scores_zero_when_tier_is_none_and_backend_domain_present(db_session):
         "No pre-commit format hook covers backend",
         "No pre-commit type-check hook covers backend",
     }
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_scores_ten_when_all_backend_cells_covered(db_session):
