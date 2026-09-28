@@ -8,7 +8,7 @@ from radar_audit.scoring import (
     RepositoryNotFoundError,
     score_repository,
 )
-from radar_core.enums import ScoreLevel
+from radar_core.enums import Confidence, ScoreLevel
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score
@@ -165,3 +165,67 @@ def test_category_score_redistributes_weight_over_scored_criteria_only(db_sessio
     assert len(arch_criterion_scores) == 3
     expected = sum(s.value for s in arch_criterion_scores) / len(arch_criterion_scores)
     assert arch_category_score.value == pytest.approx(expected)
+
+
+def test_category_score_excludes_na_reason_scores_from_weighted_average(db_session, monkeypatch):
+    # A Score carrying na_reason (e.g. a permanent not-applicable case) must stay
+    # persisted but must not drag the category's weighted average toward its
+    # placeholder value -- otherwise N/A and "genuinely scored low" would look
+    # identical at the category level.
+    from radar_core.models.audit import Audit
+    from radar_core.models.repository import Repository
+
+    repo = Repository(name="repo", path="/tmp/repo")
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+    audit = Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False)
+    db_session.add(audit)
+    db_session.commit()
+
+    def _fake_scored(session, scoring_run, criterion, tool_results):
+        score = Score(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            level=ScoreLevel.CRITERION,
+            value=8.0,
+            confidence=Confidence.HIGH,
+        )
+        session.add(score)
+        session.commit()
+        session.refresh(score)
+        return score
+
+    def _fake_na(session, scoring_run, criterion, tool_results):
+        score = Score(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            level=ScoreLevel.CRITERION,
+            value=0.0,
+            confidence=Confidence.HIGH,
+            na_reason="stub reason",
+        )
+        session.add(score)
+        session.commit()
+        session.refresh(score)
+        return score
+
+    monkeypatch.setattr(
+        "radar_audit.scoring.CRITERION_NORMALIZERS",
+        {
+            ("Maintainability", "Complexity hotspots"): _fake_scored,
+            (
+                "Maintainability",
+                "Documentation-in-code (docstring/comment coverage)",
+            ): _fake_na,
+        },
+    )
+
+    scoring_run = score_repository(db_session, "repo")
+
+    scores = db_session.exec(select(Score).where(Score.scoring_run_id == scoring_run.id)).all()
+    category_score = next(s for s in scores if s.level == ScoreLevel.CATEGORY)
+    na_score = next(s for s in scores if s.na_reason is not None)
+
+    assert na_score.value == 0.0
+    assert category_score.value == 8.0
