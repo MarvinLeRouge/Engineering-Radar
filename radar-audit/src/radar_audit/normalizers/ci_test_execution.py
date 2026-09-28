@@ -7,6 +7,10 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
+_RECOMMENDATION_TEXT = "Add a CI workflow step that runs the test suite on every push."
+
 
 def normalize_ci_test_execution(
     session: Session,
@@ -24,7 +28,8 @@ def normalize_ci_test_execution(
     if not test_execution_found:
         # Total absence of CI test execution is always a real gap (never N/A) --
         # unlike 3.3, nothing structurally prevents any repo from having CI.
-        session.add(
+        add_finding_with_recommendation(
+            session,
             Finding(
                 scoring_run_id=scoring_run.id,
                 criterion_id=criterion.id,
@@ -34,7 +39,8 @@ def normalize_ci_test_execution(
                 confidence=Confidence.HIGH,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,
-            )
+            ),
+            _RECOMMENDATION_TEXT,
         )
 
     score = Score(

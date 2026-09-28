@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 # pytest-cov's exit code 5 ("no tests collected") is still a usable, successful run --
 # its tests.total is naturally 0 and contributes nothing to the summed ratio. exit 127
 # (binary/tool missing) is excluded from all three.
@@ -19,6 +21,12 @@ _RELEVANT_TOOLS = set(_USABLE_EXIT_CODES_BY_TOOL)
 # Fixed floor (not a scored band) per spec §3.1's design decision to keep coverage
 # out of the score arithmetic entirely -- informational only.
 _COVERAGE_FLOOR = 50.0
+_RECOMMENDATION_TEXT_ABNORMAL_EXIT = (
+    "Investigate why the test run exited abnormally and fix the underlying "
+    "crash so the suite completes and reports reliably."
+)
+_RECOMMENDATION_TEXT_COVERAGE_FLOOR = "Add tests to bring coverage back above the floor."
+_RECOMMENDATION_TEXT_FAILURE = "Fix the failing test or the code it covers."
 
 
 def normalize_unit_test_pass_rate(
@@ -50,7 +58,8 @@ def normalize_unit_test_pass_rate(
         collected += tests.get("total", 0)
 
         if tool_result.exit_code not in _USABLE_EXIT_CODES_BY_TOOL[tool_result.tool_name]:
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -65,7 +74,8 @@ def normalize_unit_test_pass_rate(
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_TEXT_ABNORMAL_EXIT,
             )
 
         for failure in tool_result.raw_output.get("failures", []):
@@ -73,7 +83,8 @@ def normalize_unit_test_pass_rate(
 
         coverage_percent = tool_result.raw_output.get("coverage_percent")
         if coverage_percent is not None and coverage_percent < _COVERAGE_FLOOR:
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -85,7 +96,8 @@ def normalize_unit_test_pass_rate(
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_TEXT_COVERAGE_FLOOR,
             )
 
     if collected == 0:
@@ -112,7 +124,8 @@ def _add_failure_finding(
     failure: dict[str, object],
 ) -> None:
     name = failure.get("name") or "unknown test"
-    session.add(
+    add_finding_with_recommendation(
+        session,
         Finding(
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,
@@ -124,5 +137,6 @@ def _add_failure_finding(
             confidence=Confidence.HIGH,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,
-        )
+        ),
+        _RECOMMENDATION_TEXT_FAILURE,
     )
