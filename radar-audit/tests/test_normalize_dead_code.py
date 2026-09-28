@@ -3,7 +3,7 @@ from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -163,6 +163,13 @@ def test_counts_knip_exports_only_not_dependency_issues(db_session):
 
     assert score is not None
     assert score.value == 8.0  # 1 dead-code item (export), dependency/unlisted entries excluded
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_counts_phpmd_unusedcode_violations_only(db_session):
@@ -175,6 +182,13 @@ def test_counts_phpmd_unusedcode_violations_only(db_session):
 
     assert score is not None
     assert score.value == 8.0  # 2 unusedcode violations, codesize entry excluded from the count
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_confidence_is_high_for_knip_and_medium_for_vulture_and_phpmd(db_session):
@@ -206,6 +220,10 @@ def test_creates_one_finding_per_dead_code_item(db_session):
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
     assert len(findings) == 3
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_worst_of_two_tool_results_wins(db_session):

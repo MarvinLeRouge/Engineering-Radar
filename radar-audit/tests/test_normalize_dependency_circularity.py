@@ -3,7 +3,7 @@ from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -90,6 +90,10 @@ def test_one_dependency_cruiser_cycle_scores_six_and_creates_a_finding(db_sessio
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert len(findings) == 1
     assert findings[0].tool_result_id == tool_result.id
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_pydeps_cycle_is_detected_via_dfs(db_session):

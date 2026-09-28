@@ -3,7 +3,7 @@ from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -106,6 +106,10 @@ def test_python_creates_a_finding_per_docvet_finding(db_session):
     ).all()
     assert len(findings) == 1
     assert findings[0].file == "src/a.py"
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_php_scores_ten_with_no_errors(db_session):
@@ -206,6 +210,14 @@ def test_php_only_counts_class_and_method_types_not_param_missing(db_session):
 
     assert score is not None
     assert score.value == 8.0  # only the 1 "class" finding counts; 1-5 band
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_worst_of_python_and_php_wins(db_session):

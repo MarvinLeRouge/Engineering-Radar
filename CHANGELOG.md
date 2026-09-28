@@ -101,6 +101,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Exclude na_reason scores from category weighted average
 - *(radar-audit)* Render three-state criteria and findings in report
 - *(radar-audit)* Render recommendation text under its finding in report
+- *(radar-audit)* Populate Recommendation records for the architecture/maintainability group
 
 ### 🐛 Bug Fixes
 
