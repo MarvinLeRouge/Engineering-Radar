@@ -78,7 +78,7 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     for (category_name, criterion_name), normalizer in CRITERION_NORMALIZERS.items():
         criterion = get_criterion(session, methodology_version_id, category_name, criterion_name)
         score = normalizer(session, scoring_run, criterion, tool_results)
-        if score is None:
+        if score is None or score.na_reason is not None:
             continue
         scored_by_category.setdefault(criterion.category_id, []).append((criterion, score))
 
