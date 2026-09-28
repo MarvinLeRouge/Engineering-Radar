@@ -4,6 +4,7 @@ from pathlib import Path
 
 from radar_core.enums import ScoreLevel
 from radar_core.models.audit import Audit
+from radar_core.models.finding import Finding
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlalchemy import desc
@@ -51,6 +52,11 @@ def render_report(session: Session, repo_name: str) -> str:
     category_scores = {s.category_id: s for s in scores if s.level == ScoreLevel.CATEGORY}
     criterion_scores = {s.criterion_id: s for s in scores if s.level == ScoreLevel.CRITERION}
 
+    findings = session.exec(select(Finding).where(Finding.scoring_run_id == scoring_run.id)).all()
+    findings_by_criterion: dict[int | None, list[Finding]] = {}
+    for finding in findings:
+        findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
+
     lines = [
         f"# Report: {repository.name}",
         "",
@@ -65,13 +71,12 @@ def render_report(session: Session, repo_name: str) -> str:
 
         if category_score is None:
             lines.append(f"## {category.order}. {category.name} -- Not yet audited")
-            lines.append("")
-            continue
+        else:
+            lines.append(
+                f"## {category.order}. {category.name} -- {category_score.value:.1f}/10 "
+                f"({category_score.confidence.value} confidence)"
+            )
 
-        lines.append(
-            f"## {category.order}. {category.name} -- {category_score.value:.1f}/10 "
-            f"({category_score.confidence.value} confidence)"
-        )
         criteria = session.exec(
             select(Criterion).where(Criterion.category_id == category.id).order_by(Criterion.id)  # type: ignore[arg-type]
         ).all()
@@ -79,11 +84,27 @@ def render_report(session: Session, repo_name: str) -> str:
             criterion_score = criterion_scores.get(criterion.id)
             if criterion_score is None:
                 lines.append(f"- {criterion.name}: not scored this run")
+            elif criterion_score.na_reason is not None:
+                lines.append(f"- {criterion.name}: N/A -- {criterion_score.na_reason}")
             else:
                 lines.append(f"- {criterion.name}: {criterion_score.value:.1f}/10")
+
+            for finding in findings_by_criterion.get(criterion.id, []):
+                lines.append(
+                    f"  - [{finding.severity.value}] {finding.description}"
+                    f"{_finding_location(finding)}"
+                )
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _finding_location(finding: Finding) -> str:
+    if finding.file is None:
+        return ""
+    if finding.line is None:
+        return f" ({finding.file})"
+    return f" ({finding.file}:{finding.line})"
 
 
 def write_report(markdown: str, repo_name: str, output_dir: Path) -> Path:

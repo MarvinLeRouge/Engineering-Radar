@@ -97,6 +97,9 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add DocvetRunner for criterion 5.3 (Python docstring coverage)
 - *(radar-audit)* Add PhpdocCheckerRunner for criterion 5.3 (PHP docblock coverage)
 - *(radar-audit)* Add normalize_docstring_coverage for criterion 5.3
+- *(radar-audit)* Detect JS/TS-only stacks as N/A in docstring coverage
+- *(radar-audit)* Exclude na_reason scores from category weighted average
+- *(radar-audit)* Render three-state criteria and findings in report
 
 ### 🐛 Bug Fixes
 

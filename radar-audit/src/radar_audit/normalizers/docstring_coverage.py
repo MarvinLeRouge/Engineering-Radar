@@ -12,6 +12,22 @@ _PHPDOC_CHECKER_USABLE_EXIT_CODES = {0, 1}
 _PHP_UNDOCUMENTED_TYPES = {"class", "method"}
 _PHP_BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (5, 8.0), (15, 6.0), (30, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
+_JS_TS_SIGNAL_TOOLS = {"eslint", "tsc", "knip", "vitest"}
+_NON_JS_TS_SIGNAL_TOOLS = {
+    "docvet",
+    "ruff",
+    "mypy",
+    "pytest",
+    "radon",
+    "vulture",
+    "phpdoc-checker",
+    "phpstan",
+    "phpmd",
+    "pint",
+    "pest",
+    "composer-audit",
+}
+_JS_TS_NA_REASON = "No documentation-coverage tool available for JS/TS"
 
 
 def normalize_docstring_coverage(
@@ -41,7 +57,7 @@ def normalize_docstring_coverage(
             worst_confidence = Confidence.MEDIUM
 
     if worst_value is None or worst_confidence is None:
-        return None
+        return _score_js_ts_only(session, scoring_run, criterion, tool_results)
 
     score = Score(
         scoring_run_id=scoring_run.id,
@@ -49,6 +65,33 @@ def normalize_docstring_coverage(
         level=ScoreLevel.CRITERION,
         value=worst_value,
         confidence=worst_confidence,
+    )
+    session.add(score)
+    session.commit()
+    session.refresh(score)
+    return score
+
+
+def _score_js_ts_only(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_results: list[ToolResult],
+) -> Score | None:
+    tool_names = {tool_result.tool_name for tool_result in tool_results}
+    is_js_ts_only = bool(tool_names & _JS_TS_SIGNAL_TOOLS) and not (
+        tool_names & _NON_JS_TS_SIGNAL_TOOLS
+    )
+    if not is_js_ts_only:
+        return None
+
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=0.0,
+        confidence=Confidence.HIGH,
+        na_reason=_JS_TS_NA_REASON,
     )
     session.add(score)
     session.commit()
