@@ -4,7 +4,7 @@ from pathlib import Path
 
 from radar_core.enums import ScoreLevel
 from radar_core.models.audit import Audit
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlalchemy import desc
@@ -57,6 +57,14 @@ def render_report(session: Session, repo_name: str) -> str:
     for finding in findings:
         findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
 
+    finding_ids = [f.id for f in findings if f.id is not None]
+    recommendations = session.exec(
+        select(Recommendation).where(Recommendation.finding_id.in_(finding_ids))  # type: ignore[attr-defined]
+    ).all()
+    recommendation_by_finding: dict[int | None, Recommendation] = {
+        r.finding_id: r for r in recommendations
+    }
+
     lines = [
         f"# Report: {repository.name}",
         "",
@@ -94,6 +102,9 @@ def render_report(session: Session, repo_name: str) -> str:
                     f"  - [{finding.severity.value}] {finding.description}"
                     f"{_finding_location(finding)}"
                 )
+                recommendation = recommendation_by_finding.get(finding.id)
+                if recommendation is not None:
+                    lines.append(f"    -> {recommendation.text}")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
