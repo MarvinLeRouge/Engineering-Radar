@@ -8,7 +8,7 @@ from radar_audit.scoring import RepositoryNotFoundError, score_repository
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import Audit
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score
 
@@ -133,6 +133,43 @@ def test_render_report_shows_findings_under_their_criterion(db_session):
     assert "no architectural documentation found" in markdown
     assert "LOW" in markdown
     assert "DESIGN.md:12" in markdown
+
+
+def test_render_report_shows_recommendation_under_its_finding(db_session):
+    scoring_run = _bare_scoring_run(db_session)
+    criterion = get_criterion(
+        db_session,
+        scoring_run.methodology_version_id,
+        "Architecture & design",
+        "Architectural documentation present",
+    )
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=4.0,
+        confidence=Confidence.HIGH,
+    )
+    db_session.add(score)
+    finding = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        severity=FindingSeverity.LOW,
+        description="no architectural documentation found",
+        confidence=Confidence.MEDIUM,
+    )
+    db_session.add(finding)
+    db_session.flush()
+    recommendation = Recommendation(
+        finding_id=finding.id,
+        text="Add a DESIGN.md or ARCHITECTURE.md describing the system's structure.",
+    )
+    db_session.add(recommendation)
+    db_session.commit()
+
+    markdown = render_report(db_session, "repo")
+
+    assert "Add a DESIGN.md or ARCHITECTURE.md describing the system's structure." in markdown
 
 
 def test_write_report_creates_file_under_repo_named_subdir(db_session, tmp_path):

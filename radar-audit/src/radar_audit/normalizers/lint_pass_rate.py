@@ -7,8 +7,15 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _RELEVANT_TOOLS = {"ruff-check", "eslint", "pint"}
 _USABLE_EXIT_CODES = {0, 1}
+_RECOMMENDATION_BY_TOOL = {
+    "ruff-check": "Fix this lint violation, or add a targeted suppression with justification.",
+    "eslint": "Fix this lint violation, or add a targeted suppression with justification.",
+    "pint": "Run `pint` locally and commit the formatting fix for this file.",
+}
 
 
 def normalize_lint_pass_rate(
@@ -127,7 +134,8 @@ def _add_finding(
     file: str | None = None,
     line: int | None = None,
 ) -> None:
-    session.add(
+    add_finding_with_recommendation(
+        session,
         Finding(
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,
@@ -139,5 +147,6 @@ def _add_finding(
             confidence=Confidence.HIGH,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,
-        )
+        ),
+        _RECOMMENDATION_BY_TOOL[tool_result.tool_name],
     )

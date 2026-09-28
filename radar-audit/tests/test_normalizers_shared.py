@@ -1,13 +1,17 @@
 import pytest
 from radar_audit.normalizers.shared import (
     CriterionNotFoundError,
+    add_finding_with_recommendation,
     get_criterion,
     get_or_create_scoring_run,
     has_success_payload,
 )
 from radar_audit.taxonomy.seed import seed_taxonomy
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.models.audit import Audit, ToolResult
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
+from sqlmodel import select
 
 
 def _make_audit(db_session):
@@ -94,3 +98,32 @@ def test_has_success_payload_rejects_a_runner_reported_error():
     failed = _tool_result({"error": "boom", "vulnerabilities": []})
 
     assert has_success_payload(failed, "vulnerabilities") is False
+
+
+def test_add_finding_with_recommendation_links_a_recommendation_to_the_finding(db_session):
+    audit = _make_audit(db_session)
+    methodology_version = seed_taxonomy(db_session)
+    scoring_run = get_or_create_scoring_run(db_session, audit, methodology_version)
+    criterion = get_criterion(
+        db_session,
+        methodology_version.id,
+        "Architecture & design",
+        "Architectural documentation present",
+    )
+    finding = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        severity=FindingSeverity.LOW,
+        description="stub finding",
+        confidence=Confidence.MEDIUM,
+        status=FindingStatus.OPEN,
+        human_verdict=HumanVerdict.UNREVIEWED,
+    )
+
+    add_finding_with_recommendation(db_session, finding, "Do the thing that fixes it.")
+    db_session.commit()
+
+    recommendation = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == finding.id)
+    ).one()
+    assert recommendation.text == "Do the thing that fixes it."

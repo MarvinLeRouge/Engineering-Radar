@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _DOCVET_USABLE_EXIT_CODES = {0}
 _PHPDOC_CHECKER_USABLE_EXIT_CODES = {0, 1}
 _PHP_UNDOCUMENTED_TYPES = {"class", "method"}
@@ -109,7 +111,8 @@ def _score_docvet(
     for finding in tool_result.raw_output.get("findings", []):
         rule = finding.get("rule", "missing-docstring")
         message = finding.get("message", "")
-        session.add(
+        add_finding_with_recommendation(
+            session,
             Finding(
                 scoring_run_id=scoring_run.id,
                 criterion_id=criterion.id,
@@ -121,7 +124,8 @@ def _score_docvet(
                 confidence=Confidence.MEDIUM,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,
-            )
+            ),
+            "Add a docstring documenting this symbol's purpose, parameters, and return value.",
         )
 
     percentage: float = presence_coverage["percentage"]
@@ -141,7 +145,8 @@ def _score_phpdoc_checker(
             continue
         errors_count += 1
         method_suffix = f"::{finding['method']}" if finding.get("method") else ""
-        session.add(
+        add_finding_with_recommendation(
+            session,
             Finding(
                 scoring_run_id=scoring_run.id,
                 criterion_id=criterion.id,
@@ -155,7 +160,8 @@ def _score_phpdoc_checker(
                 confidence=Confidence.MEDIUM,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,
-            )
+            ),
+            f"Add a PHPDoc block documenting this {finding['type']}'s purpose and parameters.",
         )
 
     return _band_value(errors_count)

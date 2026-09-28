@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 from radar_core.enums import Confidence, ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
@@ -62,6 +62,17 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     existing_findings = session.exec(
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
+    existing_finding_ids = [f.id for f in existing_findings if f.id is not None]
+    existing_recommendations = session.exec(
+        select(Recommendation).where(Recommendation.finding_id.in_(existing_finding_ids))  # type: ignore[attr-defined]
+    ).all()
+    for existing_recommendation in existing_recommendations:
+        session.delete(existing_recommendation)
+    # Flush the Recommendation deletes before deleting their parent Findings: SQLAlchemy's
+    # unit of work does not infer delete ordering across unrelated mapped classes (no
+    # relationship() is declared between Finding and Recommendation), so without this the
+    # two DELETE statements can be batched in an order that violates the FK constraint.
+    session.flush()
     for existing_finding in existing_findings:
         session.delete(existing_finding)
 

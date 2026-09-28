@@ -3,7 +3,7 @@ from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_
 from radar_audit.normalizers.type_check_pass_rate import normalize_type_check_pass_rate
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -73,6 +73,10 @@ def test_lowers_score_and_adds_findings_for_phpstan_errors(db_session):
     ).all()
     assert len(findings) == 1
     assert findings[0].file == "src/A.php"
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_returns_none_when_no_relevant_tool_results(db_session):
@@ -131,6 +135,14 @@ def test_error_diagnostic_still_lowers_score(db_session):
 
     assert score is not None
     assert score.value == 0.0
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_tsc_diagnostic_without_severity_key_still_lowers_score(db_session):
