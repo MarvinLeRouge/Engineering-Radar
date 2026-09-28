@@ -2,7 +2,7 @@ from radar_audit.normalizers.ci_test_execution import normalize_ci_test_executio
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -76,6 +76,10 @@ def test_scores_zero_and_adds_finding_when_no_ci_runs_tests(db_session):
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
     assert len(findings) == 1
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_returns_none_when_no_relevant_tool_results(db_session):

@@ -7,8 +7,12 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _TODO, _IN_PROGRESS, _DONE = 0, 1, 2
 _VALUE_BY_STATUS = {_TODO: 0.0, _IN_PROGRESS: 5.0, _DONE: 10.0}
+_RECOMMENDATION_TEXT_MISSING = "Add Playwright end-to-end tests covering the main user flows."
+_RECOMMENDATION_TEXT_NOT_WIRED = "Wire the existing Playwright suite into a CI workflow."
 
 
 def normalize_e2e_tests(
@@ -42,6 +46,7 @@ def normalize_e2e_tests(
             playwright_results[0],
             FindingSeverity.MEDIUM,
             "Repo is web-facing but has no Playwright E2E test setup",
+            _RECOMMENDATION_TEXT_MISSING,
         )
     elif worst_status == _IN_PROGRESS:
         _add_finding(
@@ -51,6 +56,7 @@ def normalize_e2e_tests(
             playwright_results[0],
             FindingSeverity.LOW,
             "Playwright is present but not wired into any CI workflow",
+            _RECOMMENDATION_TEXT_NOT_WIRED,
         )
 
     score = Score(
@@ -79,8 +85,10 @@ def _add_finding(
     tool_result: ToolResult,
     severity: FindingSeverity,
     description: str,
+    recommendation_text: str,
 ) -> None:
-    session.add(
+    add_finding_with_recommendation(
+        session,
         Finding(
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,
@@ -90,5 +98,6 @@ def _add_finding(
             confidence=Confidence.MEDIUM,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,
-        )
+        ),
+        recommendation_text,
     )
