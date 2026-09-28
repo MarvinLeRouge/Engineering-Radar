@@ -2,7 +2,9 @@ from radar_audit.normalizers.e2e_tests import normalize_e2e_tests
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
+from sqlmodel import select
 
 
 def _setup(db_session):
@@ -78,6 +80,14 @@ def test_scores_in_progress_when_present_but_not_wired(db_session):
 
     assert score is not None
     assert score.value == 5.0
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_scores_todo_when_absent(db_session):
@@ -92,6 +102,14 @@ def test_scores_todo_when_absent(db_session):
 
     assert score is not None
     assert score.value == 0.0
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_returns_none_when_no_javascript_subproject(db_session):
