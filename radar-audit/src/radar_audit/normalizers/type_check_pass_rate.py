@@ -7,9 +7,12 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _RELEVANT_TOOLS = {"mypy", "tsc", "phpstan"}
 _USABLE_EXIT_CODES = {0, 1}
 _SOURCE_EXTENSIONS_BY_TOOL = {"mypy": "total_files", "tsc": "total_files"}
+_RECOMMENDATION_TEXT = "Fix this type error, or add a targeted suppression with justification."
 
 
 def normalize_type_check_pass_rate(
@@ -114,7 +117,8 @@ def _add_finding(
     file: str | None = None,
     line: int | None = None,
 ) -> None:
-    session.add(
+    add_finding_with_recommendation(
+        session,
         Finding(
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,
@@ -126,5 +130,6 @@ def _add_finding(
             confidence=Confidence.HIGH,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,
-        )
+        ),
+        _RECOMMENDATION_TEXT,
     )

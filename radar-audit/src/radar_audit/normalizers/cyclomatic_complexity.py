@@ -9,6 +9,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 # Each tool's own convention for "ran successfully and produced usable
 # data" differs (confirmed against a real portfolio repo in Task 17):
 # radon-cc always exits 0; eslint-complexity is configured with
@@ -27,6 +29,9 @@ _RELEVANT_TOOLS = set(_USABLE_EXIT_CODES_BY_TOOL)
 _BANDS: tuple[tuple[int, float], ...] = ((10, 10.0), (20, 6.0), (30, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
 _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING = 10
+_RECOMMENDATION_TEXT = (
+    "Break this function into smaller, single-purpose pieces to reduce its cyclomatic complexity."
+)
 
 
 def normalize_cyclomatic_complexity(
@@ -53,7 +58,8 @@ def normalize_cyclomatic_complexity(
         tool_confidence = _confidence_for_tool(tool_result.tool_name)
         worst_block = max(blocks, key=lambda b: int(b["complexity"]))
         if int(worst_block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -68,7 +74,8 @@ def normalize_cyclomatic_complexity(
                     confidence=tool_confidence,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_TEXT,
             )
         value = _band_value(int(worst_block["complexity"]))
         if worst_value is None or value < worst_value:

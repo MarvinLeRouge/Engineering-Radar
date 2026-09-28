@@ -2,7 +2,7 @@ from radar_audit.normalizers.lint_pass_rate import normalize_lint_pass_rate
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -84,6 +84,47 @@ def test_lowers_score_and_adds_findings_for_ruff_violations(db_session):
     ).all()
     assert len(findings) == 1
     assert findings[0].file == "a.py"
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
+
+
+def test_lowers_score_and_adds_a_finding_with_a_recommendation_for_eslint_violations(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="eslint",
+        tool_version="9.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={
+            "results": [
+                {
+                    "filePath": "a.js",
+                    "errorCount": 1,
+                    "messages": [{"ruleId": "no-unused-vars", "message": "unused var", "line": 1}],
+                },
+            ],
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_lint_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].file == "a.js"
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_returns_none_when_no_relevant_tool_results(db_session):
@@ -143,3 +184,7 @@ def test_lowers_score_and_adds_findings_for_pint_failures(db_session):
     ).all()
     assert len(findings) == 1
     assert findings[0].file == "src/A.php"
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
