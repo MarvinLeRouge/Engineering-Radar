@@ -10,6 +10,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _VALIDATOR_TYPES = ("lint", "format", "type-check")
 
 # Maps a sibling tool's tool_name to the domain its presence implies, mirroring the
@@ -101,7 +103,8 @@ def normalize_precommit_gate(
 
     for (validator_type, domain), is_covered in cells.items():
         if not is_covered:
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -111,7 +114,8 @@ def normalize_precommit_gate(
                     confidence=gate_confidence,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                f"Add a pre-commit {validator_type} hook covering {domain} to the gate config.",
             )
 
     score = Score(
