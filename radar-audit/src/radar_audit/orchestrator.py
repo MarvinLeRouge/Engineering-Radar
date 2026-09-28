@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import Session, select
 
@@ -176,6 +176,13 @@ def execute_audit(
         stale_findings = session.exec(
             select(Finding).where(Finding.tool_result_id.in_(existing_result_ids))  # type: ignore[union-attr]
         ).all()
+        stale_finding_ids = [f.id for f in stale_findings if f.id is not None]
+        stale_recommendations = session.exec(
+            select(Recommendation).where(Recommendation.finding_id.in_(stale_finding_ids))  # type: ignore[attr-defined]
+        ).all()
+        for recommendation in stale_recommendations:
+            session.delete(recommendation)
+        session.flush()
         for finding in stale_findings:
             session.delete(finding)
         session.flush()

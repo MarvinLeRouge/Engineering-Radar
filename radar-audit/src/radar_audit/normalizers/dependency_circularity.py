@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _RELEVANT_TOOLS = {"dependency-cruiser", "pydeps"}
 # Band thresholds per quality-framework.md§4.1, keyed on the number of distinct
 # cycles detected: 0 cycles=10, 1-2 cycles=6, 3-5 cycles=4, >5 cycles=2.
@@ -48,7 +50,8 @@ def normalize_dependency_circularity(
             continue
         cycles = _detect_cycles(tool_result)
         for cycle_nodes in cycles:
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -58,7 +61,9 @@ def normalize_dependency_circularity(
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                "Break the circular dependency by introducing an interface, applying "
+                "dependency inversion, or moving the shared code to a separate module.",
             )
         value = _band_value(len(cycles))
         if worst_value is None or value < worst_value:

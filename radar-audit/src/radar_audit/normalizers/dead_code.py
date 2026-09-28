@@ -9,6 +9,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 _USABLE_EXIT_CODES_BY_TOOL = {
     "vulture": {0, 3},
     "knip": {0, 1},
@@ -17,6 +19,11 @@ _USABLE_EXIT_CODES_BY_TOOL = {
 _KNIP_UNUSED_SYMBOL_CATEGORIES = ("exports", "types", "enumMembers")
 _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (3, 8.0), (8, 6.0), (15, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
+_RECOMMENDATION_BY_TOOL = {
+    "vulture": "Remove this unused Python symbol, or reference it if it's actually needed.",
+    "knip": "Remove this unused JS/TS export or file, or reference it if it's actually needed.",
+    "phpmd-codesize": "Remove this unused PHP code, or reference it if it's actually needed.",
+}
 
 
 def normalize_dead_code(
@@ -38,7 +45,8 @@ def normalize_dead_code(
     for tool_result in relevant:
         items = _extract_items(tool_result)
         for item in items:
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -50,7 +58,8 @@ def normalize_dead_code(
                     confidence=_confidence_for_tool(tool_result.tool_name),
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_BY_TOOL[tool_result.tool_name],
             )
         value = _band_value(len(items))
         tool_confidence = _confidence_for_tool(tool_result.tool_name)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.models.audit import Audit, ToolResult
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.scoring import ScoringRun
 from sqlmodel import Session, select
@@ -63,6 +64,21 @@ def get_criterion(
 # exit_code the orchestrator assigns to its crash-isolation record (see
 # orchestrator._run_tool_safely).
 CRASHED_EXIT_CODE = -1
+
+
+def add_finding_with_recommendation(
+    session: Session, finding: Finding, recommendation_text: str
+) -> Finding:
+    """Add a Finding and its Recommendation together, in the same transaction.
+
+    A Recommendation FKs to the Finding it belongs to, so the Finding must be
+    flushed first to get its id assigned without ending the transaction (the
+    caller is still free to commit whenever it commits the rest of its work).
+    """
+    session.add(finding)
+    session.flush()
+    session.add(Recommendation(finding_id=finding.id, text=recommendation_text))
+    return finding
 
 
 def has_success_payload(tool_result: ToolResult, payload_key: str) -> bool:

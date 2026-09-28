@@ -7,6 +7,8 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
 # Provisional threshold, not yet calibrated against the real portfolio (see spec §7/§9).
 _NON_TRIVIAL_LINE_THRESHOLD = 30
 
@@ -30,7 +32,12 @@ def normalize_design_doc(
     if found_path is None:
         value = 0.0
         _add_finding(
-            session, scoring_run, criterion, tool_result, "no architectural documentation found"
+            session,
+            scoring_run,
+            criterion,
+            tool_result,
+            "no architectural documentation found",
+            "Add a DESIGN.md or ARCHITECTURE.md describing the system's structure.",
         )
     elif non_blank_lines >= _NON_TRIVIAL_LINE_THRESHOLD:
         value = 10.0
@@ -43,6 +50,7 @@ def normalize_design_doc(
             tool_result,
             f"architectural documentation at {found_path} is trivial "
             f"({non_blank_lines} non-blank lines)",
+            f"Expand {found_path} with more detail on the system's structure and key decisions.",
         )
 
     score = Score(
@@ -64,8 +72,10 @@ def _add_finding(
     criterion: Criterion,
     tool_result: ToolResult,
     description: str,
+    recommendation_text: str,
 ) -> None:
-    session.add(
+    add_finding_with_recommendation(
+        session,
         Finding(
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,
@@ -75,5 +85,6 @@ def _add_finding(
             confidence=Confidence.MEDIUM,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,
-        )
+        ),
+        recommendation_text,
     )
