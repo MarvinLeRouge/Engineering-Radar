@@ -262,6 +262,29 @@ def test_returns_none_when_docvet_result_has_no_usable_payload(db_session):
     assert score is None
 
 
+def test_returns_na_score_when_only_js_ts_stack_present(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="eslint",
+        tool_version="1.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={},
+        exit_code=0,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_docstring_coverage(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.na_reason == "No documentation-coverage tool available for JS/TS"
+    assert score.value == 0.0
+    assert score.confidence == Confidence.HIGH
+
+
 def test_returns_none_when_phpdoc_checker_result_has_no_usable_payload(db_session):
     audit, scoring_run, criterion = _setup(db_session)
     # JSON-decode-failure fallback shape: no "findings" key.
