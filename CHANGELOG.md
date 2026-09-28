@@ -230,6 +230,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Write radar-audit category 5 (maintainability) implementation plan
 - *(radar-audit)* Fix VitestRunner invocation in category 3 spec
 - *(roadmap)* Reflect category 5 completion and detail the reporting pipeline
+- *(roadmap)* Mark reporting pipeline item A as complete
 
 ### 🧪 Testing
 
