@@ -10,6 +10,15 @@ services:
       - radar-data:/data
     ports:
       - "8000:8000"
+    networks:
+      - traefik-public
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      - "traefik.http.routers.radar-api.rule=Host(`radar-api.marvinlerouge.local`)"
+      - "traefik.http.routers.radar-api.entrypoints=web"
+      - "traefik.http.services.radar-api.loadbalancer.server.port=8000"
 
   radar-audit:
     build:
@@ -27,3 +36,7 @@ services:
 
 volumes:
   radar-data:
+
+networks:
+  traefik-public:
+    external: true
