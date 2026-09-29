@@ -4,7 +4,7 @@ from radar_audit.normalizers.container_image_vulnerabilities import (
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -89,6 +89,10 @@ def test_high_severity_vulnerability_scores_four_and_creates_a_finding(db_sessio
     assert score.value == 4.0
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert len(findings) == 1
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_critical_severity_vulnerability_scores_two(db_session):

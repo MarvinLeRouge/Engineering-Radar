@@ -2,7 +2,7 @@ from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_ha
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -94,6 +94,10 @@ def test_one_dirty_dockerfile_of_two_scores_five_and_creates_findings(db_session
     assert len(findings) == 1
     assert findings[0].file == "backend/Dockerfile"
     assert findings[0].line == 2
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_orchestrator_crash_record_returns_none(db_session):

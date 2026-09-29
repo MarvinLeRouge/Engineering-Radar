@@ -10,7 +10,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import has_success_payload
+from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
+
+_RECOMMENDATION_TEXT = (
+    "Rotate the exposed secret and purge it from git history, then move it to a secret manager."
+)
 
 # Pre-filter rules per quality-framework.md§3.2 (Phase 3 pilot calibration): a
 # generic-api-key hit in a tests?/ path on a fake_*/mock_*/dummy_* variable, or a
@@ -52,7 +56,8 @@ def normalize_secrets_in_history(
                 any_pre_filtered = True
             else:
                 any_confirmed = True
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -64,7 +69,8 @@ def normalize_secrets_in_history(
                     confidence=Confidence.LOW if pre_filtered else Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_TEXT,
             )
 
     # Severity bands per the category-4 spec's section 3.2 - resolved but provisional,
