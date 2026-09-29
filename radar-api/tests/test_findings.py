@@ -1,8 +1,7 @@
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, ScoringModel
 from radar_core.models.audit import Audit
 from radar_core.models.finding import Finding
-from radar_core.models.methodology import Category, Criterion
-from radar_core.models.methodology import MethodologyVersion
+from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import ScoringRun
 
@@ -156,9 +155,7 @@ def test_update_finding_verdict_returns_404_when_missing(client, monkeypatch):
     assert response.status_code == 404
 
 
-def test_update_finding_verdict_rejects_unknown_enum_value(
-    client, db_session, monkeypatch
-):
+def test_update_finding_verdict_rejects_unknown_enum_value(client, db_session, monkeypatch):
     monkeypatch.setenv("RADAR_API_KEY", "secret")
     repo = _make_repository(db_session, "repo-verdict-bad-enum")
     scoring_run = _make_scoring_run(db_session, repo)

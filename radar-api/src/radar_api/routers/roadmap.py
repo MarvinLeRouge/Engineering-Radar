@@ -35,7 +35,8 @@ def _to_roadmap_item_read(roadmap_item: RoadmapItem) -> RoadmapItemRead:
 
 @router.get("/repositories/{repository_id}/roadmap", response_model=list[RoadmapItemRead])
 def list_roadmap_items(
-    repository_id: int, session: Session = Depends(get_db_session)  # noqa: B008
+    repository_id: int,
+    session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[RoadmapItemRead]:
     repository = session.get(Repository, repository_id)
     if repository is None:
