@@ -1,6 +1,5 @@
 import pytest
 from fastapi import HTTPException
-
 from radar_api.auth import require_api_key
 
 
