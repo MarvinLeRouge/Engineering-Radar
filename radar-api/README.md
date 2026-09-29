@@ -61,6 +61,30 @@ before the API's endpoints will work. Without it, every endpoint returns a
 (referenced via `${RADAR_API_KEY}` in `docker-compose.yml`). `RADAR_PORTFOLIO_PATH`
 only matters for the separate `radar-audit` CLI profile.
 
+`radar-api` is wired to the shared Traefik instance (same convention as the
+other `marvinlerouge` projects): the `traefik-public` external network,
+`Host(\`radar-api.marvinlerouge.local\`)` on the `web` entrypoint locally. The
+production router (`radar-api.marvinlerouge.dev`, `websecure`/`letsencrypt`)
+is not wired yet, this repository has no production compose file so far.
+
+## Quality badge
+
+Any repository audited by Portfolio-Engineering-Radar can link a
+shields.io [endpoint badge](https://shields.io/badges/endpoint-badge) in its
+README, sourced from `GET /repositories/{repository_id}/badge`. Nothing
+else (no report content, no scores) is ever written into the audited
+repository itself, only this one Markdown line:
+
+    [![Quality](https://img.shields.io/endpoint?url=https%3A%2F%2Fradar-api.marvinlerouge.dev%2Frepositories%2F{repository_id}%2Fbadge)](https://radar-api.marvinlerouge.dev/repositories/{repository_id}/report)
+
+Replace `{repository_id}` with the repository's numeric id in Radar's
+database. Locally, swap the domain for `radar-api.marvinlerouge.local`.
+
+The link currently points at the raw `/report` JSON endpoint (no
+human-friendly report page exists yet, that's item E, the `radar-dashboard`
+SPA). Once the dashboard ships, the link target should move to the
+dashboard's per-repository report page instead.
+
 ## Running tests
 
     uv run --package radar-api pytest

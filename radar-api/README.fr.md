@@ -62,6 +62,32 @@ l'API ne fonctionnent. Sans cela, chaque point d'accès renvoie un `500`.
 `docker-compose.yml`). `RADAR_PORTFOLIO_PATH` ne concerne que le profil CLI
 séparé `radar-audit`.
 
+`radar-api` est raccordée à l'instance Traefik partagée (même convention que
+les autres projets `marvinlerouge`) : réseau externe `traefik-public`,
+`Host(\`radar-api.marvinlerouge.local\`)` sur l'entrypoint `web` en local. Le
+routeur de production (`radar-api.marvinlerouge.dev`, `websecure`/
+`letsencrypt`) n'est pas encore raccordé, ce dépôt n'a pas de compose de
+production pour l'instant.
+
+## Badge de qualité
+
+Tout dépôt audité par Portfolio-Engineering-Radar peut lier un badge
+shields.io de type [endpoint](https://shields.io/badges/endpoint-badge) dans
+son README, alimenté par `GET /repositories/{repository_id}/badge`. Rien
+d'autre (aucun contenu de rapport, aucun score) n'est jamais écrit dans le
+dépôt audité, seule cette ligne Markdown :
+
+    [![Quality](https://img.shields.io/endpoint?url=https%3A%2F%2Fradar-api.marvinlerouge.dev%2Frepositories%2F{repository_id}%2Fbadge)](https://radar-api.marvinlerouge.dev/repositories/{repository_id}/report)
+
+Remplacer `{repository_id}` par l'identifiant numérique du dépôt dans la base
+de Radar. En local, remplacer le domaine par `radar-api.marvinlerouge.local`.
+
+Le lien pointe pour l'instant vers le point d'accès JSON brut `/report`
+(aucune page de rapport lisible par un humain n'existe encore, ce sera
+l'item E, la SPA `radar-dashboard`). Une fois le dashboard livré, le lien
+devra pointer vers la page de rapport du dashboard plutôt que vers le JSON
+brut.
+
 ## Lancer les tests
 
     uv run --package radar-api pytest
