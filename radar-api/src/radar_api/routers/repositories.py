@@ -11,6 +11,7 @@ from sqlalchemy import desc
 from sqlmodel import Session, select
 
 from radar_api.dependencies import get_db_session
+from radar_api.schemas.badge import BadgeResponse
 from radar_api.schemas.report import (
     CategoryReport,
     CriterionReport,
@@ -29,6 +30,21 @@ def _latest_scoring_run(session: Session, repository_id: int) -> ScoringRun | No
         .where(Audit.repository_id == repository_id)
         .order_by(desc(ScoringRun.scored_at))  # type: ignore[arg-type]
     ).first()
+
+
+_BADGE_LABEL = "quality"
+
+
+def _badge_color(score: float) -> str:
+    if score >= 8:
+        return "brightgreen"
+    if score >= 6:
+        return "green"
+    if score >= 4:
+        return "yellow"
+    if score >= 2:
+        return "orange"
+    return "red"
 
 
 def _to_repository_read(session: Session, repository: Repository) -> RepositoryRead:
@@ -159,4 +175,25 @@ def get_repository_report(
         audited_at=audit.audited_at,
         scored_at=scoring_run.scored_at,
         categories=category_reports,
+    )
+
+
+@router.get("/{repository_id}/badge", response_model=BadgeResponse)
+def get_repository_badge(
+    repository_id: int, session: Session = Depends(get_db_session)  # noqa: B008
+) -> BadgeResponse:
+    repository = session.get(Repository, repository_id)
+    if repository is None:
+        raise HTTPException(status_code=404, detail="repository not found")
+
+    scoring_run = _latest_scoring_run(session, repository_id)
+    if scoring_run is None or scoring_run.global_score is None:
+        return BadgeResponse(
+            label=_BADGE_LABEL, message="not yet audited", color="lightgrey"
+        )
+
+    return BadgeResponse(
+        label=_BADGE_LABEL,
+        message=f"{scoring_run.global_score:.1f}/10",
+        color=_badge_color(scoring_run.global_score),
     )
