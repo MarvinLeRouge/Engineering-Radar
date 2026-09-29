@@ -156,3 +156,45 @@ def test_get_repository_report_marks_unscored_criterion_as_not_yet_audited(clien
     criterion_report = response.json()["categories"][0]["criteria"][0]
     assert criterion_report["status"] == "not_yet_audited"
     assert criterion_report["value"] is None
+
+
+def test_badge_returns_404_when_repository_missing(client):
+    response = client.get("/repositories/999/badge")
+
+    assert response.status_code == 404
+
+
+def test_badge_shows_not_yet_audited_when_no_scoring_run(client, db_session):
+    repo = _make_repository(db_session, "repo-badge-unscored")
+
+    response = client.get(f"/repositories/{repo.id}/badge")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["message"] == "not yet audited"
+    assert body["color"] == "lightgrey"
+    assert body["schemaVersion"] == 1
+
+
+def test_badge_shows_not_yet_audited_when_global_score_is_none(client, db_session):
+    repo = _make_repository(db_session, "repo-badge-null-score")
+    _make_scoring_run(db_session, repo, global_score=None)
+
+    response = client.get(f"/repositories/{repo.id}/badge")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["message"] == "not yet audited"
+    assert body["color"] == "lightgrey"
+
+
+def test_badge_color_reflects_global_score(client, db_session):
+    repo = _make_repository(db_session, "repo-badge-high-score")
+    _make_scoring_run(db_session, repo, global_score=8.5)
+
+    response = client.get(f"/repositories/{repo.id}/badge")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["message"] == "8.5/10"
+    assert body["color"] == "brightgreen"
