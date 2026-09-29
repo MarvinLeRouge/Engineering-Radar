@@ -1,5 +1,5 @@
 [tool.uv.workspace]
-members = ["radar-core", "radar-audit"]
+members = ["radar-core", "radar-audit", "radar-api"]
 
 [tool.ruff]
 line-length = 100
