@@ -22,7 +22,7 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 | 9 | Findings router — update status | done |
 | 10 | Roadmap router — list | done |
 | 11 | Roadmap router — update status | done |
-| 12 | Docker deployment | pending |
+| 12 | Docker deployment | done |
 | 13 | Full workspace verification | pending |
 
 ## Notes
@@ -39,3 +39,4 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 - Task 9: implemented, review approved. Disclosed scope deviation ruled in: modified `radar_api/auth.py` (outside the brief's file list) to convert an unhandled `MissingApiKeyError` into a proper 401, closing a real gap shared by every write endpoint. Independently verified minimal, safe, no regressions (full 33-test suite green). Commit `b5a6e07`.
 - Task 10: implemented, review approved, no findings held open. One Minor note parked: the brief's own tests don't exercise the `.distinct()` duplicate-row scenario (multiple Findings linked to one ImprovementTask); independently confirmed correct regardless. Commit `2b08050`.
 - Task 11: implemented, review approved, no findings held open. Confirmed Task 9's auth.py fix generalizes correctly (no-auth test passed with zero further changes). One Minor plan-level note parked: the DONE-evidence check doesn't verify the evidence belongs to the roadmap item's own finding chain, matches the brief's own code exactly. Commit `b61dd0e`.
+- Task 12: implemented, review approved, no findings held open. All three files (`radar-api/Dockerfile`, `radar-audit/Dockerfile`, `docker-compose.yml`) verified byte-identical to the brief. `docker compose config` and `docker compose build radar-api` both succeeded. One Minor closed-not-parked note: report validation was narrative rather than verbatim command output, a documentation style note only. Commit `cfd7fee`.
