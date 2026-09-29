@@ -19,7 +19,7 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 | 6 | Repositories router — badge | done |
 | 7 | Findings router — list | done |
 | 8 | Findings router — update human verdict | done |
-| 9 | Findings router — update status | pending |
+| 9 | Findings router — update status | done |
 | 10 | Roadmap router — list | pending |
 | 11 | Roadmap router — update status | pending |
 | 12 | Docker deployment | pending |
@@ -36,3 +36,4 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 - Task 6: implemented, review clean, no findings. Commit `1170ff1`.
 - Task 7: implemented, review clean, no findings. Commit `919ade2`.
 - Task 8: implemented, review approved. One Minor finding parked: the implementer's "no deviations" claim was inaccurate (an added `monkeypatch.setenv` in one test, undisclosed but verified necessary, same self-report gap pattern as Task 5). Commit `4d1e68a`.
+- Task 9: implemented, review approved. Disclosed scope deviation ruled in: modified `radar_api/auth.py` (outside the brief's file list) to convert an unhandled `MissingApiKeyError` into a proper 401, closing a real gap shared by every write endpoint. Independently verified minimal, safe, no regressions (full 33-test suite green). Commit `b5a6e07`.
