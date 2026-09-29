@@ -68,7 +68,7 @@ advances.
     - [ ] Categories 6-15 (Performance, DevOps/CI-CD, Documentation, Observability/operations, API/UX/product quality, Dependency management, Configuration management, Data quality, Developer experience, Technical debt)
 - [ ] Reporting and publication pipeline (see `docs/work-in-progress/reporting-pipeline-notes.md` for the detailed breakdown, dependencies, and tooling)
   - [x] A. Extend the report contract to render Findings and an explicit three-state model per criterion (scored / not applicable with reason / not yet audited), reusing the existing `Score.na_reason` field and `FindingSeverity` vocabulary rather than inventing new statuses. Evidence/Recommendation rendering deferred until those tables have a producer (see B)
-  - [ ] B. Populate `Recommendation` records from findings, so improvement axes are stored data feeding the report, not just report prose
+  - [x] B. Populate `Recommendation` records from findings, so improvement axes are stored data feeding the report, not just report prose
   - [ ] C. Build a minimal `radar-api` (FastAPI): read endpoints over the existing data model, plus narrow human-confirmed-only write endpoints; this is what hosts all report/finding/recommendation data — never written into audited repos
   - [ ] D. Add a quality-assessment badge (shields.io-style endpoint badge) that audited repos can link from their README, pointing at the radar-hosted report page
   - [ ] E. Build the full `radar-dashboard` (Vue 3 + Vite SPA): score gauges as discrete flat-color bands (reusing the `FindingSeverity` 5-tier palette, not a continuous gradient) for a professional, non-gimmicky look; N/A and not-yet-audited criteria rendered grayed out with the reason surfaced
