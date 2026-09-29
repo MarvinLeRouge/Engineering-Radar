@@ -128,3 +128,80 @@ def test_list_findings_filters_by_severity(client, db_session):
     body = response.json()
     assert len(body) == 1
     assert body[0]["severity"] == "CRITICAL"
+
+
+def test_update_finding_verdict_requires_api_key(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-verdict-noauth")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = client.patch(
+        f"/findings/{finding.id}/verdict", json={"human_verdict": "TRUE_POSITIVE"}
+    )
+
+    assert response.status_code == 401
+
+
+def test_update_finding_verdict_returns_404_when_missing(client, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+
+    response = client.patch(
+        "/findings/999/verdict",
+        json={"human_verdict": "TRUE_POSITIVE"},
+        headers={"X-API-Key": "secret"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_finding_verdict_rejects_unknown_enum_value(
+    client, db_session, monkeypatch
+):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-verdict-bad-enum")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = client.patch(
+        f"/findings/{finding.id}/verdict",
+        json={"human_verdict": "NOT_A_VALUE"},
+        headers={"X-API-Key": "secret"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_finding_verdict_rejects_no_op_transition(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-verdict-noop")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = client.patch(
+        f"/findings/{finding.id}/verdict",
+        json={"human_verdict": "UNREVIEWED"},
+        headers={"X-API-Key": "secret"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_update_finding_verdict_succeeds(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-verdict-ok")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = client.patch(
+        f"/findings/{finding.id}/verdict",
+        json={"human_verdict": "TRUE_POSITIVE"},
+        headers={"X-API-Key": "secret"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["human_verdict"] == "TRUE_POSITIVE"
