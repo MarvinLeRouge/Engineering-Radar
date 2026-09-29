@@ -2,7 +2,7 @@ from radar_audit.normalizers.sast_findings import normalize_sast_findings
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -73,6 +73,10 @@ def test_error_severity_scores_four_and_creates_a_finding(db_session):
     assert len(findings) == 1
     assert findings[0].file == "src/vuln.py"
     assert findings[0].line == 4
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_warning_severity_scores_six(db_session):
