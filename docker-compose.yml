@@ -19,7 +19,7 @@ services:
       - RADAR_DATABASE_URL=sqlite:////data/radar.db
     volumes:
       - radar-data:/data
-      - ${RADAR_PORTFOLIO_PATH}:/portfolio:ro
+      - ${RADAR_PORTFOLIO_PATH:-./portfolio}:/portfolio:ro
     profiles: ["cli"]
 
   # radar-dashboard:
