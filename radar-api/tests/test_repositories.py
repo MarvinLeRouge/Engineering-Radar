@@ -158,6 +158,32 @@ def test_get_repository_report_marks_unscored_criterion_as_not_yet_audited(clien
     assert criterion_report["value"] is None
 
 
+def test_get_repository_report_marks_not_applicable_criterion_with_null_value(client, db_session):
+    repo = _make_repository(db_session, "repo-na-criterion")
+    scoring_run = _make_scoring_run(db_session, repo, global_score=5.0)
+    _category, criterion = _seed_category_and_criterion(
+        db_session, scoring_run.methodology_version_id
+    )
+
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=0.0,
+        confidence=Confidence.HIGH,
+        na_reason="no dependencies to scan",
+    )
+    db_session.add(score)
+    db_session.commit()
+
+    response = client.get(f"/repositories/{repo.id}/report")
+
+    assert response.status_code == 200
+    criterion_report = response.json()["categories"][0]["criteria"][0]
+    assert criterion_report["status"] == "not_applicable"
+    assert criterion_report["value"] is None
+
+
 def test_badge_returns_404_when_repository_missing(client):
     response = client.get("/repositories/999/badge")
 

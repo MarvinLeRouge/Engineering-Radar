@@ -151,7 +151,11 @@ def get_repository_report(
                     id=criterion.id,  # type: ignore[arg-type]
                     name=criterion.name,
                     status=criterion_status,  # type: ignore[arg-type]
-                    value=criterion_score.value if criterion_score else None,
+                    value=(
+                        criterion_score.value
+                        if criterion_score is not None and criterion_status != "not_applicable"
+                        else None
+                    ),
                     na_reason=criterion_score.na_reason if criterion_score else None,
                     findings=finding_reports,
                 )
