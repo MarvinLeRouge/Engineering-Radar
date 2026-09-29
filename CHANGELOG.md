@@ -161,6 +161,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Glob nested docvet excludes and keep docvet default excludes
 - *(radar-audit)* Treat complexity fallback payloads as no data instead of a clean score
 - *(radar-audit)* Parse vulture unreachable-code findings
+- *(radar-api)* Resolve lint and type-check compliance issues
 
 ### 🚜 Refactor
 
