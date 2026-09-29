@@ -205,3 +205,47 @@ def test_update_finding_verdict_succeeds(client, db_session, monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["human_verdict"] == "TRUE_POSITIVE"
+
+
+def test_update_finding_status_requires_api_key(client, db_session):
+    repo = _make_repository(db_session, "repo-status-noauth")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = client.patch(f"/findings/{finding.id}/status", json={"status": "RESOLVED"})
+
+    assert response.status_code == 401
+
+
+def test_update_finding_status_rejects_no_op_transition(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-status-noop")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion, status=FindingStatus.OPEN)
+
+    response = client.patch(
+        f"/findings/{finding.id}/status",
+        json={"status": "OPEN"},
+        headers={"X-API-Key": "secret"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_update_finding_status_succeeds(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-status-ok")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion, status=FindingStatus.OPEN)
+
+    response = client.patch(
+        f"/findings/{finding.id}/status",
+        json={"status": "WONT_FIX"},
+        headers={"X-API-Key": "secret"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "WONT_FIX"

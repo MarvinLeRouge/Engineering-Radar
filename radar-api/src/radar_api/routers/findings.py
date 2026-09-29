@@ -11,7 +11,7 @@ from sqlmodel import Session, select
 
 from radar_api.auth import require_api_key
 from radar_api.dependencies import get_db_session
-from radar_api.schemas.findings import FindingRead, FindingVerdictUpdate
+from radar_api.schemas.findings import FindingRead, FindingStatusUpdate, FindingVerdictUpdate
 
 router = APIRouter(tags=["findings"])
 
@@ -82,6 +82,31 @@ def update_finding_verdict(
             detail=f"finding already has human_verdict {payload.human_verdict.value}",
         )
     finding.human_verdict = payload.human_verdict
+    session.add(finding)
+    session.commit()
+    session.refresh(finding)
+    return _to_finding_read(finding)
+
+
+@router.patch(
+    "/findings/{finding_id}/status",
+    response_model=FindingRead,
+    dependencies=[Depends(require_api_key)],
+)
+def update_finding_status(
+    finding_id: int,
+    payload: FindingStatusUpdate,
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> FindingRead:
+    finding = session.get(Finding, finding_id)
+    if finding is None:
+        raise HTTPException(status_code=404, detail="finding not found")
+    if finding.status == payload.status:
+        raise HTTPException(
+            status_code=400,
+            detail=f"finding already has status {payload.status.value}",
+        )
+    finding.status = payload.status
     session.add(finding)
     session.commit()
     session.refresh(finding)

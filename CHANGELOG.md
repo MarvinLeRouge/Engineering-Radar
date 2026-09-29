@@ -113,6 +113,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Add GET /repositories/{id}/badge
 - *(radar-api)* Add GET /repositories/{id}/findings
 - *(radar-api)* Add PATCH /findings/{id}/verdict
+- *(radar-api)* Add PATCH /findings/{id}/status
 
 ### 🐛 Bug Fixes
 
