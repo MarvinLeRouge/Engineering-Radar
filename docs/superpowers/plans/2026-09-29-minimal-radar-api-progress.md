@@ -17,7 +17,7 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 | 4 | Repositories router — list and detail | done |
 | 5 | Repositories router — full report | done |
 | 6 | Repositories router — badge | done |
-| 7 | Findings router — list | pending |
+| 7 | Findings router — list | done |
 | 8 | Findings router — update human verdict | pending |
 | 9 | Findings router — update status | pending |
 | 10 | Roadmap router — list | pending |
@@ -34,3 +34,4 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 - Task 4: implemented, review clean, no fix round needed. Commit `9dec514`. Also regenerated and committed `uv.lock` (stale since Task 1), resolving the Minor finding parked at Task 2 ahead of schedule.
 - Task 5: implemented, review approved with 2 findings parked (not blocking): an implementer self-report completeness gap (an undisclosed but correct second `type: ignore`), and the plan's own test spec never covering the `not_applicable` criterion-status branch. Commit `96a57bd`. `not_applicable` test coverage flagged for the final whole-branch review to decide on.
 - Task 6: implemented, review clean, no findings. Commit `1170ff1`.
+- Task 7: implemented, review clean, no findings. Commit `919ade2`.
