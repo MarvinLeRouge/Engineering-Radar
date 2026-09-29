@@ -106,6 +106,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Populate Recommendation records for the testing & reliability group
 - *(radar-audit)* Populate Recommendation records for the security group
 - *(radar-api)* Scaffold package and required env-var config
+- *(radar-api)* Wire FastAPI app, DB session dependency, and test fixtures
 
 ### 🐛 Bug Fixes
 
