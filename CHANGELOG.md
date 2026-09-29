@@ -109,6 +109,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Wire FastAPI app, DB session dependency, and test fixtures
 - *(radar-api)* Add static API-key authentication dependency
 - *(radar-api)* Add GET /repositories and GET /repositories/{id}
+- *(radar-api)* Add GET /repositories/{id}/report
 
 ### 🐛 Bug Fixes
 

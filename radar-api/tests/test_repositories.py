@@ -1,7 +1,9 @@
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel, ScoringModel
 from radar_core.models.audit import Audit
-from radar_core.models.methodology import MethodologyVersion
+from radar_core.models.finding import Finding, Recommendation
+from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
-from radar_core.models.scoring import ScoringRun
+from radar_core.models.scoring import Score, ScoringRun
 
 
 def _make_repository(db_session, name="repo"):
@@ -71,3 +73,86 @@ def test_get_repository_returns_detail(client, db_session):
 
     assert response.status_code == 200
     assert response.json()["name"] == "repo-c"
+
+
+def _seed_category_and_criterion(db_session, methodology_version_id, name="Dependency vulns"):
+    category = Category(
+        methodology_version_id=methodology_version_id, name="Security", weight=1.0, order=1
+    )
+    db_session.add(category)
+    db_session.commit()
+    db_session.refresh(category)
+
+    criterion = Criterion(
+        category_id=category.id,
+        name=name,
+        description="...",
+        weight=1.0,
+        scoring_model=ScoringModel.FIXED_SCALE,
+    )
+    db_session.add(criterion)
+    db_session.commit()
+    db_session.refresh(criterion)
+    return category, criterion
+
+
+def test_get_repository_report_returns_404_when_no_score(client, db_session):
+    repo = _make_repository(db_session, "repo-no-score")
+
+    response = client.get(f"/repositories/{repo.id}/report")
+
+    assert response.status_code == 404
+
+
+def test_get_repository_report_includes_findings_and_recommendations(client, db_session):
+    repo = _make_repository(db_session, "repo-with-findings")
+    scoring_run = _make_scoring_run(db_session, repo, global_score=5.0)
+    category, criterion = _seed_category_and_criterion(
+        db_session, scoring_run.methodology_version_id
+    )
+
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=4.0,
+        confidence=Confidence.HIGH,
+    )
+    db_session.add(score)
+    db_session.commit()
+
+    finding = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        severity=FindingSeverity.HIGH,
+        description="a vulnerable dependency",
+        confidence=Confidence.HIGH,
+    )
+    db_session.add(finding)
+    db_session.commit()
+    db_session.refresh(finding)
+
+    db_session.add(Recommendation(finding_id=finding.id, text="upgrade the dependency"))
+    db_session.commit()
+
+    response = client.get(f"/repositories/{repo.id}/report")
+
+    assert response.status_code == 200
+    body = response.json()
+    criterion_report = body["categories"][0]["criteria"][0]
+    assert criterion_report["status"] == "scored"
+    assert criterion_report["value"] == 4.0
+    assert criterion_report["findings"][0]["recommendation"] == "upgrade the dependency"
+
+
+def test_get_repository_report_marks_unscored_criterion_as_not_yet_audited(client, db_session):
+    repo = _make_repository(db_session, "repo-partial")
+    scoring_run = _make_scoring_run(db_session, repo, global_score=5.0)
+    _seed_category_and_criterion(db_session, scoring_run.methodology_version_id)
+
+    response = client.get(f"/repositories/{repo.id}/report")
+
+    assert response.status_code == 200
+    criterion_report = response.json()["categories"][0]["criteria"][0]
+    assert criterion_report["status"] == "not_yet_audited"
+    assert criterion_report["value"] is None
