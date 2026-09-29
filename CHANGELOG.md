@@ -236,6 +236,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(roadmap)* Mark reporting pipeline item B as complete
 - *(radar-api)* Add minimal radar-api design spec
 - *(radar-api)* Add implementation plan for minimal radar-api
+- *(radar-api)* Add implementation progress tracker
 
 ### 🧪 Testing
 
