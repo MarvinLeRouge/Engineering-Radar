@@ -174,6 +174,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Parse vulture unreachable-code findings
 - *(radar-api)* Resolve lint and type-check compliance issues
 - *(radar-api)* Resolve ruff I001 import sorting in test_auth.py
+- *(radar-api)* Validate and clear roadmap DONE-transition evidence
 
 ### 🚜 Refactor
 

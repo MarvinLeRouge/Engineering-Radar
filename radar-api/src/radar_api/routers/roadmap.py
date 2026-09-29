@@ -84,8 +84,24 @@ def update_roadmap_item_status(
                 status_code=400,
                 detail="done_evidence_id does not reference an existing evidence row",
             )
+        linked_finding_ids = set(
+            session.exec(
+                select(FindingImprovementTaskLink.finding_id).where(
+                    FindingImprovementTaskLink.improvement_task_id
+                    == roadmap_item.improvement_task_id
+                )
+            ).all()
+        )
+        if evidence.finding_id not in linked_finding_ids:
+            raise HTTPException(
+                status_code=400,
+                detail="done_evidence_id does not belong to a finding linked to this roadmap item",
+            )
         roadmap_item.done_evidence_id = payload.done_evidence_id
         roadmap_item.done_at = datetime.now(UTC)
+    else:
+        roadmap_item.done_evidence_id = None
+        roadmap_item.done_at = None
 
     roadmap_item.status = payload.status
     session.add(roadmap_item)
