@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException
+from radar_core.enums import RoadmapStatus
 from radar_core.models.audit import Audit
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Evidence, Finding
 from radar_core.models.links import FindingImprovementTaskLink
 from radar_core.models.repository import Repository
 from radar_core.models.roadmap import ImprovementTask, RoadmapItem
 from radar_core.models.scoring import ScoringRun
 from sqlmodel import Session, select
 
+from radar_api.auth import require_api_key
 from radar_api.dependencies import get_db_session
-from radar_api.schemas.roadmap import RoadmapItemRead
+from radar_api.schemas.roadmap import RoadmapItemRead, RoadmapItemStatusUpdate
 
 router = APIRouter(tags=["roadmap"])
 
@@ -51,3 +55,39 @@ def list_roadmap_items(
         .distinct()
     ).all()
     return [_to_roadmap_item_read(item) for item in roadmap_items]
+
+
+@router.patch(
+    "/roadmap-items/{roadmap_item_id}/status",
+    response_model=RoadmapItemRead,
+    dependencies=[Depends(require_api_key)],
+)
+def update_roadmap_item_status(
+    roadmap_item_id: int,
+    payload: RoadmapItemStatusUpdate,
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> RoadmapItemRead:
+    roadmap_item = session.get(RoadmapItem, roadmap_item_id)
+    if roadmap_item is None:
+        raise HTTPException(status_code=404, detail="roadmap item not found")
+    if roadmap_item.status == payload.status:
+        raise HTTPException(
+            status_code=400,
+            detail=f"roadmap item already has status {payload.status.value}",
+        )
+
+    if payload.status == RoadmapStatus.DONE:
+        evidence = session.get(Evidence, payload.done_evidence_id)
+        if evidence is None:
+            raise HTTPException(
+                status_code=400,
+                detail="done_evidence_id does not reference an existing evidence row",
+            )
+        roadmap_item.done_evidence_id = payload.done_evidence_id
+        roadmap_item.done_at = datetime.now(UTC)
+
+    roadmap_item.status = payload.status
+    session.add(roadmap_item)
+    session.commit()
+    session.refresh(roadmap_item)
+    return _to_roadmap_item_read(roadmap_item)
