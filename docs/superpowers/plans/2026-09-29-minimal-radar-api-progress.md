@@ -18,7 +18,7 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 | 5 | Repositories router — full report | done |
 | 6 | Repositories router — badge | done |
 | 7 | Findings router — list | done |
-| 8 | Findings router — update human verdict | pending |
+| 8 | Findings router — update human verdict | done |
 | 9 | Findings router — update status | pending |
 | 10 | Roadmap router — list | pending |
 | 11 | Roadmap router — update status | pending |
@@ -35,3 +35,4 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 - Task 5: implemented, review approved with 2 findings parked (not blocking): an implementer self-report completeness gap (an undisclosed but correct second `type: ignore`), and the plan's own test spec never covering the `not_applicable` criterion-status branch. Commit `96a57bd`. `not_applicable` test coverage flagged for the final whole-branch review to decide on.
 - Task 6: implemented, review clean, no findings. Commit `1170ff1`.
 - Task 7: implemented, review clean, no findings. Commit `919ade2`.
+- Task 8: implemented, review approved. One Minor finding parked: the implementer's "no deviations" claim was inaccurate (an added `monkeypatch.setenv` in one test, undisclosed but verified necessary, same self-report gap pattern as Task 5). Commit `4d1e68a`.
