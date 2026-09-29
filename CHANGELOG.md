@@ -267,6 +267,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Mark task 11 complete in progress tracker
 - *(radar-api)* Mark task 12 complete in progress tracker
 - *(radar-api)* Mark task 13 complete in progress tracker
+- *(radar-api)* Add README and README.fr
 
 ### 🧪 Testing
 
