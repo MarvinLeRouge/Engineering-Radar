@@ -7,9 +7,12 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import has_success_payload
+from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
 
 _RELEVANT_TOOLS = {"pip-audit", "pnpm-audit", "composer-audit"}
+_RECOMMENDATION_TEXT = (
+    "Upgrade the vulnerable dependency to a patched version, or apply the available fix."
+)
 _SEVERITY_ENUM = {
     "CRITICAL": FindingSeverity.CRITICAL,
     "HIGH": FindingSeverity.HIGH,
@@ -44,7 +47,8 @@ def normalize_dependency_vulnerabilities(
     for tool_result in relevant:
         for vuln in tool_result.raw_output["vulnerabilities"]:
             severity = vuln.get("severity", "MEDIUM")
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -54,7 +58,8 @@ def normalize_dependency_vulnerabilities(
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_TEXT,
             )
             if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
                 worst = severity

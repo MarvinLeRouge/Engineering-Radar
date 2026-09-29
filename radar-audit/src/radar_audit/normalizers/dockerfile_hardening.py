@@ -7,7 +7,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import has_success_payload
+from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
+
+_RECOMMENDATION_TEXT = (
+    "Apply the hadolint recommendation, for example pinning versions or using a non-root user."
+)
 
 
 def normalize_dockerfile_hardening(
@@ -39,7 +43,8 @@ def normalize_dockerfile_hardening(
                 clean += 1
                 continue
             for finding in findings:
-                session.add(
+                add_finding_with_recommendation(
+                    session,
                     Finding(
                         scoring_run_id=scoring_run.id,
                         criterion_id=criterion.id,
@@ -51,7 +56,8 @@ def normalize_dockerfile_hardening(
                         confidence=Confidence.HIGH,
                         status=FindingStatus.OPEN,
                         human_verdict=HumanVerdict.UNREVIEWED,
-                    )
+                    ),
+                    _RECOMMENDATION_TEXT,
                 )
 
     if total == 0:

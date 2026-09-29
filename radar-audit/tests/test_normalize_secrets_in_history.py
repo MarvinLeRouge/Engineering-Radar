@@ -3,7 +3,7 @@ from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
+from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
@@ -76,6 +76,10 @@ def test_pre_filtered_test_fixture_hit_scores_eight_with_low_confidence(db_sessi
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert len(findings) == 1
     assert findings[0].confidence == Confidence.LOW
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_pre_filtered_env_example_hit_scores_eight(db_session):
@@ -124,6 +128,10 @@ def test_unfiltered_hit_scores_two_with_high_confidence(db_session):
     assert score.value == 2.0
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert findings[0].confidence == Confidence.HIGH
+    recommendations = db_session.exec(
+        select(Recommendation).where(Recommendation.finding_id == findings[0].id)
+    ).all()
+    assert len(recommendations) == 1
 
 
 def test_one_unfiltered_hit_wins_over_several_pre_filtered_ones(db_session):

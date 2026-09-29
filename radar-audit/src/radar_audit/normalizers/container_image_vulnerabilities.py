@@ -7,6 +7,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.shared import add_finding_with_recommendation
+
+_RECOMMENDATION_TEXT = (
+    "Rebuild the container image on top of a patched base image or package version."
+)
 _SEVERITY_ENUM = {"HIGH": FindingSeverity.HIGH, "CRITICAL": FindingSeverity.CRITICAL}
 # Trivy is invoked with --severity HIGH,CRITICAL (per toolchain.md), so only these
 # two rows of the band table are ever reachable -- provisional pending Phase 5
@@ -33,7 +38,8 @@ def normalize_container_image_vulnerabilities(
     for tool_result in relevant:
         for vuln in tool_result.raw_output.get("vulnerabilities", []):
             severity = vuln.get("severity", "HIGH")
-            session.add(
+            add_finding_with_recommendation(
+                session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
@@ -43,7 +49,8 @@ def normalize_container_image_vulnerabilities(
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
-                )
+                ),
+                _RECOMMENDATION_TEXT,
             )
             if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
                 worst = severity
