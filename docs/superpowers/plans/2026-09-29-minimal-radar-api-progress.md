@@ -11,7 +11,7 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 
 | # | Task | Status |
 |---|---|---|
-| 1 | Package scaffolding and configuration | pending |
+| 1 | Package scaffolding and configuration | done |
 | 2 | App wiring, DB session dependency, test infrastructure | pending |
 | 3 | API key authentication | pending |
 | 4 | Repositories router — list and detail | pending |
@@ -28,3 +28,4 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 ## Notes
 
 - Pre-flight cross-task interface scan: clean, no contradictions found.
+- Task 1: implemented, one fix round (ruff import order + mypy --strict annotations on test functions), review clean. Commits `9fd7b26`, `f36ea81`.
