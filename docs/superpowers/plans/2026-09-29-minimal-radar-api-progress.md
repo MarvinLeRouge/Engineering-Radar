@@ -41,3 +41,25 @@ Spec: `docs/superpowers/specs/2026-09-29-minimal-radar-api-design.md`.
 - Task 11: implemented, review approved, no findings held open. Confirmed Task 9's auth.py fix generalizes correctly (no-auth test passed with zero further changes). One Minor plan-level note parked: the DONE-evidence check doesn't verify the evidence belongs to the roadmap item's own finding chain, matches the brief's own code exactly. Commit `b61dd0e`.
 - Task 12: implemented, review approved, no findings held open. All three files (`radar-api/Dockerfile`, `radar-audit/Dockerfile`, `docker-compose.yml`) verified byte-identical to the brief. `docker compose config` and `docker compose build radar-api` both succeeded. One Minor closed-not-parked note: report validation was narrative rather than verbatim command output, a documentation style note only. Commit `cfd7fee`.
 - Task 13: implemented, review approved. radar-api suite 43/43, full monorepo suite 522/522 (radar-api 43, radar-audit 439, radar-core 40), ruff/mypy clean after auto-fixes, formatting commit `d40ec2d`. One Important finding closed: implementer ran `ruff check . --fix` in addition to `ruff format .`, narrower than the controller's dispatch instruction but necessary to satisfy the brief's own Step 2 pass criterion; verified as a safe, purely mechanical import reordering. All 13 tasks now complete; proceeding to the final whole-branch review.
+
+## Final whole-branch review
+
+Reviewed on opus (30 commits, base `9af4955`, head `743adad`). Assessment: "Ready to merge, with fixes." No AI-attribution trailer in any commit, auth gating correct on all 3 write endpoints, radar-api 43/43, ruff/mypy clean.
+
+Ruled on the 4 findings parked during per-task reviews — all overturned from "safe to park" to fix-now after the reviewer independently re-investigated each:
+1. **StarletteDeprecationWarning** (parked at Task 2): accepted as a known limitation, documented in the new README. Test-client-only, no runtime effect.
+2. **`not_applicable` coverage gap** (parked at Task 5): was actually a real bug, not just a coverage gap — the report endpoint returned `value: 0.0` instead of `null` for not_applicable criteria. Fixed.
+3. **`.distinct()` coverage gap** (parked at Task 10): the duplicate-row scenario IS reachable (many-to-many finding/task link table), contradicting the original "currently unreachable" reasoning. Fixed with a regression test.
+4. **Evidence cross-reference gap** (parked at Task 11): proven exploitable — a RoadmapItem could be marked DONE using Evidence from a completely unrelated finding in a different repository. Fixed with an ownership check.
+
+New findings from the final review, also ruled:
+- Fixed now: reopening a DONE item didn't clear `done_at`/`done_evidence_id`; `docker compose config` failed outright when `RADAR_PORTFOLIO_PATH` was unset (now defaults to `./portfolio`); missing `radar-api/README.md` + `README.fr.md` (this project's convention, now added, including a documented Alembic-migration step for fresh Docker volumes).
+- Tracked as follow-ups, not fixed in this branch: no startup validation of required env vars (`RADAR_DATABASE_URL`/`RADAR_API_KEY`) — contradicts spec sections 2/4, needs a FastAPI `lifespan` hook, a genuine behavior change outside this review's one-fix-round scope; SQLite WAL mode not enabled — belongs in `radar-core`, outside this branch's package scope. Both documented in the new README's "Known limitations" section. A handful of Minor findings (engine-per-request, some missing 404/422 edge-case tests, test-helper duplication, Dockerfile hardening, dependency pin looseness) also tracked, not fixed.
+
+## Final fix round
+
+Implementer (sonnet): 4 commits (`55bf7e8` roadmap evidence validation + clearing + `.distinct()` test, `0969c8e` not_applicable value=null, `eebe3f7` docker-compose default, `486cd7e` README pair). Test count grew from 43 to 47 (4 new tests), all passing; ruff/mypy clean; `docker compose config`/`build radar-api` both verified working with the fix.
+
+Scoped re-review (sonnet): all 6 fixes verified correct against the brief, each with a correctly targeted test; independently re-ran the full suite, ruff, and mypy — all clean; confirmed `RADAR_API_KEY` untouched (auth not weakened) while only `RADAR_PORTFOLIO_PATH` got a default; README endpoint list cross-checked against actual router source, no fabricated/stale entries. Zero findings. No residuals to adjudicate.
+
+**All 13 tasks plus the final review's fix round are complete. Branch ready for PR.**
