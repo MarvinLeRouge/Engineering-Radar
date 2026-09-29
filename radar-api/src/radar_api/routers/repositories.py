@@ -180,7 +180,8 @@ def get_repository_report(
 
 @router.get("/{repository_id}/badge", response_model=BadgeResponse)
 def get_repository_badge(
-    repository_id: int, session: Session = Depends(get_db_session)  # noqa: B008
+    repository_id: int,
+    session: Session = Depends(get_db_session),  # noqa: B008
 ) -> BadgeResponse:
     repository = session.get(Repository, repository_id)
     if repository is None:
@@ -188,9 +189,7 @@ def get_repository_badge(
 
     scoring_run = _latest_scoring_run(session, repository_id)
     if scoring_run is None or scoring_run.global_score is None:
-        return BadgeResponse(
-            label=_BADGE_LABEL, message="not yet audited", color="lightgrey"
-        )
+        return BadgeResponse(label=_BADGE_LABEL, message="not yet audited", color="lightgrey")
 
     return BadgeResponse(
         label=_BADGE_LABEL,
