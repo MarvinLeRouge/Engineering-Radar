@@ -1,0 +1,29 @@
+services:
+  radar-api:
+    build:
+      context: .
+      dockerfile: radar-api/Dockerfile
+    environment:
+      - RADAR_DATABASE_URL=sqlite:////data/radar.db
+      - RADAR_API_KEY=${RADAR_API_KEY}
+    volumes:
+      - radar-data:/data
+    ports:
+      - "8000:8000"
+
+  radar-audit:
+    build:
+      context: .
+      dockerfile: radar-audit/Dockerfile
+    environment:
+      - RADAR_DATABASE_URL=sqlite:////data/radar.db
+    volumes:
+      - radar-data:/data
+      - ${RADAR_PORTFOLIO_PATH:-./portfolio}:/portfolio:ro
+    profiles: ["cli"]
+
+  # radar-dashboard:
+  #   reserved for item E (Vue 3 + Vite SPA) -- not built yet
+
+volumes:
+  radar-data:

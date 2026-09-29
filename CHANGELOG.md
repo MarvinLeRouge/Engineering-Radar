@@ -105,6 +105,18 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Populate Recommendation records for the code quality group
 - *(radar-audit)* Populate Recommendation records for the testing & reliability group
 - *(radar-audit)* Populate Recommendation records for the security group
+- *(radar-api)* Scaffold package and required env-var config
+- *(radar-api)* Wire FastAPI app, DB session dependency, and test fixtures
+- *(radar-api)* Add static API-key authentication dependency
+- *(radar-api)* Add GET /repositories and GET /repositories/{id}
+- *(radar-api)* Add GET /repositories/{id}/report
+- *(radar-api)* Add GET /repositories/{id}/badge
+- *(radar-api)* Add GET /repositories/{id}/findings
+- *(radar-api)* Add PATCH /findings/{id}/verdict
+- *(radar-api)* Add PATCH /findings/{id}/status
+- *(radar-api)* Add GET /repositories/{id}/roadmap
+- *(radar-api)* Add PATCH /roadmap-items/{id}/status
+- *(radar-api)* Add Docker deployment for radar-api and radar-audit
 
 ### 🐛 Bug Fixes
 
@@ -160,6 +172,11 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Glob nested docvet excludes and keep docvet default excludes
 - *(radar-audit)* Treat complexity fallback payloads as no data instead of a clean score
 - *(radar-audit)* Parse vulture unreachable-code findings
+- *(radar-api)* Resolve lint and type-check compliance issues
+- *(radar-api)* Resolve ruff I001 import sorting in test_auth.py
+- *(radar-api)* Validate and clear roadmap DONE-transition evidence
+- *(radar-api)* Return null value for not_applicable criteria in report
+- *(radar-api)* Default RADAR_PORTFOLIO_PATH to avoid docker compose config failure
 
 ### 🚜 Refactor
 
@@ -235,6 +252,23 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(roadmap)* Mark reporting pipeline item A as complete
 - *(roadmap)* Mark reporting pipeline item B as complete
 - *(radar-api)* Add minimal radar-api design spec
+- *(radar-api)* Add implementation plan for minimal radar-api
+- *(radar-api)* Add implementation progress tracker
+- *(radar-api)* Mark task 1 complete in progress tracker
+- *(radar-api)* Mark task 2 complete in progress tracker
+- *(radar-api)* Mark task 3 complete in progress tracker
+- *(radar-api)* Mark task 4 complete in progress tracker
+- *(radar-api)* Mark task 5 complete in progress tracker
+- *(radar-api)* Mark task 6 complete in progress tracker
+- *(radar-api)* Mark task 7 complete in progress tracker
+- *(radar-api)* Mark task 8 complete in progress tracker
+- *(radar-api)* Mark task 9 complete in progress tracker
+- *(radar-api)* Mark task 10 complete in progress tracker
+- *(radar-api)* Mark task 11 complete in progress tracker
+- *(radar-api)* Mark task 12 complete in progress tracker
+- *(radar-api)* Mark task 13 complete in progress tracker
+- *(radar-api)* Add README and README.fr
+- *(radar-api)* Record final whole-branch review and fix round in progress tracker
 
 ### 🧪 Testing
 
@@ -260,3 +294,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(changelog)* Homogenize changelog workflow
 - Standardize AI working notes folder to docs/work-in-progress
 - Add local post-commit hook for changelog generation
+- *(radar-api)* Apply ruff formatting
