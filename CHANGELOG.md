@@ -118,6 +118,20 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Add PATCH /roadmap-items/{id}/status
 - *(radar-api)* Add Docker deployment for radar-api and radar-audit
 - *(radar-api)* Document quality badge and wire radar-api to traefik
+- *(radar-api)* Add GET /roadmap-items/{id}/evidence-candidates
+- *(radar-api)* Add title/description to RoadmapItemRead
+- *(radar-dashboard)* Add session-scoped API key store
+- *(radar-dashboard)* Add typed radar-api client
+- *(radar-dashboard)* Add repositories store with loading/error state
+- *(radar-dashboard)* Add ScoreGauge flat-band component
+- *(radar-dashboard)* Add FindingCard with verdict/status controls
+- *(radar-dashboard)* Add EvidencePicker component
+- *(radar-dashboard)* Add RoadmapItemRow with DONE evidence gate
+- *(radar-dashboard)* Add RepositoryListView
+- *(radar-dashboard)* Add RepositoryDetailView with report and roadmap tabs
+- *(radar-dashboard)* Add SettingsView for the API key
+- *(radar-dashboard)* Wire router and navigation shell
+- *(radar-dashboard)* Add Docker deployment and Traefik /api proxy
 
 ### 🐛 Bug Fixes
 
@@ -178,6 +192,11 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Validate and clear roadmap DONE-transition evidence
 - *(radar-api)* Return null value for not_applicable criteria in report
 - *(radar-api)* Default RADAR_PORTFOLIO_PATH to avoid docker compose config failure
+- *(radar-api)* Revert out-of-scope mypy comment edit from Task 2
+- *(radar-api)* Restore correct union-attr type-ignore for evidence query
+- *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
+- *(radar-dashboard)* Guard loading ref with try/finally in RepositoryListView
+- *(radar-dashboard)* Resolve final-review findings (DONE evidence picker, refetch flash, remaining em dash)
 
 ### 🚜 Refactor
 
@@ -272,6 +291,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Record final whole-branch review and fix round in progress tracker
 - *(roadmap)* Mark item C (minimal radar-api) as complete
 - *(radar-dashboard)* Add radar-dashboard design spec
+- *(radar-dashboard)* Add implementation plan for radar-dashboard
 
 ### 🧪 Testing
 
@@ -298,3 +318,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Standardize AI working notes folder to docs/work-in-progress
 - Add local post-commit hook for changelog generation
 - *(radar-api)* Apply ruff formatting
+- *(radar-dashboard)* Scaffold Vue 3 + Vite + Vitest project
