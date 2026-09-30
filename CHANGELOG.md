@@ -303,3 +303,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Standardize AI working notes folder to docs/work-in-progress
 - Add local post-commit hook for changelog generation
 - *(radar-api)* Apply ruff formatting
+- *(radar-dashboard)* Scaffold Vue 3 + Vite + Vitest project
