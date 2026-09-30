@@ -79,8 +79,8 @@ describe('api/client', () => {
 
     const [url, init] = vi.mocked(fetch).mock.calls[0]!
     expect(url).toBe('/api/findings/1/status')
-    expect((init?.headers as Record<string, string>)['X-API-Key']).toBe('secret')
-    expect(JSON.parse(init?.body as string)).toEqual({ status: 'RESOLVED' })
+    expect((init!.headers as Record<string, string>)['X-API-Key']).toBe('secret')
+    expect(JSON.parse(init!.body as string)).toEqual({ status: 'RESOLVED' })
   })
 
   it('sends human_verdict as the body for updateFindingVerdict', async () => {
@@ -90,7 +90,7 @@ describe('api/client', () => {
     await updateFindingVerdict(1, 'TRUE_POSITIVE')
 
     const [, init] = vi.mocked(fetch).mock.calls[0]!
-    expect(JSON.parse(init?.body as string)).toEqual({ human_verdict: 'TRUE_POSITIVE' })
+    expect(JSON.parse(init!.body as string)).toEqual({ human_verdict: 'TRUE_POSITIVE' })
   })
 
   it('omits done_evidence_id entirely for a non-DONE roadmap status update', async () => {
@@ -100,7 +100,7 @@ describe('api/client', () => {
     await updateRoadmapItemStatus(1, 'IN_PROGRESS')
 
     const [, init] = vi.mocked(fetch).mock.calls[0]!
-    const body = JSON.parse(init?.body as string) as Record<string, unknown>
+    const body = JSON.parse(init!.body as string) as Record<string, unknown>
     expect('done_evidence_id' in body).toBe(false)
   })
 
@@ -111,7 +111,7 @@ describe('api/client', () => {
     await updateRoadmapItemStatus(1, 'DONE', 42)
 
     const [, init] = vi.mocked(fetch).mock.calls[0]!
-    const body = JSON.parse(init?.body as string) as Record<string, unknown>
+    const body = JSON.parse(init!.body as string) as Record<string, unknown>
     expect(body.done_evidence_id).toBe(42)
   })
 

@@ -184,6 +184,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Default RADAR_PORTFOLIO_PATH to avoid docker compose config failure
 - *(radar-api)* Revert out-of-scope mypy comment edit from Task 2
 - *(radar-api)* Restore correct union-attr type-ignore for evidence query
+- *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
 
 ### 🚜 Refactor
 
