@@ -359,3 +359,16 @@ def test_evidence_candidates_no_api_key_required(client, db_session):
     response = client.get(f"/roadmap-items/{roadmap_item.id}/evidence-candidates")
 
     assert response.status_code == 200
+
+
+def test_list_roadmap_items_includes_task_title_and_description(client, db_session):
+    repo = _make_repository(db_session, "repo-roadmap-title")
+    finding = _make_finding_chain(db_session, repo)
+    _make_roadmap_item(db_session, finding)
+
+    response = client.get(f"/repositories/{repo.id}/roadmap")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body[0]["title"] == "Fix it"
+    assert body[0]["description"] == "..."

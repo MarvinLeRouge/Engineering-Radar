@@ -9,6 +9,8 @@ from radar_core.enums import RoadmapStatus
 class RoadmapItemRead(BaseModel):
     id: int
     improvement_task_id: int
+    title: str
+    description: str
     status: str
     priority: int
     estimated_effort: str | None
