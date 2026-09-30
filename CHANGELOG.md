@@ -128,6 +128,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add EvidencePicker component
 - *(radar-dashboard)* Add RoadmapItemRow with DONE evidence gate
 - *(radar-dashboard)* Add RepositoryListView
+- *(radar-dashboard)* Add RepositoryDetailView with report and roadmap tabs
 
 ### 🐛 Bug Fixes
 
