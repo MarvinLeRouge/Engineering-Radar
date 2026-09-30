@@ -300,3 +300,62 @@ def test_update_roadmap_item_status_clears_done_fields_on_reopen(client, db_sess
 
     db_session.refresh(roadmap_item)
     assert roadmap_item.done_evidence_id is None
+
+
+def test_evidence_candidates_returns_404_when_roadmap_item_missing(client):
+    response = client.get("/roadmap-items/999/evidence-candidates")
+
+    assert response.status_code == 404
+
+
+def test_evidence_candidates_returns_empty_list_when_none_linked(client, db_session):
+    repo = _make_repository(db_session, "repo-evidence-empty")
+    finding = _make_finding_chain(db_session, repo)
+    roadmap_item = _make_roadmap_item(db_session, finding)
+
+    response = client.get(f"/roadmap-items/{roadmap_item.id}/evidence-candidates")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_evidence_candidates_returns_evidence_linked_via_finding(client, db_session):
+    repo = _make_repository(db_session, "repo-evidence")
+    finding = _make_finding_chain(db_session, repo)
+    evidence = _make_evidence(db_session, finding)
+    roadmap_item = _make_roadmap_item(db_session, finding)
+
+    response = client.get(f"/roadmap-items/{roadmap_item.id}/evidence-candidates")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == evidence.id
+    assert body[0]["finding_id"] == finding.id
+    assert body[0]["evidence_type"] == "HUMAN_CONFIRMATION"
+    assert body[0]["content"] == "fixed in PR #123"
+
+
+def test_evidence_candidates_excludes_evidence_from_unrelated_finding(client, db_session):
+    repo = _make_repository(db_session, "repo-evidence-unrelated")
+    finding = _make_finding_chain(db_session, repo)
+    roadmap_item = _make_roadmap_item(db_session, finding)
+
+    other_repo = _make_repository(db_session, "repo-evidence-unrelated-other")
+    other_finding = _make_finding_chain(db_session, other_repo)
+    _make_evidence(db_session, other_finding)
+
+    response = client.get(f"/roadmap-items/{roadmap_item.id}/evidence-candidates")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_evidence_candidates_no_api_key_required(client, db_session):
+    repo = _make_repository(db_session, "repo-evidence-no-auth")
+    finding = _make_finding_chain(db_session, repo)
+    roadmap_item = _make_roadmap_item(db_session, finding)
+
+    response = client.get(f"/roadmap-items/{roadmap_item.id}/evidence-candidates")
+
+    assert response.status_code == 200

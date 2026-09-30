@@ -26,3 +26,11 @@ class RoadmapItemStatusUpdate(BaseModel):
         if self.status == RoadmapStatus.DONE and self.done_evidence_id is None:
             raise ValueError("done_evidence_id is required when status is DONE")
         return self
+
+
+class EvidenceCandidate(BaseModel):
+    id: int
+    finding_id: int
+    evidence_type: str
+    content: str
+    created_at: datetime
