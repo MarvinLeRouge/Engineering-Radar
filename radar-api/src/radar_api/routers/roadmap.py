@@ -14,22 +14,36 @@ from sqlmodel import Session, select
 
 from radar_api.auth import require_api_key
 from radar_api.dependencies import get_db_session
-from radar_api.schemas.roadmap import RoadmapItemRead, RoadmapItemStatusUpdate
+from radar_api.schemas.roadmap import EvidenceCandidate, RoadmapItemRead, RoadmapItemStatusUpdate
 
 router = APIRouter(tags=["roadmap"])
 
 
-def _to_roadmap_item_read(roadmap_item: RoadmapItem) -> RoadmapItemRead:
+def _to_roadmap_item_read(
+    roadmap_item: RoadmapItem, improvement_task: ImprovementTask
+) -> RoadmapItemRead:
     assert roadmap_item.id is not None
     return RoadmapItemRead(
         id=roadmap_item.id,
         improvement_task_id=roadmap_item.improvement_task_id,
+        title=improvement_task.title,
+        description=improvement_task.description,
         status=roadmap_item.status.value,
         priority=roadmap_item.priority,
         estimated_effort=roadmap_item.estimated_effort,
         estimated_impact=roadmap_item.estimated_impact,
         promoted_at=roadmap_item.promoted_at,
         done_at=roadmap_item.done_at,
+    )
+
+
+def _linked_finding_ids(session: Session, improvement_task_id: int) -> set[int]:
+    return set(
+        session.exec(
+            select(FindingImprovementTaskLink.finding_id).where(
+                FindingImprovementTaskLink.improvement_task_id == improvement_task_id
+            )
+        ).all()
     )
 
 
@@ -42,8 +56,8 @@ def list_roadmap_items(
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
 
-    roadmap_items = session.exec(
-        select(RoadmapItem)
+    rows = session.exec(
+        select(RoadmapItem, ImprovementTask)
         .join(ImprovementTask, ImprovementTask.id == RoadmapItem.improvement_task_id)  # type: ignore[arg-type]
         .join(
             FindingImprovementTaskLink,
@@ -55,7 +69,38 @@ def list_roadmap_items(
         .where(Audit.repository_id == repository_id)
         .distinct()
     ).all()
-    return [_to_roadmap_item_read(item) for item in roadmap_items]
+    return [_to_roadmap_item_read(item, task) for item, task in rows]
+
+
+@router.get(
+    "/roadmap-items/{roadmap_item_id}/evidence-candidates",
+    response_model=list[EvidenceCandidate],
+)
+def list_roadmap_item_evidence_candidates(
+    roadmap_item_id: int,
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> list[EvidenceCandidate]:
+    roadmap_item = session.get(RoadmapItem, roadmap_item_id)
+    if roadmap_item is None:
+        raise HTTPException(status_code=404, detail="roadmap item not found")
+
+    linked_finding_ids = _linked_finding_ids(session, roadmap_item.improvement_task_id)
+    if not linked_finding_ids:
+        return []
+
+    evidence_rows = session.exec(
+        select(Evidence).where(Evidence.finding_id.in_(linked_finding_ids))  # type: ignore[union-attr]
+    ).all()
+    return [
+        EvidenceCandidate(
+            id=e.id,  # type: ignore[arg-type]
+            finding_id=e.finding_id,  # type: ignore[arg-type]
+            evidence_type=e.evidence_type.value,
+            content=e.content,
+            created_at=e.created_at,
+        )
+        for e in evidence_rows
+    ]
 
 
 @router.patch(
@@ -84,14 +129,7 @@ def update_roadmap_item_status(
                 status_code=400,
                 detail="done_evidence_id does not reference an existing evidence row",
             )
-        linked_finding_ids = set(
-            session.exec(
-                select(FindingImprovementTaskLink.finding_id).where(
-                    FindingImprovementTaskLink.improvement_task_id
-                    == roadmap_item.improvement_task_id
-                )
-            ).all()
-        )
+        linked_finding_ids = _linked_finding_ids(session, roadmap_item.improvement_task_id)
         if evidence.finding_id not in linked_finding_ids:
             raise HTTPException(
                 status_code=400,
@@ -107,4 +145,6 @@ def update_roadmap_item_status(
     session.add(roadmap_item)
     session.commit()
     session.refresh(roadmap_item)
-    return _to_roadmap_item_read(roadmap_item)
+    improvement_task = session.get(ImprovementTask, roadmap_item.improvement_task_id)
+    assert improvement_task is not None
+    return _to_roadmap_item_read(roadmap_item, improvement_task)
