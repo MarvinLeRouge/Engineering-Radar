@@ -132,6 +132,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add SettingsView for the API key
 - *(radar-dashboard)* Wire router and navigation shell
 - *(radar-dashboard)* Add Docker deployment and Traefik /api proxy
+- *(radar-dashboard)* Readable repository URLs and severity-grouped findings
 
 ### 🐛 Bug Fixes
 

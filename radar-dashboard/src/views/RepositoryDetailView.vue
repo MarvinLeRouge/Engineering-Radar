@@ -10,7 +10,10 @@
       </button>
     </nav>
 
-    <section v-if="tab === 'report'">
+    <p v-if="repositoryId === null" class="repository-detail-view__error">
+      repository not found
+    </p>
+    <section v-else-if="tab === 'report'">
       <p v-if="store.reportLoading && !store.report">Loading...</p>
       <p v-else-if="store.reportError" class="repository-detail-view__error">
         {{ store.reportError }}
@@ -31,12 +34,7 @@
                 :na-reason="criterion.na_reason"
               />
             </h3>
-            <FindingCard
-              v-for="finding in criterion.findings"
-              :key="finding.id"
-              :finding="finding"
-              @updated="refetchReport"
-            />
+            <CriterionFindings :findings="criterion.findings" @updated="refetchReport" />
           </div>
         </div>
       </template>
@@ -63,22 +61,27 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ScoreGauge from '@/components/ScoreGauge.vue'
-import FindingCard from '@/components/FindingCard.vue'
+import CriterionFindings from '@/components/CriterionFindings.vue'
 import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
 import { useRepositoriesStore } from '@/stores/repositories'
+import { extractRepositoryId } from '@/utils/slugify'
 
 const route = useRoute()
 const store = useRepositoriesStore()
 const tab = ref<'report' | 'roadmap'>('report')
 
-const repositoryId = Number(route.params.id)
+const repositoryId = extractRepositoryId(route.params.idSlug as string)
 
 function refetchReport(): void {
-  store.fetchReport(repositoryId)
+  if (repositoryId !== null) {
+    store.fetchReport(repositoryId)
+  }
 }
 
 function refetchRoadmap(): void {
-  store.fetchRoadmap(repositoryId)
+  if (repositoryId !== null) {
+    store.fetchRoadmap(repositoryId)
+  }
 }
 
 onMounted(() => {

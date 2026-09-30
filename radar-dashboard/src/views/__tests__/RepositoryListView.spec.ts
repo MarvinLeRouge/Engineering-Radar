@@ -10,7 +10,7 @@ async function mountView() {
     history: createMemoryHistory(),
     routes: [
       { path: '/', component: RepositoryListView },
-      { path: '/repositories/:id', component: { template: '<div />' } },
+      { path: '/repositories/:idSlug', component: { template: '<div />' } },
     ],
   })
   router.push('/')
@@ -59,5 +59,6 @@ describe('RepositoryListView', () => {
 
     expect(wrapper.text()).toContain('repo-a')
     expect(wrapper.findComponent({ name: 'ScoreGauge' }).exists()).toBe(true)
+    expect(wrapper.find('a').attributes('href')).toBe('/repositories/repo-a-1')
   })
 })
