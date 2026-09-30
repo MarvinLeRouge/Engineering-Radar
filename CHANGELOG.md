@@ -133,6 +133,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Wire router and navigation shell
 - *(radar-dashboard)* Add Docker deployment and Traefik /api proxy
 - *(radar-dashboard)* Readable repository URLs and severity-grouped findings
+- *(radar-dashboard)* Add a visible open/closed arrow to severity chips
 
 ### 🐛 Bug Fixes
 

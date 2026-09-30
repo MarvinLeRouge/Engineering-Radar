@@ -57,6 +57,20 @@ describe('CriterionFindings', () => {
     expect(cards[0]!.props('finding').severity).toBe('CRITICAL')
   })
 
+  it('reflects the expanded state on the chip via aria-expanded and an arrow indicator', async () => {
+    const findings = [makeFinding(1, 'CRITICAL')]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const chip = wrapper.find('[data-testid="severity-chip"]')
+
+    expect(chip.attributes('aria-expanded')).toBe('false')
+    expect(chip.find('[data-testid="chip-arrow"]').exists()).toBe(true)
+
+    await chip.trigger('click')
+
+    expect(chip.attributes('aria-expanded')).toBe('true')
+  })
+
   it('toggles a severity group closed on a second click', async () => {
     const findings = [makeFinding(1, 'CRITICAL')]
 
