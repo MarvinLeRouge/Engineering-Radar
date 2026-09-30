@@ -124,6 +124,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add typed radar-api client
 - *(radar-dashboard)* Add repositories store with loading/error state
 - *(radar-dashboard)* Add ScoreGauge flat-band component
+- *(radar-dashboard)* Add FindingCard with verdict/status controls
 
 ### 🐛 Bug Fixes
 
