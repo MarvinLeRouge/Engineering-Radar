@@ -118,6 +118,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Add PATCH /roadmap-items/{id}/status
 - *(radar-api)* Add Docker deployment for radar-api and radar-audit
 - *(radar-api)* Document quality badge and wire radar-api to traefik
+- *(radar-api)* Add GET /roadmap-items/{id}/evidence-candidates
 
 ### 🐛 Bug Fixes
 
