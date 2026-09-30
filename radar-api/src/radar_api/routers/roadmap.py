@@ -89,7 +89,7 @@ def list_roadmap_item_evidence_candidates(
         return []
 
     evidence_rows = session.exec(
-        select(Evidence).where(Evidence.finding_id.in_(linked_finding_ids))  # type: ignore[union-attr]
+        select(Evidence).where(Evidence.finding_id.in_(linked_finding_ids))  # type: ignore[attr-defined]
     ).all()
     return [
         EvidenceCandidate(
