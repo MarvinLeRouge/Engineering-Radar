@@ -121,6 +121,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Add GET /roadmap-items/{id}/evidence-candidates
 - *(radar-api)* Add title/description to RoadmapItemRead
 - *(radar-dashboard)* Add session-scoped API key store
+- *(radar-dashboard)* Add typed radar-api client
 
 ### 🐛 Bug Fixes
 
