@@ -191,6 +191,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Revert out-of-scope mypy comment edit from Task 2
 - *(radar-api)* Restore correct union-attr type-ignore for evidence query
 - *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
+- *(radar-dashboard)* Guard loading ref with try/finally in RepositoryListView
 
 ### 🚜 Refactor
 
