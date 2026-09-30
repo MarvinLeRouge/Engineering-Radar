@@ -1,6 +1,6 @@
 <template>
   <div class="evidence-picker">
-    <p v-if="loading">Loading evidence…</p>
+    <p v-if="loading">Loading evidence...</p>
     <p v-else-if="error" class="evidence-picker__error">{{ error }}</p>
     <p v-else-if="candidates.length === 0" class="evidence-picker__empty">
       No evidence linked to this roadmap item's findings yet.
@@ -10,7 +10,7 @@
         <label>
           <input
             type="radio"
-            name="evidence-candidate"
+            :name="`evidence-candidate-${props.roadmapItemId}`"
             :value="candidate.id"
             v-model="selectedId"
             @change="emitSelection"
@@ -37,7 +37,7 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 function preview(content: string): string {
-  return content.length > 80 ? `${content.slice(0, 80)}…` : content
+  return content.length > 80 ? `${content.slice(0, 80)}...` : content
 }
 
 function emitSelection(): void {

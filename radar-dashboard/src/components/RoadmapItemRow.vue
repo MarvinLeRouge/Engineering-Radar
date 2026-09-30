@@ -18,7 +18,7 @@
       </select>
     </label>
     <EvidencePicker
-      v-if="targetStatus === 'DONE'"
+      v-if="targetStatus === 'DONE' && item.status !== 'DONE'"
       :roadmap-item-id="item.id"
       @select="onEvidenceSelected"
     />

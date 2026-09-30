@@ -196,6 +196,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Restore correct union-attr type-ignore for evidence query
 - *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
 - *(radar-dashboard)* Guard loading ref with try/finally in RepositoryListView
+- *(radar-dashboard)* Resolve final-review findings (DONE evidence picker, refetch flash, remaining em dash)
 
 ### 🚜 Refactor
 

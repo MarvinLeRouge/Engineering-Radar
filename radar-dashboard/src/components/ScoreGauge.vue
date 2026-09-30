@@ -46,7 +46,7 @@ const displayValue = computed(() => {
   if (props.status === 'scored' && props.value !== null) {
     return props.value.toFixed(1)
   }
-  return props.status === 'not_applicable' ? 'N/A' : '—'
+  return props.status === 'not_applicable' ? 'N/A' : '-'
 })
 
 const reasonText = computed(() => {
