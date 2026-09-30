@@ -6,7 +6,7 @@
     <p v-else-if="store.listError" class="repository-list-view__error">{{ store.listError }}</p>
     <ul v-else>
       <li v-for="repo in store.list" :key="repo.id">
-        <RouterLink :to="`/repositories/${repo.id}`">{{ repo.name }}</RouterLink>
+        <RouterLink :to="`/repositories/${slugify(repo.name)}-${repo.id}`">{{ repo.name }}</RouterLink>
         <ScoreGauge
           :value="repo.global_score"
           :status="repo.audit_status === 'scored' ? 'scored' : 'not_yet_audited'"
@@ -21,6 +21,7 @@ import { onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import ScoreGauge from '@/components/ScoreGauge.vue'
 import { useRepositoriesStore } from '@/stores/repositories'
+import { slugify } from '@/utils/slugify'
 
 const store = useRepositoriesStore()
 const loading = ref(true)

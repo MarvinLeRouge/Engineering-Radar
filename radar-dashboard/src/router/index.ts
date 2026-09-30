@@ -7,7 +7,11 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'repository-list', component: RepositoryListView },
-    { path: '/repositories/:id', name: 'repository-detail', component: RepositoryDetailView },
+    {
+      path: '/repositories/:idSlug',
+      name: 'repository-detail',
+      component: RepositoryDetailView,
+    },
     { path: '/settings', name: 'settings', component: SettingsView },
   ],
 })

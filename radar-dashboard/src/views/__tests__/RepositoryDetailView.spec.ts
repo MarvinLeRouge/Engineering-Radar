@@ -6,12 +6,12 @@ import { useRepositoriesStore } from '@/stores/repositories'
 import RepositoryDetailView from '../RepositoryDetailView.vue'
 import type { RoadmapItemRead } from '@/api/client'
 
-async function mountView() {
+async function mountView(path = '/repositories/repo-a-1') {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/repositories/:id', component: RepositoryDetailView }],
+    routes: [{ path: '/repositories/:idSlug', component: RepositoryDetailView }],
   })
-  router.push('/repositories/1')
+  router.push(path)
   await router.isReady()
   const wrapper = mount(RepositoryDetailView, { global: { plugins: [router] } })
   await wrapper.vm.$nextTick()
@@ -22,6 +22,18 @@ async function mountView() {
 describe('RepositoryDetailView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  it('shows a not-found state when the route slug has no trailing numeric id', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = await mountView('/repositories/not-a-valid-slug')
+
+    expect(wrapper.text()).toContain('repository not found')
+    expect(store.fetchReport).not.toHaveBeenCalled()
+    expect(store.fetchRoadmap).not.toHaveBeenCalled()
   })
 
   it('shows the report error state', async () => {
@@ -84,6 +96,11 @@ describe('RepositoryDetailView', () => {
 
     expect(wrapper.text()).toContain('Security')
     expect(wrapper.text()).toContain('SAST findings')
+    expect(wrapper.text()).toContain('HIGH (1)')
+    expect(wrapper.findComponent({ name: 'FindingCard' }).exists()).toBe(false)
+
+    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+
     expect(wrapper.findComponent({ name: 'FindingCard' }).exists()).toBe(true)
   })
 
@@ -141,6 +158,7 @@ describe('RepositoryDetailView', () => {
     const wrapper = await mountView()
     expect(wrapper.text()).toContain('Security')
 
+    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
     await wrapper.findComponent({ name: 'FindingCard' }).vm.$emit('updated')
     await wrapper.vm.$nextTick()
 
