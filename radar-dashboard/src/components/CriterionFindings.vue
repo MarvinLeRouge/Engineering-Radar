@@ -7,9 +7,15 @@
       type="button"
       data-testid="severity-chip"
       :class="`criterion-findings__chip criterion-findings__chip--${group.severity.toLowerCase()}`"
+      :aria-expanded="expanded.has(group.severity)"
       @click="toggle(group.severity)"
     >
       {{ group.severity }} ({{ group.findings.length }})
+      <span
+        data-testid="chip-arrow"
+        class="criterion-findings__arrow"
+        :class="{ 'criterion-findings__arrow--open': expanded.has(group.severity) }"
+      />
     </button>
 
     <template v-for="group in severityGroups" :key="`${group.severity}-findings`">
@@ -84,5 +90,19 @@ const severityGroups = computed(() =>
 }
 .criterion-findings__group {
   margin-top: 0.5rem;
+}
+.criterion-findings__arrow {
+  display: inline-block;
+  margin-left: 0.35rem;
+  width: 0;
+  height: 0;
+  border-left: 0.3rem solid transparent;
+  border-right: 0.3rem solid transparent;
+  border-top: 0.35rem solid currentColor;
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+.criterion-findings__arrow--open {
+  transform: rotate(-180deg);
 }
 </style>
