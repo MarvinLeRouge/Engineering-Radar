@@ -26,7 +26,10 @@ const store = useRepositoriesStore()
 const loading = ref(true)
 
 onMounted(async () => {
-  await store.fetchList()
-  loading.value = false
+  try {
+    await store.fetchList()
+  } finally {
+    loading.value = false
+  }
 })
 </script>
