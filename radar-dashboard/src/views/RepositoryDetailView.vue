@@ -11,7 +11,7 @@
     </nav>
 
     <section v-if="tab === 'report'">
-      <p v-if="store.reportLoading">Loading...</p>
+      <p v-if="store.reportLoading && !store.report">Loading...</p>
       <p v-else-if="store.reportError" class="repository-detail-view__error">
         {{ store.reportError }}
       </p>
@@ -43,7 +43,7 @@
     </section>
 
     <section v-else>
-      <p v-if="store.roadmapLoading">Loading...</p>
+      <p v-if="store.roadmapLoading && !store.roadmap.length">Loading...</p>
       <p v-else-if="store.roadmapError" class="repository-detail-view__error">
         {{ store.roadmapError }}
       </p>

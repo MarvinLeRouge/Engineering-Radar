@@ -48,6 +48,13 @@ describe('RoadmapItemRow', () => {
     expect(wrapper.findComponent(EvidencePicker).exists()).toBe(true)
   })
 
+  it('does not show the evidence picker on initial mount for an item that is already DONE', () => {
+    const doneItem: RoadmapItemRead = { ...item, status: 'DONE' }
+    const wrapper = mount(RoadmapItemRow, { props: { item: doneItem } })
+
+    expect(wrapper.findComponent(EvidencePicker).exists()).toBe(false)
+  })
+
   it('disables submit for DONE until evidence is selected, then submits with done_evidence_id', async () => {
     vi.mocked(client.updateRoadmapItemStatus).mockResolvedValueOnce(undefined)
     const wrapper = mount(RoadmapItemRow, { props: { item } })
