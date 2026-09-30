@@ -272,6 +272,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Record final whole-branch review and fix round in progress tracker
 - *(roadmap)* Mark item C (minimal radar-api) as complete
 - *(radar-dashboard)* Add radar-dashboard design spec
+- *(radar-dashboard)* Add implementation plan for radar-dashboard
 
 ### 🧪 Testing
 
