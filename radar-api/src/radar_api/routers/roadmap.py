@@ -19,11 +19,15 @@ from radar_api.schemas.roadmap import EvidenceCandidate, RoadmapItemRead, Roadma
 router = APIRouter(tags=["roadmap"])
 
 
-def _to_roadmap_item_read(roadmap_item: RoadmapItem) -> RoadmapItemRead:
+def _to_roadmap_item_read(
+    roadmap_item: RoadmapItem, improvement_task: ImprovementTask
+) -> RoadmapItemRead:
     assert roadmap_item.id is not None
     return RoadmapItemRead(
         id=roadmap_item.id,
         improvement_task_id=roadmap_item.improvement_task_id,
+        title=improvement_task.title,
+        description=improvement_task.description,
         status=roadmap_item.status.value,
         priority=roadmap_item.priority,
         estimated_effort=roadmap_item.estimated_effort,
@@ -52,8 +56,8 @@ def list_roadmap_items(
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
 
-    roadmap_items = session.exec(
-        select(RoadmapItem)
+    rows = session.exec(
+        select(RoadmapItem, ImprovementTask)
         .join(ImprovementTask, ImprovementTask.id == RoadmapItem.improvement_task_id)  # type: ignore[arg-type]
         .join(
             FindingImprovementTaskLink,
@@ -65,7 +69,7 @@ def list_roadmap_items(
         .where(Audit.repository_id == repository_id)
         .distinct()
     ).all()
-    return [_to_roadmap_item_read(item) for item in roadmap_items]
+    return [_to_roadmap_item_read(item, task) for item, task in rows]
 
 
 @router.get(
@@ -85,7 +89,7 @@ def list_roadmap_item_evidence_candidates(
         return []
 
     evidence_rows = session.exec(
-        select(Evidence).where(Evidence.finding_id.in_(linked_finding_ids))  # type: ignore[attr-defined]
+        select(Evidence).where(Evidence.finding_id.in_(linked_finding_ids))  # type: ignore[union-attr]
     ).all()
     return [
         EvidenceCandidate(
@@ -141,4 +145,6 @@ def update_roadmap_item_status(
     session.add(roadmap_item)
     session.commit()
     session.refresh(roadmap_item)
-    return _to_roadmap_item_read(roadmap_item)
+    improvement_task = session.get(ImprovementTask, roadmap_item.improvement_task_id)
+    assert improvement_task is not None
+    return _to_roadmap_item_read(roadmap_item, improvement_task)
