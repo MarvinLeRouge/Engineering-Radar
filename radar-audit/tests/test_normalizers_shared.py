@@ -4,6 +4,7 @@ from radar_audit.normalizers.shared import (
     add_finding_with_recommendation,
     get_criterion,
     get_or_create_scoring_run,
+    get_repository_path,
     has_success_payload,
 )
 from radar_audit.taxonomy.seed import seed_taxonomy
@@ -127,3 +128,22 @@ def test_add_finding_with_recommendation_links_a_recommendation_to_the_finding(d
         select(Recommendation).where(Recommendation.finding_id == finding.id)
     ).one()
     assert recommendation.text == "Do the thing that fixes it."
+
+
+def test_get_repository_path_resolves_from_scoring_run(db_session):
+    repo = Repository(name="repo", path="/tmp/repo-under-test")
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+
+    audit = Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False)
+    db_session.add(audit)
+    db_session.commit()
+    db_session.refresh(audit)
+
+    methodology_version = seed_taxonomy(db_session)
+    scoring_run = get_or_create_scoring_run(db_session, audit, methodology_version)
+
+    path = get_repository_path(db_session, scoring_run)
+
+    assert str(path) == "/tmp/repo-under-test"
