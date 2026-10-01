@@ -23,6 +23,7 @@ from radar_audit.normalizers.dependency_circularity import normalize_dependency_
 from radar_audit.normalizers.dependency_vulnerabilities import (
     normalize_dependency_vulnerabilities,
 )
+from radar_audit.normalizers.deployment_automation import normalize_deployment_automation
 from radar_audit.normalizers.design_doc import normalize_design_doc
 from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_hardening
 from radar_audit.normalizers.docstring_coverage import normalize_docstring_coverage
@@ -75,4 +76,5 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
         "DevOps / CI-CD",
         "Reverse proxy / local-prod environment parity (Traefik)",
     ): normalize_traefik_parity,
+    ("DevOps / CI-CD", "Deployment automation"): normalize_deployment_automation,
 }

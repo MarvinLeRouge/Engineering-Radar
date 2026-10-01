@@ -138,6 +138,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalize_ci_health for criterion 7.1
 - *(radar-audit)* Add get_repository_path and normalize_traefik_parity for criterion 7.2
 - *(radar-audit)* Add normalize_container_build_hardening for criterion 7.3
+- *(radar-audit)* Add normalize_deployment_automation for criterion 7.4
 
 ### 🐛 Bug Fixes
 
