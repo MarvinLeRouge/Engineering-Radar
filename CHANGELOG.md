@@ -296,6 +296,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add implementation plan for radar-dashboard
 - *(roadmap)* Mark item E (radar-dashboard) and the reporting pipeline as complete
 - *(radar-audit)* Add category 7 (DevOps/CI-CD) design spec
+- *(radar-audit)* Add implementation plan for category 7 (DevOps/CI-CD)
 
 ### 🧪 Testing
 
