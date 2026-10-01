@@ -30,6 +30,7 @@ from radar_audit.normalizers.module_size import normalize_module_size
 from radar_audit.normalizers.precommit_gate import normalize_precommit_gate
 from radar_audit.normalizers.sast_findings import normalize_sast_findings
 from radar_audit.normalizers.secrets_in_history import normalize_secrets_in_history
+from radar_audit.normalizers.traefik_parity import normalize_traefik_parity
 from radar_audit.normalizers.type_check_pass_rate import normalize_type_check_pass_rate
 from radar_audit.normalizers.unit_test_pass_rate import normalize_unit_test_pass_rate
 
@@ -66,4 +67,8 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Security", "Container image vulnerabilities"): normalize_container_image_vulnerabilities,
     ("Security", "Dockerfile hardening"): normalize_dockerfile_hardening,
     ("DevOps / CI-CD", "CI presence & health"): normalize_ci_health,
+    (
+        "DevOps / CI-CD",
+        "Reverse proxy / local-prod environment parity (Traefik)",
+    ): normalize_traefik_parity,
 }
