@@ -111,3 +111,29 @@ def test_prod_filename_candidate_order_prefers_docker_compose_prod(db_session, t
     score = normalize_traefik_parity(db_session, scoring_run, criterion, [])
 
     assert score.value == 10.0
+
+
+def test_dict_form_labels_with_unquoted_boolean_detected_as_traefik_routed(db_session, tmp_path):
+    compose = "services:\n  app:\n    labels:\n      traefik.enable: true\n"
+    (tmp_path / "docker-compose.yml").write_text(compose)
+    (tmp_path / "docker-compose.prod.yml").write_text(compose)
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_traefik_parity(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+    assert score.na_reason is None
+
+
+def test_dict_form_labels_with_quoted_string_boolean_detected_as_traefik_routed(
+    db_session, tmp_path
+):
+    compose = 'services:\n  app:\n    labels:\n      traefik.enable: "true"\n'
+    (tmp_path / "docker-compose.yml").write_text(compose)
+    (tmp_path / "docker-compose.prod.yml").write_text(compose)
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_traefik_parity(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+    assert score.na_reason is None

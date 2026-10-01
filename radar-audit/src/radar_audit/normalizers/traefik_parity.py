@@ -124,7 +124,13 @@ def _traefik_services(compose_path: Path) -> set[str] | None:
             continue
         labels = definition.get("labels") or []
         if isinstance(labels, dict):
-            labels = [f"{k}={v}" for k, v in labels.items()]
+            enabled = labels.get("traefik.enable")
+            if isinstance(enabled, bool):
+                if enabled:
+                    result.add(name)
+            elif str(enabled).strip().strip('"').strip("'").lower() == "true":
+                result.add(name)
+            continue
         if any(
             str(label).strip().strip('"').strip("'") == "traefik.enable=true" for label in labels
         ):
