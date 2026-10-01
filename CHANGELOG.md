@@ -134,6 +134,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add Docker deployment and Traefik /api proxy
 - *(radar-dashboard)* Readable repository URLs and severity-grouped findings
 - *(radar-dashboard)* Add a visible open/closed arrow to severity chips
+- *(radar-audit)* Add ActionlintRunner for criterion 7.1
 
 ### 🐛 Bug Fixes
 
