@@ -21,7 +21,7 @@ class ActionlintRunner:
         completed, duration_ms = run_docker_command(
             [
                 "-v",
-                f"{target_path}:/repo",
+                f"{target_path}:/repo:ro",
                 "-w",
                 "/repo",
                 "rhysd/actionlint:latest",

@@ -138,3 +138,26 @@ def test_orchestrator_crash_record_returns_none(db_session):
     score = normalize_container_build_hardening(db_session, scoring_run, criterion, [crashed])
 
     assert score is None
+
+
+def test_no_dockerfiles_found_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(db_session, audit, {"dockerfiles": []})
+
+    score = normalize_container_build_hardening(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None
+
+
+def test_all_dockerfile_entries_errored_returns_none(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {"dockerfiles": [{"path": "Dockerfile", "error": "could not lint"}]},
+        exit_code=1,
+    )
+
+    score = normalize_container_build_hardening(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is None

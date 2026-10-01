@@ -70,9 +70,26 @@ def _is_wired_to_registry_push(workflow_path: Path) -> bool:
             uses = step.get("uses")
             if isinstance(uses, str) and uses.startswith("docker/build-push-action"):
                 with_block = step.get("with")
-                if isinstance(with_block, dict) and with_block.get("push") is True:
+                if isinstance(with_block, dict) and _is_push_enabled(with_block.get("push")):
                     return True
             run = step.get("run")
             if isinstance(run, str) and "docker push" in run:
                 return True
+    return False
+
+
+def _is_push_enabled(push_value: object) -> bool:
+    """Tell whether a build-push-action `push:` value wires the step to a registry push.
+
+    A literal YAML boolean `true` is the simplest case. The common real-world
+    conditional-push idiom sets `push` to a GitHub Actions expression string, such as
+    `push: ${{ github.event_name != 'pull_request' }}`, or to a quoted string `"true"`.
+    We cannot evaluate a GitHub Actions expression, but its presence on `push` is the
+    standard conditional-push pattern and counts as wired.
+    """
+    if push_value is True:
+        return True
+    if isinstance(push_value, str):
+        stripped = push_value.strip()
+        return stripped.lower() == "true" or stripped.startswith("${{")
     return False
