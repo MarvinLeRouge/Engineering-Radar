@@ -200,6 +200,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
 - *(radar-dashboard)* Guard loading ref with try/finally in RepositoryListView
 - *(radar-dashboard)* Resolve final-review findings (DONE evidence picker, refetch flash, remaining em dash)
+- *(radar-audit)* Update test_cli.py's expected tool names for ActionlintRunner
 
 ### 🚜 Refactor
 
