@@ -134,6 +134,11 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add Docker deployment and Traefik /api proxy
 - *(radar-dashboard)* Readable repository URLs and severity-grouped findings
 - *(radar-dashboard)* Add a visible open/closed arrow to severity chips
+- *(radar-audit)* Add ActionlintRunner for criterion 7.1
+- *(radar-audit)* Add normalize_ci_health for criterion 7.1
+- *(radar-audit)* Add get_repository_path and normalize_traefik_parity for criterion 7.2
+- *(radar-audit)* Add normalize_container_build_hardening for criterion 7.3
+- *(radar-audit)* Add normalize_deployment_automation for criterion 7.4
 
 ### 🐛 Bug Fixes
 
@@ -199,6 +204,10 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
 - *(radar-dashboard)* Guard loading ref with try/finally in RepositoryListView
 - *(radar-dashboard)* Resolve final-review findings (DONE evidence picker, refetch flash, remaining em dash)
+- *(radar-audit)* Update test_cli.py's expected tool names for ActionlintRunner
+- *(radar-audit)* Update hardcoded normalizer registry count
+- *(radar-audit)* Detect dict-form Traefik labels with unquoted booleans
+- *(radar-audit)* Correct container build hardening, deployment automation and actionlint mount
 
 ### 🚜 Refactor
 
@@ -296,6 +305,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add implementation plan for radar-dashboard
 - *(roadmap)* Mark item E (radar-dashboard) and the reporting pipeline as complete
 - *(radar-audit)* Add category 7 (DevOps/CI-CD) design spec
+- *(radar-audit)* Add implementation plan for category 7 (DevOps/CI-CD)
 
 ### 🧪 Testing
 
