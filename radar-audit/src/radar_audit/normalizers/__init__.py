@@ -11,6 +11,9 @@ from radar_audit.normalizers.ci_health import normalize_ci_health
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
 from radar_audit.normalizers.complexity_hotspots import normalize_complexity_hotspots
+from radar_audit.normalizers.container_build_hardening import (
+    normalize_container_build_hardening,
+)
 from radar_audit.normalizers.container_image_vulnerabilities import (
     normalize_container_image_vulnerabilities,
 )
@@ -67,6 +70,7 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Security", "Container image vulnerabilities"): normalize_container_image_vulnerabilities,
     ("Security", "Dockerfile hardening"): normalize_dockerfile_hardening,
     ("DevOps / CI-CD", "CI presence & health"): normalize_ci_health,
+    ("DevOps / CI-CD", "Container build hardening"): normalize_container_build_hardening,
     (
         "DevOps / CI-CD",
         "Reverse proxy / local-prod environment parity (Traefik)",
