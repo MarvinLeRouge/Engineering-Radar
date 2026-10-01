@@ -89,6 +89,10 @@ def get_repository_path(session: Session, scoring_run: ScoringRun) -> Path:
 
     For normalizers that read the audited repo's own files directly (no
     ToolRunner/ToolResult involved), unlike every other normalizer in this module.
+
+    Note: normalizers using this helper read the repository's current on-disk state
+    at score time, which may differ from the commit the audit ran against if the
+    repository has moved to a different commit or been locally modified since.
     """
     audit = session.get(Audit, scoring_run.audit_id)
     assert audit is not None

@@ -26,12 +26,20 @@ def normalize_container_build_hardening(
     if not relevant:
         return None
 
+    total = 0
     finding_count = 0
     for tool_result in relevant:
         for entry in tool_result.raw_output["dockerfiles"]:
             findings = entry.get("findings")
-            if isinstance(findings, list):
-                finding_count += len(findings)
+            # A Dockerfile hadolint failed to lint carries an "error" key instead of a
+            # findings list: it is excluded from the count rather than treated as clean.
+            if not isinstance(findings, list) or "error" in entry:
+                continue
+            total += 1
+            finding_count += len(findings)
+
+    if total == 0:
+        return None
 
     score = Score(
         scoring_run_id=scoring_run.id,

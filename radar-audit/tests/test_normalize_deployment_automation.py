@@ -59,6 +59,19 @@ jobs:
       - run: docker push ghcr.io/example/app:latest
 """
 
+_CONDITIONAL_PUSH_WORKFLOW = """\
+name: Build and push
+on: [push]
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/build-push-action@v6
+        with:
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/example/app:latest
+"""
+
 
 def test_no_workflows_directory_returns_none(db_session, tmp_path):
     scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
@@ -105,6 +118,17 @@ def test_candidate_wired_via_shell_docker_push_scores_done(db_session, tmp_path)
     workflows = tmp_path / ".github" / "workflows"
     workflows.mkdir(parents=True)
     (workflows / "build-deploy.yml").write_text(_SHELL_PUSH_WORKFLOW)
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_deployment_automation(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+
+
+def test_candidate_wired_via_conditional_push_expression_scores_done(db_session, tmp_path):
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "build-push.yml").write_text(_CONDITIONAL_PUSH_WORKFLOW)
     scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
 
     score = normalize_deployment_automation(db_session, scoring_run, criterion, [])
