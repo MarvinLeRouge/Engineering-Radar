@@ -4,7 +4,7 @@ from radar_audit.taxonomy.seed import seed_taxonomy
 
 
 def test_registry_has_exactly_the_tooled_criteria():
-    assert len(CRITERION_NORMALIZERS) == 23
+    assert len(CRITERION_NORMALIZERS) == 24
 
 
 def test_registry_excludes_the_two_deferred_llm_judgment_criteria():
