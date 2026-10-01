@@ -7,9 +7,13 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.ci_health import normalize_ci_health
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
 from radar_audit.normalizers.complexity_hotspots import normalize_complexity_hotspots
+from radar_audit.normalizers.container_build_hardening import (
+    normalize_container_build_hardening,
+)
 from radar_audit.normalizers.container_image_vulnerabilities import (
     normalize_container_image_vulnerabilities,
 )
@@ -19,6 +23,7 @@ from radar_audit.normalizers.dependency_circularity import normalize_dependency_
 from radar_audit.normalizers.dependency_vulnerabilities import (
     normalize_dependency_vulnerabilities,
 )
+from radar_audit.normalizers.deployment_automation import normalize_deployment_automation
 from radar_audit.normalizers.design_doc import normalize_design_doc
 from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_hardening
 from radar_audit.normalizers.docstring_coverage import normalize_docstring_coverage
@@ -29,6 +34,7 @@ from radar_audit.normalizers.module_size import normalize_module_size
 from radar_audit.normalizers.precommit_gate import normalize_precommit_gate
 from radar_audit.normalizers.sast_findings import normalize_sast_findings
 from radar_audit.normalizers.secrets_in_history import normalize_secrets_in_history
+from radar_audit.normalizers.traefik_parity import normalize_traefik_parity
 from radar_audit.normalizers.type_check_pass_rate import normalize_type_check_pass_rate
 from radar_audit.normalizers.unit_test_pass_rate import normalize_unit_test_pass_rate
 
@@ -64,4 +70,11 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Security", "SAST findings"): normalize_sast_findings,
     ("Security", "Container image vulnerabilities"): normalize_container_image_vulnerabilities,
     ("Security", "Dockerfile hardening"): normalize_dockerfile_hardening,
+    ("DevOps / CI-CD", "CI presence & health"): normalize_ci_health,
+    ("DevOps / CI-CD", "Container build hardening"): normalize_container_build_hardening,
+    (
+        "DevOps / CI-CD",
+        "Reverse proxy / local-prod environment parity (Traefik)",
+    ): normalize_traefik_parity,
+    ("DevOps / CI-CD", "Deployment automation"): normalize_deployment_automation,
 }

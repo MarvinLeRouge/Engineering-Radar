@@ -11,6 +11,7 @@ from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, planned_runs
 from radar_audit.report import NoScoringRunFoundError, render_report, write_report
 from radar_audit.runner import ToolRunner
+from radar_audit.runners.actionlint_runner import ActionlintRunner
 from radar_audit.runners.ci_workflow_runner import CiWorkflowRunner
 from radar_audit.runners.composer_audit_runner import ComposerAuditRunner
 from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
@@ -84,6 +85,7 @@ DEFAULT_RUNNERS: list[ToolRunner] = [
     SemgrepRunner(),
     TrivyImageRunner(),
     HadolintRunner(),
+    ActionlintRunner(),
 ]
 
 

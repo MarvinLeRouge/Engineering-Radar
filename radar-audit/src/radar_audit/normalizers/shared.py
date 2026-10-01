@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
+from radar_core.models.repository import Repository
 from radar_core.models.scoring import ScoringRun
 from sqlmodel import Session, select
 
@@ -79,6 +82,23 @@ def add_finding_with_recommendation(
     session.flush()
     session.add(Recommendation(finding_id=finding.id, text=recommendation_text))
     return finding
+
+
+def get_repository_path(session: Session, scoring_run: ScoringRun) -> Path:
+    """Resolve the on-disk path of the repository being scored.
+
+    For normalizers that read the audited repo's own files directly (no
+    ToolRunner/ToolResult involved), unlike every other normalizer in this module.
+
+    Note: normalizers using this helper read the repository's current on-disk state
+    at score time, which may differ from the commit the audit ran against if the
+    repository has moved to a different commit or been locally modified since.
+    """
+    audit = session.get(Audit, scoring_run.audit_id)
+    assert audit is not None
+    repository = session.get(Repository, audit.repository_id)
+    assert repository is not None
+    return Path(repository.path)
 
 
 def has_success_payload(tool_result: ToolResult, payload_key: str) -> bool:
