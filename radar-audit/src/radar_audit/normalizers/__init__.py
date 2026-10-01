@@ -7,6 +7,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.ci_health import normalize_ci_health
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
 from radar_audit.normalizers.complexity_hotspots import normalize_complexity_hotspots
@@ -64,4 +65,5 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Security", "SAST findings"): normalize_sast_findings,
     ("Security", "Container image vulnerabilities"): normalize_container_image_vulnerabilities,
     ("Security", "Dockerfile hardening"): normalize_dockerfile_hardening,
+    ("DevOps / CI-CD", "CI presence & health"): normalize_ci_health,
 }
