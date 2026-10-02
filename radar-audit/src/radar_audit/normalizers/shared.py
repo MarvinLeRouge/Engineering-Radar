@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
-from radar_core.models.scoring import ScoringRun
+from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session, select
 
 
@@ -68,6 +70,10 @@ def get_criterion(
 # orchestrator._run_tool_safely).
 CRASHED_EXIT_CODE = -1
 
+# Shared between criteria 1.2 and 8.2, which both read the same design-doc-presence
+# evidence. Provisional threshold, not yet calibrated against the real portfolio.
+DESIGN_DOC_NON_TRIVIAL_LINE_THRESHOLD = 30
+
 
 def add_finding_with_recommendation(
     session: Session, finding: Finding, recommendation_text: str
@@ -99,6 +105,94 @@ def get_repository_path(session: Session, scoring_run: ScoringRun) -> Path:
     repository = session.get(Repository, audit.repository_id)
     assert repository is not None
     return Path(repository.path)
+
+
+def score_design_doc_evidence(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_results: list[ToolResult],
+    *,
+    missing_description: str,
+    missing_recommendation: str,
+    trivial_description: Callable[[str, int], str],
+    trivial_recommendation: Callable[[str], str],
+) -> Score | None:
+    """Score a criterion from the design-doc-presence evidence (DESIGN.md/ARCHITECTURE.md/ADR).
+
+    Shared by criteria 1.2 and 8.2, which read the same evidence under two different
+    framings (architecture fidelity vs. documentation completeness) -- cross-referenced
+    per the Quality Framework, not double-weighted. Callers supply their own Finding/
+    Recommendation text; the evidence filter and the 0/6/10 banding are identical.
+    """
+    relevant = [
+        r for r in tool_results if r.tool_name == "design-doc-presence" and r.exit_code == 0
+    ]
+    if not relevant:
+        return None
+
+    tool_result = relevant[0]
+    found_path = tool_result.raw_output.get("found_path")
+    non_blank_lines = tool_result.raw_output.get("non_blank_lines", 0)
+
+    if found_path is None:
+        value = 0.0
+        _add_design_doc_finding(
+            session,
+            scoring_run,
+            criterion,
+            tool_result,
+            missing_description,
+            missing_recommendation,
+        )
+    elif non_blank_lines >= DESIGN_DOC_NON_TRIVIAL_LINE_THRESHOLD:
+        value = 10.0
+    else:
+        value = 6.0
+        _add_design_doc_finding(
+            session,
+            scoring_run,
+            criterion,
+            tool_result,
+            trivial_description(found_path, non_blank_lines),
+            trivial_recommendation(found_path),
+        )
+
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=value,
+        confidence=Confidence.MEDIUM,
+    )
+    session.add(score)
+    session.commit()
+    session.refresh(score)
+    return score
+
+
+def _add_design_doc_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    description: str,
+    recommendation_text: str,
+) -> None:
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=FindingSeverity.LOW,
+            description=description,
+            confidence=Confidence.MEDIUM,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        recommendation_text,
+    )
 
 
 def has_success_payload(tool_result: ToolResult, payload_key: str) -> bool:
