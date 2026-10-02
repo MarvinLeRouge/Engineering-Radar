@@ -32,6 +32,8 @@ from radar_audit.normalizers.design_doc import normalize_design_doc
 from radar_audit.normalizers.dockerfile_hardening import normalize_dockerfile_hardening
 from radar_audit.normalizers.docstring_coverage import normalize_docstring_coverage
 from radar_audit.normalizers.e2e_tests import normalize_e2e_tests
+from radar_audit.normalizers.error_tracking import normalize_error_tracking
+from radar_audit.normalizers.health_check import normalize_health_check
 from radar_audit.normalizers.integration_tests import normalize_integration_tests
 from radar_audit.normalizers.lint_pass_rate import normalize_lint_pass_rate
 from radar_audit.normalizers.module_size import normalize_module_size
@@ -39,6 +41,7 @@ from radar_audit.normalizers.precommit_gate import normalize_precommit_gate
 from radar_audit.normalizers.readme_completeness import normalize_readme_completeness
 from radar_audit.normalizers.sast_findings import normalize_sast_findings
 from radar_audit.normalizers.secrets_in_history import normalize_secrets_in_history
+from radar_audit.normalizers.structured_logging import normalize_structured_logging
 from radar_audit.normalizers.traefik_parity import normalize_traefik_parity
 from radar_audit.normalizers.type_check_pass_rate import normalize_type_check_pass_rate
 from radar_audit.normalizers.unit_test_pass_rate import normalize_unit_test_pass_rate
@@ -85,4 +88,7 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
     ("Documentation", "README completeness"): normalize_readme_completeness,
     ("Documentation", "Architecture documentation"): normalize_architecture_documentation,
     ("Documentation", "API documentation"): normalize_api_documentation,
+    ("Observability / operations", "Structured logging"): normalize_structured_logging,
+    ("Observability / operations", "Error tracking integration"): normalize_error_tracking,
+    ("Observability / operations", "Health-check endpoint"): normalize_health_check,
 }
