@@ -11,15 +11,13 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, get_repository_path
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    find_prod_compose,
+    get_repository_path,
+)
 
 _LOCAL_COMPOSE_FILENAME = "docker-compose.yml"
-_PROD_COMPOSE_CANDIDATES = (
-    "docker-compose.prod.yml",
-    "docker-compose.production.yml",
-    "compose.prod.yml",
-    "compose.prod.yaml",
-)
 _NO_PROD_FILE_NA_REASON = "No production compose file found (no long-lived service to proxy)"
 _NO_TRAEFIK_NA_REASON = "No Traefik-routed services found in either compose file"
 
@@ -36,7 +34,7 @@ def normalize_traefik_parity(
     if local_services is None:
         return None
 
-    prod_path = _find_prod_compose(target_path)
+    prod_path = find_prod_compose(target_path)
     if prod_path is None:
         return _na_score(session, scoring_run, criterion, _NO_PROD_FILE_NA_REASON)
 
@@ -95,14 +93,6 @@ def _na_score(
     session.commit()
     session.refresh(score)
     return score
-
-
-def _find_prod_compose(target_path: Path) -> Path | None:
-    for candidate in _PROD_COMPOSE_CANDIDATES:
-        candidate_path = target_path / candidate
-        if candidate_path.is_file():
-            return candidate_path
-    return None
 
 
 def _traefik_services(compose_path: Path) -> set[str] | None:

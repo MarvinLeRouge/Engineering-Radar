@@ -140,6 +140,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add normalize_container_build_hardening for criterion 7.3
 - *(radar-audit)* Add normalize_deployment_automation for criterion 7.4
 - *(radar-audit)* Add category 8 Documentation normalizers
+- *(radar-audit)* Add category 9 Observability normalizers (FEAT-015)
 
 ### 🐛 Bug Fixes
 
@@ -309,6 +310,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add implementation plan for category 7 (DevOps/CI-CD)
 - *(roadmap)* Migrate to Section/TYPE-NNN task nomenclature
 - *(roadmap)* Tick FEAT-014 (category 8 Documentation)
+- *(roadmap)* Tick FEAT-015 (category 9 Observability)
 
 ### 🧪 Testing
 
