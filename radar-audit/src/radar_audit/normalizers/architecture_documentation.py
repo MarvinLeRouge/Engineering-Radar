@@ -7,8 +7,13 @@ from sqlmodel import Session
 
 from radar_audit.normalizers.shared import score_design_doc_evidence
 
+# Shares evidence with criterion 1.2 (Architectural documentation present): same
+# tool, same banding, reframed for documentation completeness/onboarding rather
+# than structural fidelity. Cross-referenced per the Quality Framework, not
+# double-weighted.
 
-def normalize_design_doc(
+
+def normalize_architecture_documentation(
     session: Session,
     scoring_run: ScoringRun,
     criterion: Criterion,
@@ -19,15 +24,15 @@ def normalize_design_doc(
         scoring_run,
         criterion,
         tool_results,
-        missing_description="no architectural documentation found",
+        missing_description="no architecture documentation available for onboarding",
         missing_recommendation=(
-            "Add a DESIGN.md or ARCHITECTURE.md describing the system's structure."
+            "Add a DESIGN.md or ARCHITECTURE.md so new contributors can get oriented."
         ),
         trivial_description=lambda found_path, non_blank_lines: (
-            f"architectural documentation at {found_path} is trivial "
+            f"architecture documentation at {found_path} is too short to onboard from "
             f"({non_blank_lines} non-blank lines)"
         ),
         trivial_recommendation=lambda found_path: (
-            f"Expand {found_path} with more detail on the system's structure and key decisions."
+            f"Expand {found_path} so it is usable as an onboarding reference."
         ),
     )

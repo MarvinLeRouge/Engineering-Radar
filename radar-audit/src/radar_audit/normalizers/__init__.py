@@ -7,6 +7,10 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
+from radar_audit.normalizers.api_documentation import normalize_api_documentation
+from radar_audit.normalizers.architecture_documentation import (
+    normalize_architecture_documentation,
+)
 from radar_audit.normalizers.ci_health import normalize_ci_health
 from radar_audit.normalizers.ci_test_execution import normalize_ci_test_execution
 from radar_audit.normalizers.code_duplication import normalize_code_duplication
@@ -32,6 +36,7 @@ from radar_audit.normalizers.integration_tests import normalize_integration_test
 from radar_audit.normalizers.lint_pass_rate import normalize_lint_pass_rate
 from radar_audit.normalizers.module_size import normalize_module_size
 from radar_audit.normalizers.precommit_gate import normalize_precommit_gate
+from radar_audit.normalizers.readme_completeness import normalize_readme_completeness
 from radar_audit.normalizers.sast_findings import normalize_sast_findings
 from radar_audit.normalizers.secrets_in_history import normalize_secrets_in_history
 from radar_audit.normalizers.traefik_parity import normalize_traefik_parity
@@ -77,4 +82,7 @@ CRITERION_NORMALIZERS: dict[tuple[str, str], NormalizerFn] = {
         "Reverse proxy / local-prod environment parity (Traefik)",
     ): normalize_traefik_parity,
     ("DevOps / CI-CD", "Deployment automation"): normalize_deployment_automation,
+    ("Documentation", "README completeness"): normalize_readme_completeness,
+    ("Documentation", "Architecture documentation"): normalize_architecture_documentation,
+    ("Documentation", "API documentation"): normalize_api_documentation,
 }
