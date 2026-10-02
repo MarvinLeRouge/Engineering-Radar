@@ -310,6 +310,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add implementation plan for category 7 (DevOps/CI-CD)
 - *(roadmap)* Migrate to Section/TYPE-NNN task nomenclature
 - *(roadmap)* Tick FEAT-014 (category 8 Documentation)
+- *(roadmap)* Tick FEAT-015 (category 9 Observability)
 
 ### 🧪 Testing
 
