@@ -31,6 +31,11 @@ class Finding(SQLModel, table=True):
     description: str
     file: str | None = None
     line: int | None = None
+    # Generic numeric magnitude for this finding (e.g. a cyclomatic complexity
+    # value, a duplication percentage, a CVE count). Used to order findings of
+    # equal severity by how bad they are, not just when they were found;
+    # optional since most criteria have no single comparable number.
+    magnitude: float | None = None
     estimated_effort: str | None = None
     confidence: Confidence = Field(
         sa_column=Column(

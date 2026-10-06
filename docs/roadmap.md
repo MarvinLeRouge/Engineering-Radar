@@ -80,6 +80,7 @@ completes (ticked when its PR merges to `main`).
   - [x] FEAT-010 - C. Build a minimal `radar-api` (FastAPI): read endpoints over the existing data model, plus narrow human-confirmed-only write endpoints; this is what hosts all report/finding/recommendation data, never written into audited repos
   - [x] FEAT-011 - D. Add a quality-assessment badge (shields.io-style endpoint badge) that audited repos can link from their README, pointing at the radar-hosted report page
   - [x] FEAT-012 - E. Build the full `radar-dashboard` (Vue 3 + Vite SPA): score gauges as discrete flat-color bands (reusing the `FindingSeverity` 5-tier palette, not a continuous gradient) for a professional, non-gimmicky look; N/A and not-yet-audited criteria rendered grayed out with the reason surfaced
+  - [x] FEAT-016 - F. Add a generic `Finding.magnitude` field and a shared severity-then-magnitude sort (`radar_core.finding_ordering`), wired into both the CLI report and the `radar-api` report endpoint, so findings of equal severity surface the worst offender first
 
 ## Section 6 - Full portfolio audit
 
