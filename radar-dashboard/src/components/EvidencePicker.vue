@@ -1,13 +1,13 @@
 <template>
   <div class="evidence-picker">
-    <p v-if="loading">Loading evidence...</p>
+    <p v-if="loading" class="evidence-picker__status">Loading evidence...</p>
     <p v-else-if="error" class="evidence-picker__error">{{ error }}</p>
     <p v-else-if="candidates.length === 0" class="evidence-picker__empty">
       No evidence linked to this roadmap item's findings yet.
     </p>
     <ul v-else class="evidence-picker__list">
-      <li v-for="candidate in candidates" :key="candidate.id">
-        <label>
+      <li v-for="candidate in candidates" :key="candidate.id" class="evidence-picker__item">
+        <label class="evidence-picker__option">
           <input
             type="radio"
             :name="`evidence-candidate-${props.roadmapItemId}`"
@@ -15,8 +15,8 @@
             v-model="selectedId"
             @change="emitSelection"
           />
-          <strong>{{ candidate.evidence_type }}</strong>
-          : {{ preview(candidate.content) }}
+          <strong class="evidence-picker__type">{{ candidate.evidence_type }}</strong>
+          <span class="evidence-picker__preview">{{ preview(candidate.content) }}</span>
         </label>
       </li>
     </ul>
@@ -56,3 +56,49 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.evidence-picker {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-sunken);
+}
+
+.evidence-picker__status,
+.evidence-picker__empty {
+  font-size: var(--text-meta);
+  color: var(--color-ink-soft);
+}
+
+.evidence-picker__error {
+  font-size: var(--text-meta);
+  color: var(--text-danger);
+}
+
+.evidence-picker__list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.evidence-picker__option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-meta);
+  cursor: pointer;
+}
+
+.evidence-picker__type {
+  font-weight: var(--weight-semibold);
+  flex-shrink: 0;
+}
+
+.evidence-picker__preview {
+  color: var(--color-ink-soft);
+  font-family: var(--font-mono);
+}
+</style>

@@ -1,0 +1,132 @@
+/* radar-dashboard/src/assets/tokens.css */
+/* Design tokens: spacing, type, and the existing severity/score-band palette,
+   centralized so every component references the same scale instead of
+   repeating literal values. */
+
+:root {
+  /* Spacing: 4px base scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Type: system stack, no webfont delivery cost for an internal tool */
+  --font-sans:
+    -apple-system, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  /* Type roles: distinguished by size AND weight, not size alone */
+  --text-display: 1.75rem; /* repository name */
+  --text-title: 1.25rem; /* category */
+  --text-subtitle: 1.0625rem; /* criterion */
+  --text-body: 0.9375rem; /* findings, descriptions */
+  --text-meta: 0.8125rem; /* file:line, status labels, timestamps */
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+
+  /* Neutral surface palette */
+  --color-ink: #1a1f26;
+  --color-ink-soft: #4a5260;
+  --color-ink-faint: #767f8c;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f6f7f9;
+  --color-border: #e2e5ea;
+  --color-border-strong: #c7ccd4;
+  --color-accent: #2f6fed;
+  --color-accent-soft: #e8eefd;
+
+  /* Severity / score-band palette: the committed world, unchanged values,
+     now named tokens instead of literals repeated across components. */
+  --severity-critical: #eb5757;
+  /* Dark ink, not light: #eb5757 is too light a red for white/near-white text
+     to clear 4.5:1 at badge text sizes (measured ~3.2:1 with #f5f5f5; ~4.8:1
+     with this dark ink). Same token also backs the NA gray band below. */
+  --severity-critical-ink: var(--color-ink);
+  --severity-high: #f2994a;
+  --severity-high-ink: #1a1a1a;
+  --severity-medium: #f2c94c;
+  --severity-medium-ink: #1a1a1a;
+  --severity-low: #6fcf97;
+  --severity-low-ink: #1a1a1a;
+  --severity-info: #56ccf2;
+  --severity-info-ink: #1a1a1a;
+
+  --score-brightgreen: #2ecc71;
+  --score-green: #6fcf97;
+  --score-yellow: #f2c94c;
+  --score-orange: #f2994a;
+  --score-red: #eb5757;
+  --score-na: #9a9a9a;
+  --score-pending: #d4d4d4;
+
+  /* Text-only status colors: tuned for >=4.5:1 on a light surface, distinct
+     from the severity/score palette above which is tuned for filled badges,
+     not foreground text. */
+  --text-danger: #c0392b;
+  --text-success: #1a7f37;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+
+  --focus-ring: 0 0 0 3px var(--color-accent-soft), 0 0 0 1px var(--color-accent);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-normal);
+  color: var(--color-ink);
+  background: var(--color-surface-sunken);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

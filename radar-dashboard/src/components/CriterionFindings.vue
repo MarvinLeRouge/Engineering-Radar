@@ -1,22 +1,24 @@
 <!-- radar-dashboard/src/components/CriterionFindings.vue -->
 <template>
   <div class="criterion-findings">
-    <button
-      v-for="group in severityGroups"
-      :key="group.severity"
-      type="button"
-      data-testid="severity-chip"
-      :class="`criterion-findings__chip criterion-findings__chip--${group.severity.toLowerCase()}`"
-      :aria-expanded="expanded.has(group.severity)"
-      @click="toggle(group.severity)"
-    >
-      {{ group.severity }} ({{ group.findings.length }})
-      <span
-        data-testid="chip-arrow"
-        class="criterion-findings__arrow"
-        :class="{ 'criterion-findings__arrow--open': expanded.has(group.severity) }"
-      />
-    </button>
+    <div class="criterion-findings__chips">
+      <button
+        v-for="group in severityGroups"
+        :key="group.severity"
+        type="button"
+        data-testid="severity-chip"
+        :class="`criterion-findings__chip criterion-findings__chip--${group.severity.toLowerCase()}`"
+        :aria-expanded="expanded.has(group.severity)"
+        @click="toggle(group.severity)"
+      >
+        {{ group.severity }} ({{ group.findings.length }})
+        <span
+          data-testid="chip-arrow"
+          class="criterion-findings__arrow"
+          :class="{ 'criterion-findings__arrow--open': expanded.has(group.severity) }"
+        />
+      </button>
+    </div>
 
     <template v-for="group in severityGroups" :key="`${group.severity}-findings`">
       <div v-if="expanded.has(group.severity)" class="criterion-findings__group">
@@ -60,40 +62,55 @@ const severityGroups = computed(() =>
 </script>
 
 <style scoped>
+.criterion-findings__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .criterion-findings__chip {
+  appearance: none;
+  border: none;
   display: inline-flex;
   align-items: center;
-  padding: 0.15rem 0.5rem;
-  margin-right: 0.5rem;
-  border-radius: 0.25rem;
-  border: none;
-  font-weight: 600;
-  font-size: 0.85rem;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
   cursor: pointer;
-  color: #1a1a1a;
 }
 .criterion-findings__chip--critical {
-  background-color: #eb5757;
-  color: #f5f5f5;
+  background-color: var(--severity-critical);
+  color: var(--severity-critical-ink);
 }
 .criterion-findings__chip--high {
-  background-color: #f2994a;
+  background-color: var(--severity-high);
+  color: var(--severity-high-ink);
 }
 .criterion-findings__chip--medium {
-  background-color: #f2c94c;
+  background-color: var(--severity-medium);
+  color: var(--severity-medium-ink);
 }
 .criterion-findings__chip--low {
-  background-color: #6fcf97;
+  background-color: var(--severity-low);
+  color: var(--severity-low-ink);
 }
 .criterion-findings__chip--info {
-  background-color: #56ccf2;
+  background-color: var(--severity-info);
+  color: var(--severity-info-ink);
 }
+
 .criterion-findings__group {
-  margin-top: 0.5rem;
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
+
 .criterion-findings__arrow {
   display: inline-block;
-  margin-left: 0.35rem;
   width: 0;
   height: 0;
   border-left: 0.3rem solid transparent;
