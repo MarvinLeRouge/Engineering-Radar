@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from radar_core.enums import ScoreLevel
+from radar_core.finding_ordering import sort_findings_by_priority
 from radar_core.models.audit import Audit
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
@@ -54,7 +55,7 @@ def render_report(session: Session, repo_name: str) -> str:
 
     findings = session.exec(select(Finding).where(Finding.scoring_run_id == scoring_run.id)).all()
     findings_by_criterion: dict[int | None, list[Finding]] = {}
-    for finding in findings:
+    for finding in sort_findings_by_priority(findings):
         findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
 
     finding_ids = [f.id for f in findings if f.id is not None]

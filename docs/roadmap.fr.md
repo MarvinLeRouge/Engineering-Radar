@@ -81,6 +81,7 @@ chaque tâche se termine (cochée quand sa PR est mergée sur `main`).
   - [x] FEAT-010 - C. Construire un `radar-api` minimal (FastAPI) : endpoints de lecture sur le modèle de données existant, plus des endpoints d'écriture étroits, réservés aux confirmations humaines ; c'est lui qui héberge toutes les données de rapport/finding/recommandation, jamais écrites dans les dépôts audités
   - [x] FEAT-011 - D. Ajouter un badge d'évaluation qualité (badge de type endpoint shields.io) que les dépôts audités peuvent lier depuis leur README, pointant vers la page de rapport hébergée par Radar
   - [x] FEAT-012 - E. Construire le `radar-dashboard` complet (SPA Vue 3 + Vite) : jauges de score en bandes de couleur plates et discrètes (réutilisant la palette à 5 niveaux de `FindingSeverity`, pas un dégradé continu) pour un rendu sérieux et non gadget ; critères N/A et pas encore audités affichés grisés avec le motif visible
+  - [x] FEAT-016 - F. Ajouter un champ générique `Finding.magnitude` et un tri partagé sévérité-puis-magnitude (`radar_core.finding_ordering`), câblé à la fois dans le rapport CLI et l'endpoint de rapport `radar-api`, pour que les findings de même sévérité fassent apparaître le pire cas en premier
 
 ## Section 6 - Audit complet du portfolio
 
