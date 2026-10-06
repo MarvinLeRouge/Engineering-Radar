@@ -210,6 +210,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Update hardcoded normalizer registry count
 - *(radar-audit)* Detect dict-form Traefik labels with unquoted booleans
 - *(radar-audit)* Correct container build hardening, deployment automation and actionlint mount
+- *(radar-audit)* Create a finding for every complexity violation, not just the worst
 
 ### 🚜 Refactor
 

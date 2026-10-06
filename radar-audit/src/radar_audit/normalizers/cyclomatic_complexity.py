@@ -57,26 +57,27 @@ def normalize_cyclomatic_complexity(
             continue
         tool_confidence = _confidence_for_tool(tool_result.tool_name)
         worst_block = max(blocks, key=lambda b: int(b["complexity"]))
-        if int(worst_block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=FindingSeverity.MEDIUM,
-                    description=(
-                        f"{worst_block.get('name', 'function')} has cyclomatic complexity "
-                        f"{worst_block['complexity']}"
+        for block in blocks:
+            if int(block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
+                add_finding_with_recommendation(
+                    session,
+                    Finding(
+                        scoring_run_id=scoring_run.id,
+                        criterion_id=criterion.id,
+                        tool_result_id=tool_result.id,
+                        severity=FindingSeverity.MEDIUM,
+                        description=(
+                            f"{block.get('name', 'function')} has cyclomatic complexity "
+                            f"{block['complexity']}"
+                        ),
+                        file=block.get("file"),
+                        line=block.get("line"),
+                        confidence=tool_confidence,
+                        status=FindingStatus.OPEN,
+                        human_verdict=HumanVerdict.UNREVIEWED,
                     ),
-                    file=worst_block.get("file"),
-                    line=worst_block.get("line"),
-                    confidence=tool_confidence,
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                _RECOMMENDATION_TEXT,
-            )
+                    _RECOMMENDATION_TEXT,
+                )
         value = _band_value(int(worst_block["complexity"]))
         if worst_value is None or value < worst_value:
             worst_value = value

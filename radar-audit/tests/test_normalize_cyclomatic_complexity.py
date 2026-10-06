@@ -131,6 +131,50 @@ def test_scores_low_and_adds_a_finding_when_worst_complexity_is_very_high(db_ses
     assert len(recommendations) == 1
 
 
+def test_creates_a_finding_for_every_violating_function_not_just_the_worst(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="radon-cc",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "src/a.py": [
+                {"type": "function", "name": "worst", "complexity": 42, "lineno": 1},
+                {"type": "function", "name": "also_bad", "complexity": 28, "lineno": 20},
+                {"type": "function", "name": "fine", "complexity": 3, "lineno": 40},
+            ],
+            "src/b.py": [
+                {"type": "function", "name": "also_also_bad", "complexity": 15, "lineno": 5},
+            ],
+        },
+        exit_code=0,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    assert score is not None
+    assert score.value == 2.0  # still banded on the single worst complexity (42)
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    descriptions = {f.description for f in findings}
+    assert len(findings) == 3
+    assert "worst has cyclomatic complexity 42" in descriptions
+    assert "also_bad has cyclomatic complexity 28" in descriptions
+    assert "also_also_bad has cyclomatic complexity 15" in descriptions
+    assert "fine has cyclomatic complexity 3" not in descriptions
+    for finding in findings:
+        recommendations = db_session.exec(
+            select(Recommendation).where(Recommendation.finding_id == finding.id)
+        ).all()
+        assert len(recommendations) == 1
+
+
 def test_returns_none_when_no_relevant_tool_results(db_session):
     audit, scoring_run, criterion = _setup(db_session)
 
