@@ -175,6 +175,32 @@ def test_creates_a_finding_for_every_violating_function_not_just_the_worst(db_se
         assert len(recommendations) == 1
 
 
+def test_finding_magnitude_is_set_to_the_block_complexity(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="radon-cc",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "src/a.py": [{"type": "function", "name": "worst", "complexity": 42, "lineno": 1}]
+        },
+        exit_code=0,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].magnitude == 42.0
+
+
 def test_returns_none_when_no_relevant_tool_results(db_session):
     audit, scoring_run, criterion = _setup(db_session)
 

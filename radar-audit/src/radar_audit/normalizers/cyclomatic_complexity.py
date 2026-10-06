@@ -72,6 +72,7 @@ def normalize_cyclomatic_complexity(
                         ),
                         file=block.get("file"),
                         line=block.get("line"),
+                        magnitude=float(block["complexity"]),
                         confidence=tool_confidence,
                         status=FindingStatus.OPEN,
                         human_verdict=HumanVerdict.UNREVIEWED,

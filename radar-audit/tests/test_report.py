@@ -135,6 +135,50 @@ def test_render_report_shows_findings_under_their_criterion(db_session):
     assert "DESIGN.md:12" in markdown
 
 
+def test_render_report_orders_findings_by_severity_then_magnitude(db_session):
+    scoring_run = _bare_scoring_run(db_session)
+    criterion = get_criterion(
+        db_session,
+        scoring_run.methodology_version_id,
+        "Code quality",
+        "Cyclomatic complexity",
+    )
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=2.0,
+        confidence=Confidence.HIGH,
+    )
+    db_session.add(score)
+    low_magnitude = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        severity=FindingSeverity.MEDIUM,
+        description="small has cyclomatic complexity 11",
+        magnitude=11.0,
+        confidence=Confidence.HIGH,
+    )
+    high_magnitude = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        severity=FindingSeverity.MEDIUM,
+        description="worst has cyclomatic complexity 42",
+        magnitude=42.0,
+        confidence=Confidence.HIGH,
+    )
+    # Inserted in an order that would be wrong if findings were left unsorted.
+    db_session.add(low_magnitude)
+    db_session.add(high_magnitude)
+    db_session.commit()
+
+    markdown = render_report(db_session, "repo")
+
+    assert markdown.index("worst has cyclomatic complexity 42") < markdown.index(
+        "small has cyclomatic complexity 11"
+    )
+
+
 def test_render_report_shows_recommendation_under_its_finding(db_session):
     scoring_run = _bare_scoring_run(db_session)
     criterion = get_criterion(
