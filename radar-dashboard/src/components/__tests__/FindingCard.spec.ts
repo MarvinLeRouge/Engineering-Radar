@@ -33,7 +33,9 @@ describe('FindingCard', () => {
   it('renders the severity badge and the recommendation text', () => {
     const wrapper = mount(FindingCard, { props: { finding } })
 
-    expect(wrapper.classes()).toContain('finding-card--high')
+    expect(wrapper.find('.finding-card__severity').classes()).toContain(
+      'finding-card__severity--high',
+    )
     expect(wrapper.text()).toContain('upgrade the dependency')
   })
 
