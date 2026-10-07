@@ -773,6 +773,7 @@ name = "radar-audit"
 version = "0.1.0"
 source = { editable = "radar-audit" }
 dependencies = [
+    { name = "pathspec" },
     { name = "pyyaml" },
     { name = "radar-core" },
     { name = "typer" },
@@ -788,6 +789,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "pathspec", specifier = ">=0.12" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "radar-core", editable = "radar-core" },
     { name = "typer", specifier = ">=0.12" },

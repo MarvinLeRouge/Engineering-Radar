@@ -11,6 +11,12 @@ from radar_audit.runner import RawToolOutput
 
 _ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build", "docs")
 _DOT_DIRECTORY_IGNORE_SUFFIX = "**/.*/**"
+# Code duplication (criterion 2.5) means source code, not prose: without an
+# explicit --format, jscpd also scans markdown and other text formats by
+# default, which flags things like a bash example block mirrored between
+# README.md and README.fr.md as a "duplicate" -- a false positive, not a
+# code-quality issue. Scoped to this portfolio's actual stacks (toolchain.md).
+_SOURCE_FORMATS = ("javascript", "jsx", "typescript", "tsx", "vue", "php", "python")
 
 
 class JscpdRunner:
@@ -39,6 +45,8 @@ class JscpdRunner:
                 "--output",
                 report_dir,
                 "--silent",
+                "--format",
+                ",".join(_SOURCE_FORMATS),
                 "--ignore",
                 ",".join(ignore_patterns),
                 str(target_path),
