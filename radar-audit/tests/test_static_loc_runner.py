@@ -93,3 +93,23 @@ def test_counts_files_even_when_repo_path_contains_skip_dirname(tmp_path):
     assert files[str(repo_root / "src" / "a.js")] == 1
     assert str(repo_root / "main.php") in files
     assert files[str(repo_root / "main.php")] == 2
+
+
+def test_skips_gitignored_paths(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            ".gitignore": "docs/work-in-progress/\n",
+            "src/a.js": "line one\n",
+            "docs/work-in-progress/zones-explorer-legacy/zone-type-stats-map.spec.ts": (
+                "line one\nline two\n"
+            ),
+        },
+    )
+
+    runner = StaticLocRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    files = result.raw_output["files"]
+    assert set(files) == {str(repo_path / "src" / "a.js")}
