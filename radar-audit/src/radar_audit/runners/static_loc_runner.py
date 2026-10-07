@@ -4,6 +4,7 @@ import time
 from pathlib import Path
 from typing import Literal
 
+from radar_audit.gitignore import GitignoreSpec, is_git_ignored, load_gitignore_spec
 from radar_audit.runner import RawToolOutput
 
 _SOURCE_EXTENSIONS = {".js", ".ts", ".jsx", ".tsx", ".vue", ".php"}
@@ -24,11 +25,18 @@ class StaticLocRunner:
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         start = time.monotonic()
 
+        # Treats target_path as the .gitignore root: correct when this runner
+        # scans a repo-root target (the reported case), but a nested
+        # subproject's own ancestor .gitignore further up the tree is not
+        # consulted -- a known, accepted limitation, not a full git-ignore
+        # resolution.
+        gitignore_spec = load_gitignore_spec(target_path)
+
         per_file: dict[str, int] = {}
         for file_path in sorted(target_path.rglob("*")):
             if not file_path.is_file() or file_path.suffix not in _SOURCE_EXTENSIONS:
                 continue
-            if self._is_skipped(file_path, target_path, exclude_paths):
+            if self._is_skipped(file_path, target_path, exclude_paths, gitignore_spec):
                 continue
             per_file[str(file_path)] = self._count_non_blank_lines(file_path)
 
@@ -40,9 +48,17 @@ class StaticLocRunner:
             duration_ms=duration_ms,
         )
 
-    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
+    def _is_skipped(
+        self,
+        file_path: Path,
+        target_path: Path,
+        exclude_paths: list[Path],
+        gitignore_spec: GitignoreSpec,
+    ) -> bool:
         relative_parts = file_path.relative_to(target_path).parts
         if any(part in _SKIP_DIRNAMES for part in relative_parts):
+            return True
+        if is_git_ignored(file_path, target_path, gitignore_spec):
             return True
         return any(
             excluded == file_path or excluded in file_path.parents for excluded in exclude_paths

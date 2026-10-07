@@ -153,3 +153,30 @@ def test_reports_tool_identity():
     assert runner.tool_name == "jscpd"
     assert runner.scope == "repo"
     assert runner.supported_stacks == frozenset()
+
+
+def test_excludes_markdown_files_from_the_scan(tmp_path):
+    duplicate_block = "\n".join(f"line {i} of a shared example" for i in range(20))
+    duplicate_md_a = f"# Guide (EN)\n\n```bash\n{duplicate_block}\n```\n"
+    duplicate_md_b = f"# Guide (FR)\n\n```bash\n{duplicate_block}\n```\n"
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
+            "CONTRIBUTING.md": duplicate_md_a,
+            "CONTRIBUTING.fr.md": duplicate_md_b,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
+    duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
+        d["secondFile"]["name"] for d in result.raw_output["duplicates"]
+    }
+    # jscpd names a clone as "<path>:<format>" (e.g. "CONTRIBUTING.md:bash"), so
+    # check the path component, not the raw name string.
+    assert all(not name.split(":")[0].endswith(".md") for name in duplicate_files)
