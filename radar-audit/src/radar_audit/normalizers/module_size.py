@@ -44,6 +44,7 @@ def normalize_module_size(
                             f"{_COVERED_LOC_THRESHOLD}-line threshold"
                         ),
                         file=file_path,
+                        magnitude=float(loc),
                         confidence=Confidence.MEDIUM,
                         status=FindingStatus.OPEN,
                         human_verdict=HumanVerdict.UNREVIEWED,
