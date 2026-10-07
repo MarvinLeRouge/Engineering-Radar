@@ -67,10 +67,27 @@ def test_one_oversized_module_creates_a_finding_and_lowers_score(db_session):
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert len(findings) == 1
     assert findings[0].file == "big.py"
+    assert findings[0].magnitude == 500.0
     recommendations = db_session.exec(
         select(Recommendation).where(Recommendation.finding_id == findings[0].id)
     ).all()
     assert len(recommendations) == 1
+
+
+def test_magnitude_reflects_each_oversized_file_line_count(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        "radon-raw",
+        {"a.py": {"sloc": 100}, "big.py": {"sloc": 500}, "huge.py": {"sloc": 900}},
+    )
+
+    normalize_module_size(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    magnitudes = {f.file: f.magnitude for f in findings}
+    assert magnitudes == {"big.py": 500.0, "huge.py": 900.0}
 
 
 def test_covered_and_applicable_are_summed_across_two_subprojects(db_session):
