@@ -98,8 +98,15 @@ describe('RepositoryDetailView', () => {
     expect(wrapper.text()).toContain('SAST findings')
     expect(wrapper.text()).toContain('HIGH (1)')
     expect(wrapper.findComponent({ name: 'FindingCard' }).exists()).toBe(false)
+    expect(wrapper.find('#criterion-1').exists()).toBe(true)
+    expect(wrapper.findComponent({ name: 'ReportSeveritySummary' }).text()).toContain(
+      'HIGH (1 / 1)',
+    )
 
-    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+    await wrapper
+      .findComponent({ name: 'CriterionFindings' })
+      .find('[data-testid="severity-chip"]')
+      .trigger('click')
 
     expect(wrapper.findComponent({ name: 'FindingCard' }).exists()).toBe(true)
   })
@@ -158,7 +165,10 @@ describe('RepositoryDetailView', () => {
     const wrapper = await mountView()
     expect(wrapper.text()).toContain('Security')
 
-    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+    await wrapper
+      .findComponent({ name: 'CriterionFindings' })
+      .find('[data-testid="severity-chip"]')
+      .trigger('click')
     await wrapper.findComponent({ name: 'FindingCard' }).vm.$emit('updated')
     await wrapper.vm.$nextTick()
 

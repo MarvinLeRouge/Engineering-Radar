@@ -22,6 +22,7 @@
       </p>
       <template v-else-if="store.report">
         <h1 class="repository-detail-view__title">{{ store.report.repository_name }}</h1>
+        <ReportSeveritySummary :categories="store.report.categories" />
         <div
           v-for="category in store.report.categories"
           :key="category.id"
@@ -32,7 +33,7 @@
             <ScoreGauge :value="category.value" :status="category.status" />
           </h2>
           <div v-for="criterion in category.criteria" :key="criterion.id" class="criterion">
-            <h3 class="criterion__heading">
+            <h3 :id="`criterion-${criterion.id}`" class="criterion__heading">
               <span class="criterion__name">{{ criterion.name }}</span>
               <ScoreGauge
                 :value="criterion.value"
@@ -73,6 +74,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import ScoreGauge from '@/components/ScoreGauge.vue'
 import CriterionFindings from '@/components/CriterionFindings.vue'
+import ReportSeveritySummary from '@/components/ReportSeveritySummary.vue'
 import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
 import { useRepositoriesStore } from '@/stores/repositories'
 import { extractRepositoryId } from '@/utils/slugify'
