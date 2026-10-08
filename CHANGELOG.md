@@ -316,6 +316,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(roadmap)* Migrate to Section/TYPE-NNN task nomenclature
 - *(roadmap)* Tick FEAT-014 (category 8 Documentation)
 - *(roadmap)* Tick FEAT-015 (category 9 Observability)
+- *(root)* Move French community-health docs into docs/i18n/fr
 
 ### 🧪 Testing
 
