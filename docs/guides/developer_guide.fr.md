@@ -6,7 +6,7 @@
 
 Guide pratique pour travailler sur le code `radar-core` / `radar-audit`.
 Pour le workflow de contribution (branches, commits, pull requests), voir
-[`CONTRIBUTING.md`](../../CONTRIBUTING.fr.md). Pour la conception globale
+[`CONTRIBUTING.md`](../i18n/fr/CONTRIBUTING.fr.md). Pour la conception globale
 du système, voir [`docs/system-design.md`](../system-design.md) et les
 docs d'architecture par composant dans
 [`docs/architecture/`](../architecture/).
