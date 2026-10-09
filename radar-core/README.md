@@ -4,7 +4,7 @@
 
 # radar-core
 
-Shared data model (SQLModel) and Alembic migrations for [Portfolio-Engineering-Radar](../README.md).
+Shared data model (SQLModel) and Alembic migrations for [Engineering-Radar](../README.md).
 
 `radar-core` defines the persistence layer shared by every other package:
 `Repository`, `Audit`, `MethodologyVersion`, `Category`, `Criterion`,

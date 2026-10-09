@@ -113,7 +113,7 @@ Expected: FAIL — `radar-audit` isn't a workspace member yet / `radar_audit` mo
 [project]
 name = "radar-audit"
 version = "0.1.0"
-description = "Tool orchestration and normalization engine for Portfolio-Engineering-Radar."
+description = "Tool orchestration and normalization engine for Engineering-Radar."
 requires-python = ">=3.12"
 dependencies = [
     "radar-core",
@@ -515,7 +515,7 @@ repositories:
   - name: HexaRot
   - name: HiveMind
   - name: JobFlow
-  - name: Portfolio-Engineering-Radar
+  - name: Engineering-Radar
   - name: Stamped
   - name: Summit-Stats
   - name: Trello-Board-Init
@@ -1998,7 +1998,7 @@ if __name__ == "__main__":
 ```markdown
 # radar-audit
 
-Tool orchestration and normalization engine for Portfolio-Engineering-Radar.
+Tool orchestration and normalization engine for Engineering-Radar.
 
 ## Prerequisites
 
@@ -2068,9 +2068,9 @@ Expected: all hooks pass (ruff, ruff-format, mypy-radar-core, mypy-radar-audit).
 
 Run (from repo root):
 ```bash
-uv run --package radar-audit radar-audit run Portfolio-Engineering-Radar --dry-run
+uv run --package radar-audit radar-audit run Engineering-Radar --dry-run
 ```
-Expected: prints `Portfolio-Engineering-Radar` as the repository, at least two sub-projects (root `python` from the workspace `pyproject.toml`, plus `radar-core` and `radar-audit` as first-level `python` sub-projects), and `would run: example-git-log` for each. No `radar.db` file is created by this command.
+Expected: prints `Engineering-Radar` as the repository, at least two sub-projects (root `python` from the workspace `pyproject.toml`, plus `radar-core` and `radar-audit` as first-level `python` sub-projects), and `would run: example-git-log` for each. No `radar.db` file is created by this command.
 
 This step has no code to commit — it is a manual verification gate confirming the full increment 2.0 pipeline behaves as designed against a real (not fixture) repository. If it fails, return to the relevant earlier task and fix the underlying module; do not patch behavior only in this step.
 

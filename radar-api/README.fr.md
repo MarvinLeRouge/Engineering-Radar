@@ -4,10 +4,10 @@
 
 # radar-api
 
-Service FastAPI minimal pour [Portfolio-Engineering-Radar](../README.fr.md).
+Service FastAPI minimal pour [Engineering-Radar](../README.fr.md).
 
 `radar-api` expose des points d'accès en lecture sur le modèle de données de
-Portfolio-Engineering-Radar (dépôts, audits, scores, findings, roadmap) ainsi
+Engineering-Radar (dépôts, audits, scores, findings, roadmap) ainsi
 que des points d'accès en écriture restreints, confirmés uniquement par un
 humain.
 
@@ -71,7 +71,7 @@ production pour l'instant.
 
 ## Badge de qualité
 
-Tout dépôt audité par Portfolio-Engineering-Radar peut lier un badge
+Tout dépôt audité par Engineering-Radar peut lier un badge
 shields.io de type [endpoint](https://shields.io/badges/endpoint-badge) dans
 son README, alimenté par `GET /repositories/{repository_id}/badge`. Rien
 d'autre (aucun contenu de rapport, aucun score) n'est jamais écrit dans le

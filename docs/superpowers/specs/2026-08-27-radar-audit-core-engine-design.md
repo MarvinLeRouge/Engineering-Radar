@@ -71,7 +71,7 @@ repositories:
   - name: HexaRot
   - name: HiveMind
   - name: JobFlow
-  - name: Portfolio-Engineering-Radar
+  - name: Engineering-Radar
   - name: Stamped
   - name: Summit-Stats
   - name: Trello-Board-Init
@@ -84,7 +84,7 @@ This is the authoritative source for `--all`, and validates that a `<repo-name>`
 
 A repo's sub-projects are detected by **first-level manifest presence**: `pyproject.toml`/`requirements.txt` (Python), `package.json` (JS/TS), `composer.json` (PHP) — checked at the repo root and in each direct child directory. Each manifest found (root or one level down) defines one sub-project with its own stack. A repo with no sub-directory manifests is treated as a single sub-project (root = its own stack).
 
-This covers the monorepo case (HexaRot, HiveMind: `backend/`, `frontend/`) without deeper recursion. `Portfolio-Engineering-Radar` itself will now be detected as Python (root `pyproject.toml` + `radar-core/pyproject.toml` as a second-level manifest — no longer a zero-marker repo as it was at Phase 0 inventory time).
+This covers the monorepo case (HexaRot, HiveMind: `backend/`, `frontend/`) without deeper recursion. `Engineering-Radar` itself will now be detected as Python (root `pyproject.toml` + `radar-core/pyproject.toml` as a second-level manifest — no longer a zero-marker repo as it was at Phase 0 inventory time).
 
 ## 7. Worktree exclusion
 
