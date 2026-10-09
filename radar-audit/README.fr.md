@@ -4,7 +4,7 @@
 
 # radar-audit
 
-Moteur d'orchestration d'outils et de normalisation pour [Portfolio-Engineering-Radar](../README.fr.md).
+Moteur d'orchestration d'outils et de normalisation pour [Engineering-Radar](../README.fr.md).
 
 `radar-audit` détecte les sous-projets d'un dépôt, exécute les outils
 d'analyse déterministes pertinents pour chaque stack détectée, et persiste

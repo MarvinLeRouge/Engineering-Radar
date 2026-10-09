@@ -2,7 +2,7 @@
 
 ---
 
-# Contribuer à Portfolio Engineering Radar
+# Contribuer à Engineering Radar
 
 Il s'agit principalement d'un projet personnel. Les contributions externes (signalements de bugs, corrections, petites améliorations) sont bienvenues mais dans un périmètre limité.
 
@@ -14,8 +14,8 @@ Il s'agit principalement d'un projet personnel. Les contributions externes (sign
 ## Installation locale
 
 ```bash
-git clone https://github.com/MarvinLeRouge/Portfolio-Engineering-Radar.git
-cd Portfolio-Engineering-Radar
+git clone https://github.com/MarvinLeRouge/Engineering-Radar.git
+cd Engineering-Radar
 uv sync
 uv run pre-commit install
 ```

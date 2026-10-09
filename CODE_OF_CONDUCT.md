@@ -6,7 +6,7 @@
 
 ## Our Pledge
 
-We as contributors and maintainers pledge to make participation in the Portfolio Engineering Radar project a harassment-free experience for everyone, regardless of experience level, background, or identity.
+We as contributors and maintainers pledge to make participation in the Engineering Radar project a harassment-free experience for everyone, regardless of experience level, background, or identity.
 
 ## Our Standards
 

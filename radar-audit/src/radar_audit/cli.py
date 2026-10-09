@@ -116,7 +116,7 @@ _EXPECTED_ERRORS = (
 
 @app.callback(invoke_without_command=True)
 def main() -> None:
-    """Radar-audit: tool orchestration engine for Portfolio-Engineering-Radar."""
+    """Radar-audit: tool orchestration engine for Engineering-Radar."""
     pass
 
 

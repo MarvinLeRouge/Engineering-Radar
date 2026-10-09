@@ -11,7 +11,7 @@ Sub-project 1 of 4 in Phase 4 (see `TODO.md`), foundation for the other three (t
 ## Package structure
 
 ```
-Portfolio-Engineering-Radar/
+Engineering-Radar/
   pyproject.toml            # root: declares the uv workspace
                              # [tool.uv.workspace] members = ["radar-core", "radar-audit", "radar-api"]
   radar-core/

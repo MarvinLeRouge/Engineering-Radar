@@ -6,7 +6,7 @@
 
 ## Notre engagement
 
-En tant que contributeurs et mainteneurs, nous nous engageons à faire de la participation au projet Portfolio Engineering Radar une expérience exempte de harcèlement pour tout le monde, quel que soit le niveau d'expérience, le parcours ou l'identité.
+En tant que contributeurs et mainteneurs, nous nous engageons à faire de la participation au projet Engineering Radar une expérience exempte de harcèlement pour tout le monde, quel que soit le niveau d'expérience, le parcours ou l'identité.
 
 ## Nos standards
 

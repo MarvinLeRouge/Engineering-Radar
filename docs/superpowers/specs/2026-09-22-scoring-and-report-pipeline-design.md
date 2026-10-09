@@ -82,7 +82,7 @@ Re-running `score` on the same `Audit` reuses the existing `ScoringRun` (unique 
    - **Category has a `CATEGORY` `Score`** (1-3 today): heading with score/10 and confidence, then one line per criterion — its score/10 if it has a `CRITERION` `Score`, or "not yet tooled (LLM-judgment layer, deferred)" for 1.4/3.5-style gaps.
    - **Category has no `Score` at all** (4-15 today): heading with "Not yet audited" — no fabricated number, no placeholder score.
 4. Header block: repo name, commit SHA, `audited_at`, `scored_at`.
-5. Write to `reports/<repo-name>/latest.md` at the Portfolio-Engineering-Radar repo root. Add `reports/` to `.gitignore` — same "generated local artifact, never the source of truth" treatment as `radar.db`, consistent with `system-design.md`'s pipeline diagram (DB → report generator → Markdown, regenerated on demand).
+5. Write to `reports/<repo-name>/latest.md` at the Engineering-Radar repo root. Add `reports/` to `.gitignore` — same "generated local artifact, never the source of truth" treatment as `radar.db`, consistent with `system-design.md`'s pipeline diagram (DB → report generator → Markdown, regenerated on demand).
 
 ## 7. Error handling
 
@@ -113,6 +113,6 @@ Re-running `score` on the same `Audit` reuses the existing `ScoringRun` (unique 
 
 - No `ToolRunner` protocol changes, no `Score`/`ScoringRun`/`Criterion`/`Category` schema changes, no new Alembic migration — every structural piece needed already exists.
 - `score` and `report` are new Typer commands in `radar-audit/src/radar_audit/cli.py`, following the same `_database_url()`/session pattern as the existing `run` command.
-- `reports/` is added to `.gitignore` at the Portfolio-Engineering-Radar repo root; report files are never hand-edited or committed.
+- `reports/` is added to `.gitignore` at the Engineering-Radar repo root; report files are never hand-edited or committed.
 - Category-level weight redistribution in scope (A) is a simple renormalization over scored criteria only — no distinction between "structurally not tooled" (1.4, 3.5) and "tooled but returned `N/A` this run" is made or needs to be made at this stage.
 - `score`/`report` never require the target repo to be checked out on disk — both operate purely against already-persisted DB rows.

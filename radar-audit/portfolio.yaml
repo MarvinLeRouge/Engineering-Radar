@@ -5,7 +5,7 @@ repositories:
   - name: HexaRot
   - name: HiveMind
   - name: JobFlow
-  - name: Portfolio-Engineering-Radar
+  - name: Engineering-Radar
   - name: Stamped
   - name: Summit-Stats
   - name: Trello-Board-Init

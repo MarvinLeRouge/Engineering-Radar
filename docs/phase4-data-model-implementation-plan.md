@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement `radar-core`, the shared SQLModel data model and Alembic migrations for Portfolio-Engineering-Radar, as its own installable package inside a `uv` workspace.
+**Goal:** Implement `radar-core`, the shared SQLModel data model and Alembic migrations for Engineering-Radar, as its own installable package inside a `uv` workspace.
 
 **Architecture:** One Python package (`radar-core`) exposing 13 SQLModel table classes plus one association table across seven model modules, backed by SQLite via Alembic migrations. Tests replay the real migrations against a fresh temporary SQLite file per test (no `:memory:`, no `create_all()`), with an explicit isolation guard so tests can never touch the real `radar.db`.
 
@@ -60,7 +60,7 @@ strict = true
 [project]
 name = "radar-core"
 version = "0.1.0"
-description = "Shared data model (SQLModel) and Alembic migrations for Portfolio-Engineering-Radar."
+description = "Shared data model (SQLModel) and Alembic migrations for Engineering-Radar."
 requires-python = ">=3.12"
 dependencies = [
     "sqlmodel>=0.0.22",
