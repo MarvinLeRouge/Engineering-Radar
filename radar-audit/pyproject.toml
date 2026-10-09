@@ -1,7 +1,7 @@
 [project]
 name = "radar-audit"
 version = "0.1.0"
-description = "Tool orchestration and normalization engine for Portfolio-Engineering-Radar."
+description = "Tool orchestration and normalization engine for Engineering-Radar."
 requires-python = ">=3.12"
 dependencies = [
     "radar-core",

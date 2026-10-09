@@ -56,14 +56,14 @@ No analysis/security tool is installed globally: **ruff, mypy, eslint, phpstan, 
 | MarvinLeRouge.dev Homepage | 2026-03-28 | none | Static HTML/CSS portfolio site | Excluded |
 | MarvinLeRouge-github | 2026-03-13 | none | GitHub profile README repo, not an application | Excluded |
 | PlayWithPi | 2026-05-21 | none (no manifest, pure scripts) | Python, has its own CLAUDE.md and `documentation/` | Excluded |
-| Portfolio-Engineering-Radar | 2026-08-24 | none yet | This project itself | **In scope (self-audit)** |
+| Engineering-Radar | 2026-08-24 | none yet | This project itself | **In scope (self-audit)** |
 | project-templates | 2026-05-07 | none | Scaffolding templates, not a shipped product | Excluded |
 | Recherche emploi | 2026-06-19 | none | Personal job-search material: CVs, PDFs, personal notes | Excluded |
 | Summit-Stats-clean | 2026-03-16 | package.json, composer.json, artisan, CI | Same remote as Summit-Stats.git, older last commit — stale local clone | Excluded |
 | temp | 2026-03-12 | none | Same remote as Summit-Stats.git, named `temp` — stale local clone | Excluded |
 | Training | 2026-06-11 | none | Appears to hold coding exercises (e.g. `backtracking/`) | Excluded |
 
-**DECIDED — confirmed portfolio scope (D1):** the audited portfolio is exactly these 10 repositories: **CC-Beacon, GeoChallenge-Tracker, HexaRot, HiveMind, JobFlow, Stamped, Summit-Stats, Trello-Board-Init, Triton, and Portfolio-Engineering-Radar itself (self-audit, included from the start).** All other repositories listed above are out of scope. This also resolves D2 (duplicates excluded), D3 (`Recherche emploi` excluded), and D4 (CC-Beacon confirmed in scope) — see `docs/open-decisions.md`.
+**DECIDED — confirmed portfolio scope (D1):** the audited portfolio is exactly these 10 repositories: **CC-Beacon, GeoChallenge-Tracker, HexaRot, HiveMind, JobFlow, Stamped, Summit-Stats, Trello-Board-Init, Triton, and Engineering-Radar itself (self-audit, included from the start).** All other repositories listed above are out of scope. This also resolves D2 (duplicates excluded), D3 (`Recherche emploi` excluded), and D4 (CC-Beacon confirmed in scope) — see `docs/open-decisions.md`.
 
 ---
 

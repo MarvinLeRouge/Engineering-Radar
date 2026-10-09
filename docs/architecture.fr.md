@@ -2,13 +2,13 @@
 
 ---
 
-# Architecture - Portfolio Engineering Radar
+# Architecture - Engineering Radar
 
 > Référence technique publique. Voir [architecture radar-core](architecture/radar-core_architecture.fr.md) et [architecture radar-audit](architecture/radar-audit_architecture.fr.md) pour les détails d'implémentation.
 
 ## Vue d'ensemble
 
-Portfolio Engineering Radar audite un portefeuille de dépôts locaux selon un Quality Framework versionné, en stockant les résultats dans un modèle de données partagé :
+Engineering Radar audite un portefeuille de dépôts locaux selon un Quality Framework versionné, en stockant les résultats dans un modèle de données partagé :
 
 - **`radar-core`** - modèle de données SQLModel partagé et historique de migrations Alembic. Aucune logique d'orchestration propre ; tous les autres composants lisent et écrivent dedans.
 - **`radar-audit`** - CLI mono-exécution (`radar-audit run ...`) qui détecte les sous-projets, exécute des outils externes épinglés par stack détectée avec isolation des crashs, et normalise la sortie brute des outils en lignes `Finding`/`Score` selon la taxonomie figée.
@@ -17,7 +17,7 @@ Portfolio Engineering Radar audite un portefeuille de dépôts locaux selon un Q
 ## Structure du projet
 
 ```
-portfolio-engineering-radar/
+engineering-radar/
 ├── radar-core/
 │   └── src/radar_core/
 │       ├── db.py         # helpers engine/session

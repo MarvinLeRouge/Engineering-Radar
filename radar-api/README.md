@@ -4,9 +4,9 @@
 
 # radar-api
 
-Minimal FastAPI service for [Portfolio-Engineering-Radar](../README.md).
+Minimal FastAPI service for [Engineering-Radar](../README.md).
 
-`radar-api` exposes read endpoints over the Portfolio-Engineering-Radar data
+`radar-api` exposes read endpoints over the Engineering-Radar data
 model (repositories, audits, scores, findings, roadmap) plus narrow,
 human-confirmed-only write endpoints.
 
@@ -69,7 +69,7 @@ is not wired yet, this repository has no production compose file so far.
 
 ## Quality badge
 
-Any repository audited by Portfolio-Engineering-Radar can link a
+Any repository audited by Engineering-Radar can link a
 shields.io [endpoint badge](https://shields.io/badges/endpoint-badge) in its
 README, sourced from `GET /repositories/{repository_id}/badge`. Nothing
 else (no report content, no scores) is ever written into the audited

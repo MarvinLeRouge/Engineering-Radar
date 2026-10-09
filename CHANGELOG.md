@@ -346,3 +346,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Apply ruff formatting
 - *(radar-dashboard)* Scaffold Vue 3 + Vite + Vitest project
 - *(radar-dashboard)* Bump source-map-js to patch the event-loop DoS advisory
+- Project renaming

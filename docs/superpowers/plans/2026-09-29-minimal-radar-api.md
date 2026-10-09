@@ -66,7 +66,7 @@ members = ["radar-core", "radar-audit", "radar-api"]
 [project]
 name = "radar-api"
 version = "0.1.0"
-description = "Minimal read/write API for Portfolio-Engineering-Radar."
+description = "Minimal read/write API for Engineering-Radar."
 requires-python = ">=3.12"
 dependencies = [
     "radar-core",
