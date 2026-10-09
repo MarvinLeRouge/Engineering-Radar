@@ -2,11 +2,11 @@
 
 ---
 
-# Portfolio Engineering Radar
+# Engineering Radar
 
 > Suivi de la qualité d'ingénierie et amélioration continue, assistés par l'IA et fondés sur des preuves, pour un portfolio de projets logiciels.
 
-**Portfolio Engineering Radar** est une plateforme locale de pilotage de la qualité d'ingénierie conçue pour évaluer, comparer, prioriser et améliorer continuellement un ensemble de projets logiciels.
+**Engineering Radar** est une plateforme locale de pilotage de la qualité d'ingénierie conçue pour évaluer, comparer, prioriser et améliorer continuellement un ensemble de projets logiciels.
 
 Le projet est conçu pour un développeur web fullstack travaillant sur plusieurs repositories et plusieurs stacks technologiques. Son objectif n'est pas de remplacer le jugement d'ingénierie par une note générée par une IA, mais de combiner des analyses déterministes, une évaluation fondée sur des preuves, un référentiel de qualité versionné et un raisonnement assisté par IA au sein d'un système cohérent d'amélioration.
 
@@ -14,7 +14,7 @@ Le projet est conçu pour un développeur web fullstack travaillant sur plusieur
 
 La gestion de plusieurs applications pose un problème difficile à résoudre repository par repository : les projets individuels peuvent progresser alors que le portfolio reste globalement hétérogène.
 
-Portfolio Engineering Radar vise à mettre en place une boucle continue :
+Engineering Radar vise à mettre en place une boucle continue :
 
 ```text
 Repositories
@@ -94,7 +94,7 @@ Une amélioration n'est pas considérée comme terminée simplement parce que du
 - Évolution des indicateurs du portfolio
 - Dashboard local
 - Analyse et planification assistées par IA
-- Auto-évaluation de Portfolio Engineering Radar
+- Auto-évaluation de Engineering Radar
 
 ## Environnement cible
 

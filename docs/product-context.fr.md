@@ -10,7 +10,7 @@ eux-mêmes, voir [`docs/quality-framework.md`](quality-framework.md).
 
 ## Ce que c'est
 
-Portfolio Engineering Radar est un système d'audit local, offline-first,
+Engineering Radar est un système d'audit local, offline-first,
 pour un portfolio personnel de dépôts logiciels. Il exécute un ensemble
 fixe de vérifications d'analyse statique et d'outillage sur chaque dépôt,
 normalise les résultats bruts en constats scorés par rapport au Quality

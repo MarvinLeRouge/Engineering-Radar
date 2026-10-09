@@ -12,7 +12,7 @@ This project follows a single rolling `main` branch. There are no maintained rel
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Instead, use GitHub's private vulnerability reporting: go to the [Security tab](https://github.com/MarvinLeRouge/Portfolio-Engineering-Radar/security/advisories/new) of this repository and click "Report a vulnerability". This keeps the report private until a fix is available.
+Instead, use GitHub's private vulnerability reporting: go to the [Security tab](https://github.com/MarvinLeRouge/Engineering-Radar/security/advisories/new) of this repository and click "Report a vulnerability". This keeps the report private until a fix is available.
 
 This project is maintained by a single developer, so response times are best-effort rather than guaranteed on an SLA.
 
