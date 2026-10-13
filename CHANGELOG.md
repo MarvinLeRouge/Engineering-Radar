@@ -218,6 +218,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Sort module-size findings by line count within severity
 - *(radar-audit)* Scan each subproject's container image separately
 - *(radar-audit)* Weight Dockerfile hardening score by finding severity
+- *(radar-audit)* Compute and persist the global score
 
 ### 🚜 Refactor
 
