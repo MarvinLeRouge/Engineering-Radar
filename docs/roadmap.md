@@ -104,5 +104,6 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 
 - [ ] Re-audit after implementation work
 - [ ] Detect resolved/new/regressed findings with evidence
+- [ ] Persist human verdicts (`FALSE_POSITIVE`/`WONT_FIX`) across re-audits via a stable per-finding fingerprint (criterion + file + description, since `Finding` rows are fully deleted and recreated on every `radar-audit run`), then exclude dismissed findings from both the report display (behind a "display excluded findings" toggle) and score computation -- the latter requires each normalizer individually, since bands aren't generically count-based (worst-value, worst-severity, and count-ratio banding all coexist)
 - [ ] Detect roadmap <-> code divergence
 - [ ] Track system self-metrics (score stability, false-positive rate, reproducibility)
