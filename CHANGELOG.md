@@ -216,6 +216,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Create a finding for every complexity violation, not just the worst
 - *(radar-audit)* Exclude markdown and gitignored paths from false-positive findings
 - *(radar-audit)* Sort module-size findings by line count within severity
+- *(radar-audit)* Scan each subproject's container image separately
 
 ### 🚜 Refactor
 
