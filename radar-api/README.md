@@ -35,6 +35,18 @@ human-confirmed-only write endpoints.
 
 ## Running locally
 
+Copy `.env.example` (repo root) to `.env`, fill in a real `RADAR_API_KEY`, then
+load it into the shell before starting the server (run from the repo root,
+not from `radar-api/`):
+
+    set -a && source .env && set +a
+    uv run --package radar-api uvicorn radar_api.main:app --reload
+
+Neither `radar-api` nor `radar-audit` loads `.env` automatically (see
+`config.py`'s "never assumes a default" policy) — it must be sourced in every
+new shell. Without a `.env` file, exporting the two variables directly also
+works:
+
     export RADAR_DATABASE_URL="sqlite:///$(pwd)/radar.db"
     export RADAR_API_KEY="your-secret-key"
     uv run --package radar-api uvicorn radar_api.main:app --reload
