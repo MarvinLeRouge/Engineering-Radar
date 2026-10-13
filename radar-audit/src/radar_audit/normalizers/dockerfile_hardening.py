@@ -12,6 +12,18 @@ from radar_audit.normalizers.shared import add_finding_with_recommendation, has_
 _RECOMMENDATION_TEXT = (
     "Apply the hadolint recommendation, for example pinning versions or using a non-root user."
 )
+_RAW_SEVERITY_MAP = {"error": "HIGH", "warning": "MEDIUM", "info": "LOW", "style": "LOW"}
+_SEVERITY_ENUM = {
+    "HIGH": FindingSeverity.HIGH,
+    "MEDIUM": FindingSeverity.MEDIUM,
+    "LOW": FindingSeverity.LOW,
+}
+# Worst-severity-present bands, same scale as sast_findings.py's (4.3) for
+# cross-criterion consistency -- resolved but provisional, pending Phase 5
+# portfolio-wide calibration. Hadolint has no CRITICAL-equivalent level, so
+# that row is never actually reached here.
+_BAND_VALUE = {"NONE": 10.0, "LOW": 6.0, "MEDIUM": 6.0, "HIGH": 4.0, "CRITICAL": 2.0}
+_SEVERITY_RANK = {"NONE": 0, "LOW": 1, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
 
 
 def normalize_dockerfile_hardening(
@@ -29,27 +41,26 @@ def normalize_dockerfile_hardening(
     if not relevant:
         return None
 
-    clean = 0
     total = 0
+    worst = "NONE"
     for tool_result in relevant:
         for entry in tool_result.raw_output["dockerfiles"]:
             findings = entry.get("findings")
             # A Dockerfile hadolint failed to lint carries an "error" key instead of a
-            # findings list: it is left out of the ratio rather than counted as clean.
+            # findings list: it is excluded rather than counted either way.
             if not isinstance(findings, list) or "error" in entry:
                 continue
             total += 1
-            if not findings:
-                clean += 1
-                continue
             for finding in findings:
+                raw_severity = finding.get("level", "")
+                severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
                 add_finding_with_recommendation(
                     session,
                     Finding(
                         scoring_run_id=scoring_run.id,
                         criterion_id=criterion.id,
                         tool_result_id=tool_result.id,
-                        severity=FindingSeverity.LOW,
+                        severity=_SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM),
                         description=f"{finding['code']}: {finding['message']}",
                         file=entry["path"],
                         line=finding.get("line"),
@@ -59,17 +70,17 @@ def normalize_dockerfile_hardening(
                     ),
                     _RECOMMENDATION_TEXT,
                 )
+                if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
+                    worst = severity
 
     if total == 0:
         return None
 
-    # Score calculation: (clean / total) * 10 is provisional pending Phase 5
-    # portfolio-wide calibration
     score = Score(
         scoring_run_id=scoring_run.id,
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
-        value=(clean / total) * 10,
+        value=_BAND_VALUE[worst],
         confidence=Confidence.HIGH,
     )
     session.add(score)
