@@ -105,5 +105,6 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 
 - [ ] Réauditer après les travaux d'implémentation
 - [ ] Détecter les constats résolus/nouveaux/régressés avec preuves
+- [ ] Faire persister les verdicts humains (`FALSE_POSITIVE`/`WONT_FIX`) entre réaudits via une empreinte stable par finding (critère + fichier + description, puisque les lignes `Finding` sont entièrement supprimées et recréées à chaque `radar-audit run`), puis exclure les findings écartés à la fois de l'affichage du rapport (derrière un bouton "afficher les findings exclus") et du calcul du score -- ce dernier point nécessite une adaptation de chaque normaliseur individuellement, les bandes de score n'étant pas toutes basées sur un simple comptage (valeur la plus défavorable, sévérité la plus défavorable, et ratio de comptage coexistent)
 - [ ] Détecter les divergences entre roadmap et code
 - [ ] Suivre les métriques internes du système (stabilité des scores, taux de faux positifs, reproductibilité)
