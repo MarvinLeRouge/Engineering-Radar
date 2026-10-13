@@ -35,6 +35,18 @@ humain.
 
 ## Lancement en local
 
+Copie `.env.example` (racine du repo) vers `.env`, renseigne un vrai
+`RADAR_API_KEY`, puis charge-le dans le shell avant de lancer le serveur
+(depuis la racine du repo, pas depuis `radar-api/`) :
+
+    set -a && source .env && set +a
+    uv run --package radar-api uvicorn radar_api.main:app --reload
+
+Ni `radar-api` ni `radar-audit` ne chargent `.env` automatiquement (voir la
+politique "never assumes a default" de `config.py`) — il faut le sourcer dans
+chaque nouveau shell. Sans fichier `.env`, exporter directement les deux
+variables fonctionne aussi :
+
     export RADAR_DATABASE_URL="sqlite:///$(pwd)/radar.db"
     export RADAR_API_KEY="votre-cle-secrete"
     uv run --package radar-api uvicorn radar_api.main:app --reload
