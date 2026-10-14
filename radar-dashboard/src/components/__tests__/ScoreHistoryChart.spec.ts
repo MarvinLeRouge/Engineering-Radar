@@ -348,6 +348,21 @@ describe('ScoreHistoryChart', () => {
       ])
     })
 
+    it('lists both categories and no global score when two categories are compared with Global off', async () => {
+      const wrapper = mount(ScoreHistoryChart, { props: { points: pointsWithCategories() } })
+      const [globalChip, securityChip, architectureChip] = wrapper.findAll(
+        '.score-history-chart__metric-toggle',
+      )
+      await securityChip!.trigger('click')
+      await architectureChip!.trigger('click')
+      await globalChip!.trigger('click')
+
+      const buttons = wrapper.findAll('.score-history-chart__list button')
+      expect(buttons[0]!.text()).toContain('Security: 4.0')
+      expect(buttons[0]!.text()).toContain('Architecture: 6.0')
+      expect(buttons[0]!.text()).not.toContain('Global score')
+    })
+
     it('moves focus to the title when "Back to overview" is clicked', async () => {
       const wrapper = mount(ScoreHistoryChart, {
         props: { points: pointsWithCategories() },
@@ -421,6 +436,40 @@ describe('ScoreHistoryChart', () => {
       expect(wrapper.findComponent({ name: 'LineStub' }).props('options').plugins.legend.display).toBe(
         true,
       )
+    })
+
+    it('lists every currently selected metric for each date, not just global', async () => {
+      const wrapper = mount(ScoreHistoryChart, { props: { points: pointsWithCategories() } })
+      await wrapper.findAll('.score-history-chart__metric-toggle')[1]!.trigger('click')
+
+      const buttons = wrapper.findAll('.score-history-chart__list button')
+      expect(buttons[0]!.text()).toContain('Global score: 5.0')
+      expect(buttons[0]!.text()).toContain('Security: 4.0')
+      expect(buttons[1]!.text()).toContain('Global score: 7.0')
+      expect(buttons[1]!.text()).toContain('Security: 8.0')
+    })
+
+    it('shows only the drilled-down category value in the list, not global', async () => {
+      const wrapper = mount(ScoreHistoryChart, { props: { points: pointsWithCategories() } })
+      const [globalChip, securityChip] = wrapper.findAll('.score-history-chart__metric-toggle')
+      await securityChip!.trigger('click')
+      await globalChip!.trigger('click')
+
+      const buttons = wrapper.findAll('.score-history-chart__list button')
+      expect(buttons[0]!.text()).toContain('Security: 4.0')
+      expect(buttons[0]!.text()).not.toContain('Global score')
+    })
+
+    it('formats a not-yet-scored selected metric as "not yet audited" in the list', async () => {
+      const points = [
+        makePoint(1, '2026-01-01', 5, [{ id: 10, name: 'Security', value: null }]),
+        makePoint(2, '2026-02-01', 7, [{ id: 10, name: 'Security', value: 8 }]),
+      ]
+      const wrapper = mount(ScoreHistoryChart, { props: { points } })
+      await wrapper.findAll('.score-history-chart__metric-toggle')[1]!.trigger('click')
+
+      const buttons = wrapper.findAll('.score-history-chart__list button')
+      expect(buttons[0]!.text()).toContain('Security: not yet audited')
     })
   })
 })

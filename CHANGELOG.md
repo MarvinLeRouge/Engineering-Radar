@@ -221,6 +221,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Scan each subproject's container image separately
 - *(radar-audit)* Weight Dockerfile hardening score by finding severity
 - *(radar-audit)* Compute and persist the global score
+- *(radar-dashboard)* Keyboard-fallback score list reflects selected metrics (FIX-007)
 
 ### 🚜 Refactor
 
