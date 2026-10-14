@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { useRepositoriesStore } from '@/stores/repositories'
 import RepositoryDetailView from '../RepositoryDetailView.vue'
 import type { RoadmapItemRead } from '@/api/client'
+
+// See ScoreHistoryChart.spec.ts: mocked only because jsdom has no real
+// <canvas> 2D context, not a general mocking precedent.
+vi.mock('vue-chartjs', () => ({
+  Line: { name: 'LineStub', props: ['data', 'options'], template: '<div />' },
+}))
 
 async function mountView(path = '/repositories/repo-a-1') {
   const router = createRouter({
@@ -109,6 +115,57 @@ describe('RepositoryDetailView', () => {
       .trigger('click')
 
     expect(wrapper.findComponent({ name: 'FindingCard' }).exists()).toBe(true)
+  })
+
+  it('shows the scored date and marks it as latest when there is no scoringRun query', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.report = {
+        repository_id: 1,
+        repository_name: 'repo-a',
+        commit_sha: 'a',
+        audited_at: '2026-01-01',
+        scored_at: '2026-03-15',
+        categories: [],
+      }
+    })
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = await mountView()
+
+    expect(wrapper.text()).toContain(new Date('2026-03-15').toLocaleDateString())
+    expect(wrapper.text()).toContain('(latest)')
+  })
+
+  it('does not mark the date as latest when viewing a historical scoring run', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/repositories/:idSlug', component: RepositoryDetailView }],
+    })
+    router.push('/repositories/repo-a-1?scoringRun=7')
+    await router.isReady()
+
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>(
+      async () => {
+        store.report = {
+          repository_id: 1,
+          repository_name: 'repo-a',
+          commit_sha: 'a',
+          audited_at: '2026-01-01',
+          scored_at: '2026-02-01',
+          categories: [],
+        }
+      },
+    )
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = mount(RepositoryDetailView, { global: { plugins: [router] } })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.text()).toContain(new Date('2026-02-01').toLocaleDateString())
+    expect(wrapper.text()).not.toContain('(latest)')
   })
 
   it('keeps existing report content visible during a refetch instead of flashing Loading', async () => {
@@ -238,5 +295,127 @@ describe('RepositoryDetailView', () => {
     await wrapper.findAll('button')[1]!.trigger('click')
 
     expect(wrapper.findComponent({ name: 'RoadmapItemRow' }).exists()).toBe(true)
+  })
+
+  it('switches to the trends tab and fetches score history', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+    store.fetchScoreHistory = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.scoreHistory = [
+        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5 },
+        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7 },
+      ]
+    })
+
+    const wrapper = await mountView()
+    await wrapper.findAll('button')[2]!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(store.fetchScoreHistory).toHaveBeenCalledWith(1)
+    expect(wrapper.findComponent({ name: 'ScoreHistoryChart' }).exists()).toBe(true)
+  })
+
+  it('clicking a point in the trends chart switches to the report tab for that scoring run', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+    store.fetchScoreHistory = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.scoreHistory = [
+        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5 },
+        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7 },
+      ]
+    })
+
+    const wrapper = await mountView()
+    await wrapper.findAll('button')[2]!.trigger('click')
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findComponent({ name: 'ScoreHistoryChart' }).vm.$emit('select-point', 2)
+    await wrapper.vm.$nextTick()
+
+    expect(store.fetchReport).toHaveBeenLastCalledWith(1, 2)
+  })
+
+  it('clicking the Report tab directly resets to the latest report', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = await mountView()
+    await wrapper.findAll('button')[0]!.trigger('click')
+
+    expect(store.fetchReport).toHaveBeenLastCalledWith(1, undefined)
+  })
+
+  it('reflects the viewed scoring run in the URL query when a chart point is clicked', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/repositories/:idSlug', component: RepositoryDetailView }],
+    })
+    router.push('/repositories/repo-a-1')
+    await router.isReady()
+
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+    store.fetchScoreHistory = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.scoreHistory = [
+        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5 },
+        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7 },
+      ]
+    })
+
+    const wrapper = mount(RepositoryDetailView, { global: { plugins: [router] } })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findAll('button')[2]!.trigger('click')
+    await wrapper.vm.$nextTick()
+    await wrapper.findComponent({ name: 'ScoreHistoryChart' }).vm.$emit('select-point', 2)
+    await flushPromises()
+
+    expect(router.currentRoute.value.query.scoringRun).toBe('2')
+  })
+
+  it('clears the scoringRun URL query when the Report tab is clicked directly', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/repositories/:idSlug', component: RepositoryDetailView }],
+    })
+    router.push('/repositories/repo-a-1?scoringRun=2')
+    await router.isReady()
+
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = mount(RepositoryDetailView, { global: { plugins: [router] } })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findAll('button')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(router.currentRoute.value.query.scoringRun).toBeUndefined()
+  })
+
+  it('loads the historical report for a scoringRun present in the URL on mount', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/repositories/:idSlug', component: RepositoryDetailView }],
+    })
+    router.push('/repositories/repo-a-1?scoringRun=7')
+    await router.isReady()
+
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>()
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = mount(RepositoryDetailView, { global: { plugins: [router] } })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    expect(store.fetchReport).toHaveBeenCalledWith(1, 7)
   })
 })

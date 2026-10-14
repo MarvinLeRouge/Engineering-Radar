@@ -2,11 +2,14 @@
 <template>
   <div class="repository-detail-view">
     <nav class="repository-detail-view__tabs">
-      <button type="button" :class="{ active: tab === 'report' }" @click="tab = 'report'">
+      <button type="button" :class="{ active: tab === 'report' }" @click="showLatestReport">
         Report
       </button>
       <button type="button" :class="{ active: tab === 'roadmap' }" @click="tab = 'roadmap'">
         Roadmap
+      </button>
+      <button type="button" :class="{ active: tab === 'trends' }" @click="showTrends">
+        Trends
       </button>
     </nav>
 
@@ -22,6 +25,10 @@
       </p>
       <template v-else-if="store.report">
         <h1 class="repository-detail-view__title">{{ store.report.repository_name }}</h1>
+        <p class="repository-detail-view__scored-at">
+          Scored on {{ formatScoredAt(store.report.scored_at) }}
+          <span v-if="activeScoringRunId === null">(latest)</span>
+        </p>
         <ReportSeveritySummary :categories="store.report.categories" />
         <div
           v-for="category in store.report.categories"
@@ -47,7 +54,7 @@
       </template>
     </section>
 
-    <section v-else>
+    <section v-else-if="tab === 'roadmap'">
       <p v-if="store.roadmapLoading && !store.roadmap.length" class="repository-detail-view__status">
         Loading...
       </p>
@@ -66,28 +73,45 @@
         />
       </ul>
     </section>
+
+    <section v-else>
+      <p v-if="store.scoreHistoryLoading && !store.scoreHistory.length" class="repository-detail-view__status">
+        Loading...
+      </p>
+      <p v-else-if="store.scoreHistoryError" class="repository-detail-view__error">
+        {{ store.scoreHistoryError }}
+      </p>
+      <ScoreHistoryChart v-else :points="store.scoreHistory" @select-point="showHistoricalReport" />
+    </section>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ScoreGauge from '@/components/ScoreGauge.vue'
 import CriterionFindings from '@/components/CriterionFindings.vue'
 import ReportSeveritySummary from '@/components/ReportSeveritySummary.vue'
 import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
+import ScoreHistoryChart from '@/components/ScoreHistoryChart.vue'
 import { useRepositoriesStore } from '@/stores/repositories'
 import { extractRepositoryId } from '@/utils/slugify'
 
 const route = useRoute()
+const router = useRouter()
 const store = useRepositoriesStore()
-const tab = ref<'report' | 'roadmap'>('report')
+const tab = ref<'report' | 'roadmap' | 'trends'>('report')
 
 const repositoryId = extractRepositoryId(route.params.idSlug as string)
+const activeScoringRunId = ref<number | null>(null)
 
-function refetchReport(): void {
+function formatScoredAt(scoredAt: string): string {
+  return new Date(scoredAt).toLocaleDateString()
+}
+
+function refetchReport(scoringRunId?: number): void {
   if (repositoryId !== null) {
-    store.fetchReport(repositoryId)
+    store.fetchReport(repositoryId, scoringRunId)
   }
 }
 
@@ -97,8 +121,32 @@ function refetchRoadmap(): void {
   }
 }
 
-onMounted(() => {
+function showLatestReport(): void {
+  tab.value = 'report'
+  activeScoringRunId.value = null
   refetchReport()
+  router.replace({ query: {} })
+}
+
+function showHistoricalReport(scoringRunId: number): void {
+  tab.value = 'report'
+  activeScoringRunId.value = scoringRunId
+  refetchReport(scoringRunId)
+  router.replace({ query: { scoringRun: String(scoringRunId) } })
+}
+
+function showTrends(): void {
+  tab.value = 'trends'
+  if (repositoryId !== null) {
+    store.fetchScoreHistory(repositoryId)
+  }
+}
+
+onMounted(() => {
+  const scoringRunFromUrl = Number(route.query.scoringRun)
+  const validScoringRun = Number.isInteger(scoringRunFromUrl) ? scoringRunFromUrl : undefined
+  activeScoringRunId.value = validScoringRun ?? null
+  refetchReport(validScoringRun)
   refetchRoadmap()
 })
 </script>
@@ -144,6 +192,12 @@ onMounted(() => {
   font-weight: var(--weight-bold);
   line-height: var(--leading-tight);
   letter-spacing: -0.01em;
+  margin-bottom: var(--space-2);
+}
+
+.repository-detail-view__scored-at {
+  font-size: var(--text-meta);
+  color: var(--color-ink-soft);
   margin-bottom: var(--space-6);
 }
 

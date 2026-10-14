@@ -57,6 +57,14 @@ export interface RepositoryReport {
   categories: CategoryReport[]
 }
 
+export interface ScoreHistoryPoint {
+  scoring_run_id: number
+  audit_id: number
+  commit_sha: string
+  scored_at: string
+  global_score: number | null
+}
+
 export interface RoadmapItemRead {
   id: number
   improvement_task_id: number
@@ -112,8 +120,16 @@ export function listRepositories(): Promise<RepositoryRead[]> {
   return request<RepositoryRead[]>('/repositories')
 }
 
-export function getRepositoryReport(repositoryId: number): Promise<RepositoryReport> {
-  return request<RepositoryReport>(`/repositories/${repositoryId}/report`)
+export function getRepositoryReport(
+  repositoryId: number,
+  scoringRunId?: number,
+): Promise<RepositoryReport> {
+  const query = scoringRunId !== undefined ? `?scoring_run_id=${scoringRunId}` : ''
+  return request<RepositoryReport>(`/repositories/${repositoryId}/report${query}`)
+}
+
+export function getScoreHistory(repositoryId: number): Promise<ScoreHistoryPoint[]> {
+  return request<ScoreHistoryPoint[]>(`/repositories/${repositoryId}/score-history`)
 }
 
 export function getRepositoryRoadmap(repositoryId: number): Promise<RoadmapItemRead[]> {
