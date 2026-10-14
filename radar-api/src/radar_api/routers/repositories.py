@@ -82,13 +82,21 @@ def get_repository(
 @router.get("/{repository_id}/report", response_model=RepositoryReport)
 def get_repository_report(
     repository_id: int,
+    scoring_run_id: int | None = None,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> RepositoryReport:
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
 
-    scoring_run = _latest_scoring_run(session, repository_id)
+    if scoring_run_id is not None:
+        scoring_run = session.exec(
+            select(ScoringRun)
+            .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
+            .where(ScoringRun.id == scoring_run_id, Audit.repository_id == repository_id)
+        ).first()
+    else:
+        scoring_run = _latest_scoring_run(session, repository_id)
     if scoring_run is None:
         raise HTTPException(status_code=404, detail="no score found for this repository")
 

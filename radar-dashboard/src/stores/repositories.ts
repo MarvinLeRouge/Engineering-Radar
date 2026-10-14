@@ -1,7 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import * as client from '@/api/client'
-import type { RepositoryRead, RepositoryReport, RoadmapItemRead } from '@/api/client'
+import type {
+  RepositoryRead,
+  RepositoryReport,
+  RoadmapItemRead,
+  ScoreHistoryPoint,
+} from '@/api/client'
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unexpected error'
@@ -20,6 +25,10 @@ export const useRepositoriesStore = defineStore('repositories', () => {
   const roadmapLoading = ref(false)
   const roadmapError = ref<string | null>(null)
 
+  const scoreHistory = ref<ScoreHistoryPoint[]>([])
+  const scoreHistoryLoading = ref(false)
+  const scoreHistoryError = ref<string | null>(null)
+
   async function fetchList(): Promise<void> {
     listLoading.value = true
     listError.value = null
@@ -32,15 +41,27 @@ export const useRepositoriesStore = defineStore('repositories', () => {
     }
   }
 
-  async function fetchReport(repositoryId: number): Promise<void> {
+  async function fetchReport(repositoryId: number, scoringRunId?: number): Promise<void> {
     reportLoading.value = true
     reportError.value = null
     try {
-      report.value = await client.getRepositoryReport(repositoryId)
+      report.value = await client.getRepositoryReport(repositoryId, scoringRunId)
     } catch (error) {
       reportError.value = errorMessage(error)
     } finally {
       reportLoading.value = false
+    }
+  }
+
+  async function fetchScoreHistory(repositoryId: number): Promise<void> {
+    scoreHistoryLoading.value = true
+    scoreHistoryError.value = null
+    try {
+      scoreHistory.value = await client.getScoreHistory(repositoryId)
+    } catch (error) {
+      scoreHistoryError.value = errorMessage(error)
+    } finally {
+      scoreHistoryLoading.value = false
     }
   }
 
@@ -69,5 +90,9 @@ export const useRepositoriesStore = defineStore('repositories', () => {
     roadmapLoading,
     roadmapError,
     fetchRoadmap,
+    scoreHistory,
+    scoreHistoryLoading,
+    scoreHistoryError,
+    fetchScoreHistory,
   }
 })

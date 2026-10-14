@@ -57,6 +57,46 @@ describe('repositories store', () => {
     expect(store.report).toBeNull()
   })
 
+  it('fetchReport forwards an optional scoringRunId to the client', async () => {
+    const report = {
+      repository_id: 1,
+      repository_name: 'repo',
+      commit_sha: 'a',
+      audited_at: '2026-01-01',
+      scored_at: '2026-01-01',
+      categories: [],
+    }
+    vi.mocked(client.getRepositoryReport).mockResolvedValueOnce(report)
+    const store = useRepositoriesStore()
+
+    await store.fetchReport(1, 42)
+
+    expect(client.getRepositoryReport).toHaveBeenCalledWith(1, 42)
+  })
+
+  it('fetchScoreHistory populates scoreHistory on success', async () => {
+    const points = [
+      { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 7 },
+    ]
+    vi.mocked(client.getScoreHistory).mockResolvedValueOnce(points)
+    const store = useRepositoriesStore()
+
+    await store.fetchScoreHistory(1)
+
+    expect(store.scoreHistory).toEqual(points)
+    expect(store.scoreHistoryError).toBeNull()
+  })
+
+  it('fetchScoreHistory sets scoreHistoryError on failure', async () => {
+    vi.mocked(client.getScoreHistory).mockRejectedValueOnce(new Error('boom'))
+    const store = useRepositoriesStore()
+
+    await store.fetchScoreHistory(1)
+
+    expect(store.scoreHistoryError).toBe('boom')
+    expect(store.scoreHistory).toEqual([])
+  })
+
   it('fetchRoadmap populates roadmap on success', async () => {
     const items = [
       {
