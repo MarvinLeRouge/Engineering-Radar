@@ -64,15 +64,16 @@
       <!-- Chart.js clicks are mouse/touch-only (canvas has no focusable
       points) -- this list is the keyboard- and screen-reader-operable path
       to the same "view that audit's report" outcome, not decoration. It
-      always lists the global score, independently of which metrics are
-      plotted: viewing an audit's report is a global action either way. -->
+      shows the same metrics as the chart (one value per currently selected
+      metric, so a drilled-down category is listed on its own, not global);
+      the button's click action stays tied to the scoring run regardless,
+      since viewing an audit's report is a global action either way. -->
       <details class="score-history-chart__list-disclosure">
         <summary>View as list</summary>
         <ul class="score-history-chart__list">
           <li v-for="point in points" :key="point.scoring_run_id">
             <button type="button" @click="emit('select-point', point.scoring_run_id)">
-              {{ formatDate(point.scored_at) }} --
-              {{ point.global_score === null ? 'not yet audited' : point.global_score.toFixed(1) }}
+              {{ formatDate(point.scored_at) }} -- {{ listEntryLabel(point) }}
             </button>
           </li>
         </ul>
@@ -217,6 +218,19 @@ function valueForMetric(point: ScoreHistoryPoint, id: MetricId): number | null {
   return point.categories.find((category) => category.id === id)?.value ?? null
 }
 
+function formatMetricLabel(label: string, value: number | null): string {
+  return value === null ? `${label}: not yet audited` : `${label}: ${value.toFixed(1)}`
+}
+
+// Mirrors the chart itself (and the tooltip) -- one value per currently
+// selected metric, so the keyboard-operable fallback list never falls out
+// of sync with what's actually plotted (e.g. a drilled-down category).
+function listEntryLabel(point: ScoreHistoryPoint): string {
+  return selectedMetrics.value
+    .map((metric) => formatMetricLabel(metric.name, valueForMetric(point, metric.id)))
+    .join(', ')
+}
+
 // floor(min)/ceil(max) over the currently selected metrics' defined scores,
 // so a tightly-clustered history (e.g. 6.6-7.6) is actually readable
 // instead of squashed into a sliver of the fixed 0-10 range. Falls back to
@@ -277,11 +291,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
     lastPointValueLabel: { fontFamily: cssVar('--font-sans') },
     tooltip: {
       callbacks: {
-        label: (context) => {
-          const value = context.parsed.y
-          const label = context.dataset.label ?? 'Score'
-          return value === null ? `${label}: not yet audited` : `${label}: ${value.toFixed(1)}`
-        },
+        label: (context) => formatMetricLabel(context.dataset.label ?? 'Score', context.parsed.y),
       },
     },
   },
