@@ -57,12 +57,19 @@ export interface RepositoryReport {
   categories: CategoryReport[]
 }
 
+export interface CategoryScorePoint {
+  id: number
+  name: string
+  value: number | null
+}
+
 export interface ScoreHistoryPoint {
   scoring_run_id: number
   audit_id: number
   commit_sha: string
   scored_at: string
   global_score: number | null
+  categories: CategoryScorePoint[]
 }
 
 export interface RoadmapItemRead {

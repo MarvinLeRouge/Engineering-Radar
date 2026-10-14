@@ -303,8 +303,8 @@ describe('RepositoryDetailView', () => {
     store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
     store.fetchScoreHistory = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
       store.scoreHistory = [
-        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5 },
-        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7 },
+        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5, categories: [] },
+        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7, categories: [] },
       ]
     })
 
@@ -322,8 +322,8 @@ describe('RepositoryDetailView', () => {
     store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
     store.fetchScoreHistory = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
       store.scoreHistory = [
-        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5 },
-        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7 },
+        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5, categories: [] },
+        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7, categories: [] },
       ]
     })
 
@@ -361,8 +361,8 @@ describe('RepositoryDetailView', () => {
     store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
     store.fetchScoreHistory = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
       store.scoreHistory = [
-        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5 },
-        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7 },
+        { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 5, categories: [] },
+        { scoring_run_id: 2, audit_id: 2, commit_sha: 'b', scored_at: '2026-02-01', global_score: 7, categories: [] },
       ]
     })
 
