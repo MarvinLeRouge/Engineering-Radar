@@ -144,6 +144,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-core)* Add generic Finding.magnitude and shared priority sort (FEAT-016)
 - *(radar-dashboard)* Visual refresh with spacing/type tokens and a staggered hierarchy
 - *(radar-dashboard)* Add a severity summary at the top of the report
+- *(radar-api,radar-dashboard)* Global score history with a Trends tab
 
 ### 🐛 Bug Fixes
 
