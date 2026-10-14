@@ -76,7 +76,7 @@ describe('repositories store', () => {
 
   it('fetchScoreHistory populates scoreHistory on success', async () => {
     const points = [
-      { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 7 },
+      { scoring_run_id: 1, audit_id: 1, commit_sha: 'a', scored_at: '2026-01-01', global_score: 7, categories: [] },
     ]
     vi.mocked(client.getScoreHistory).mockResolvedValueOnce(points)
     const store = useRepositoriesStore()
