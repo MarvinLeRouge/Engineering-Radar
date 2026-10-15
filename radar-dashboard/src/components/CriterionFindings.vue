@@ -1,25 +1,24 @@
 <!-- radar-dashboard/src/components/CriterionFindings.vue -->
 <template>
   <div class="criterion-findings">
-    <button
-      v-for="group in severityGroups"
-      :key="group.severity"
-      type="button"
-      data-testid="severity-chip"
-      :class="`criterion-findings__chip criterion-findings__chip--${group.severity.toLowerCase()}`"
-      :aria-expanded="expanded.has(group.severity)"
-      @click="toggle(group.severity)"
-    >
-      {{ group.severity }} ({{ group.findings.length }})
-      <span
-        data-testid="chip-arrow"
-        class="criterion-findings__arrow"
-        :class="{ 'criterion-findings__arrow--open': expanded.has(group.severity) }"
+    <div class="criterion-findings__chips">
+      <SeverityToggleChip
+        v-for="group in severityGroups"
+        :key="group.severity"
+        :severity="group.severity"
+        :count-label="String(group.findings.length)"
+        :expanded="expanded.has(group.severity)"
+        :controls-id="`${instanceId}-${group.severity}`"
+        @toggle="toggle(group.severity)"
       />
-    </button>
+    </div>
 
     <template v-for="group in severityGroups" :key="`${group.severity}-findings`">
-      <div v-if="expanded.has(group.severity)" class="criterion-findings__group">
+      <div
+        v-if="expanded.has(group.severity)"
+        :id="`${instanceId}-${group.severity}`"
+        class="criterion-findings__group"
+      >
         <FindingCard
           v-for="finding in group.findings"
           :key="finding.id"
@@ -32,14 +31,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive } from 'vue'
+import { computed, reactive, useId } from 'vue'
 import FindingCard from './FindingCard.vue'
+import SeverityToggleChip from './SeverityToggleChip.vue'
 import type { FindingReport } from '@/api/client'
+import { SEVERITY_ORDER } from '@/utils/severity'
+
+const instanceId = useId()
 
 const props = defineProps<{ findings: FindingReport[] }>()
 defineEmits<{ updated: [] }>()
-
-const SEVERITY_ORDER: FindingReport['severity'][] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
 const expanded = reactive(new Set<string>())
 
@@ -60,49 +61,16 @@ const severityGroups = computed(() =>
 </script>
 
 <style scoped>
-.criterion-findings__chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.5rem;
-  margin-right: 0.5rem;
-  border-radius: 0.25rem;
-  border: none;
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  color: #1a1a1a;
+.criterion-findings__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
-.criterion-findings__chip--critical {
-  background-color: #eb5757;
-  color: #f5f5f5;
-}
-.criterion-findings__chip--high {
-  background-color: #f2994a;
-}
-.criterion-findings__chip--medium {
-  background-color: #f2c94c;
-}
-.criterion-findings__chip--low {
-  background-color: #6fcf97;
-}
-.criterion-findings__chip--info {
-  background-color: #56ccf2;
-}
+
 .criterion-findings__group {
-  margin-top: 0.5rem;
-}
-.criterion-findings__arrow {
-  display: inline-block;
-  margin-left: 0.35rem;
-  width: 0;
-  height: 0;
-  border-left: 0.3rem solid transparent;
-  border-right: 0.3rem solid transparent;
-  border-top: 0.35rem solid currentColor;
-  transition: transform 0.15s ease;
-  vertical-align: middle;
-}
-.criterion-findings__arrow--open {
-  transform: rotate(-180deg);
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 </style>

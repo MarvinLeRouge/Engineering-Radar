@@ -108,8 +108,8 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
         # repo fixture has no manifest -> stack="unknown" -> only the repo-scoped,
         # stack-independent runners (DesignDocRunner, PreCommitGateRunner, JscpdRunner,
         # IntegrationTestRunner, CiWorkflowRunner, GitleaksRunner, SemgrepRunner,
-        # TrivyImageRunner, HadolintRunner) run; every subproject-scoped runner
-        # (PipAuditRunner, PnpmAuditRunner, ComposerAuditRunner) skips an "unknown" stack.
+        # TrivyImageRunner, HadolintRunner, ActionlintRunner) run; every subproject-scoped
+        # runner (PipAuditRunner, PnpmAuditRunner, ComposerAuditRunner) skips an "unknown" stack.
         assert {r.tool_name for r in results} == {
             "design-doc-presence",
             "pre-commit-gate",
@@ -120,4 +120,5 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
             "semgrep",
             "trivy-image",
             "hadolint",
+            "actionlint",
         }

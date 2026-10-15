@@ -17,7 +17,7 @@ to include itself.
 
 Confirmed portfolio scope (10 repositories): CC-Beacon,
 GeoChallenge-Tracker, HexaRot, HiveMind, JobFlow, Stamped, Summit-Stats,
-Trello-Board-Init, Triton, and **Portfolio-Engineering-Radar itself**
+Trello-Board-Init, Triton, and **Engineering-Radar itself**
 (self-audit, included from the start, not deferred).
 
 All other repositories are out of scope: laravel-task-manager,
@@ -56,6 +56,6 @@ Training.
   would pull in duplicate clones, personal-data repositories, and
   unrelated experiments, diluting the audit's signal and creating a
   privacy risk.
-- **Exclude Portfolio-Engineering-Radar from its own audit:** rejected;
+- **Exclude Engineering-Radar from its own audit:** rejected;
   self-auditing was considered valuable dogfooding and was included from
   the start rather than deferred to a later phase.

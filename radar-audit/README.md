@@ -4,7 +4,7 @@
 
 # radar-audit
 
-Tool orchestration and normalization engine for [Portfolio-Engineering-Radar](../README.md).
+Tool orchestration and normalization engine for [Engineering-Radar](../README.md).
 
 `radar-audit` discovers a repository's sub-projects, runs the deterministic
 analysis tools relevant to each detected stack, and persists their raw

@@ -229,3 +229,67 @@ def test_category_score_excludes_na_reason_scores_from_weighted_average(db_sessi
 
     assert na_score.value == 0.0
     assert category_score.value == 8.0
+
+
+def test_score_repository_sets_global_score_as_category_weighted_average(db_session, monkeypatch):
+    # Architecture & design (weight 6.15) and Security (weight 10.0) are not
+    # equal, so a naive unweighted average would give a different, wrong result
+    # -- this pins down the real formula, not just "some average".
+    from radar_core.enums import Confidence
+    from radar_core.models.audit import Audit
+    from radar_core.models.repository import Repository
+
+    repo = Repository(name="repo", path="/tmp/repo")
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+    db_session.add(Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False))
+    db_session.commit()
+
+    def _make_fake(value):
+        def _fake(session, scoring_run, criterion, tool_results):
+            score = Score(
+                scoring_run_id=scoring_run.id,
+                criterion_id=criterion.id,
+                level=ScoreLevel.CRITERION,
+                value=value,
+                confidence=Confidence.HIGH,
+            )
+            session.add(score)
+            session.commit()
+            session.refresh(score)
+            return score
+
+        return _fake
+
+    monkeypatch.setattr(
+        "radar_audit.scoring.CRITERION_NORMALIZERS",
+        {
+            ("Architecture & design", "Dependency direction / circularity"): _make_fake(4.0),
+            ("Security", "Dependency vulnerabilities (CVE)"): _make_fake(10.0),
+        },
+    )
+
+    scoring_run = score_repository(db_session, "repo")
+
+    expected = (6.15 * 4.0 + 10.0 * 10.0) / (6.15 + 10.0)
+    assert scoring_run.global_score == pytest.approx(expected)
+
+
+def test_score_repository_leaves_global_score_none_when_nothing_scored(db_session, monkeypatch):
+    from radar_core.models.audit import Audit
+    from radar_core.models.repository import Repository
+
+    repo = Repository(name="repo", path="/tmp/repo")
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+    db_session.add(Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False))
+    db_session.commit()
+
+    monkeypatch.setattr("radar_audit.scoring.CRITERION_NORMALIZERS", {})
+
+    scoring_run = score_repository(db_session, "repo")
+
+    assert scoring_run.global_score is None
+    assert scoring_run.global_confidence is None

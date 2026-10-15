@@ -62,49 +62,53 @@ const reasonText = computed(() => {
   align-items: center;
   justify-content: center;
   min-width: 3rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-weight: 600;
-  color: #1a1a1a;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-meta);
+  color: var(--color-ink);
   position: relative;
 }
 .score-gauge--brightgreen {
-  background-color: #2ecc71;
+  background-color: var(--score-brightgreen);
 }
 .score-gauge--green {
-  background-color: #6fcf97;
+  background-color: var(--score-green);
 }
 .score-gauge--yellow {
-  background-color: #f2c94c;
+  background-color: var(--score-yellow);
 }
 .score-gauge--orange {
-  background-color: #f2994a;
+  background-color: var(--score-orange);
 }
 .score-gauge--red {
-  background-color: #eb5757;
-  color: #f5f5f5;
+  background-color: var(--score-red);
+  color: var(--severity-critical-ink);
 }
 .score-gauge--na {
-  background-color: #9a9a9a;
-  color: #f5f5f5;
+  background-color: var(--score-na);
+  color: var(--severity-critical-ink);
   cursor: pointer;
 }
 .score-gauge--pending {
-  background-color: #d4d4d4;
-  color: #4a4a4a;
+  background-color: var(--score-pending);
+  color: var(--color-ink-soft);
   cursor: pointer;
 }
 .score-gauge__reason {
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 0.25rem;
-  padding: 0.25rem 0.5rem;
-  background: #1a1a1a;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 400;
-  border-radius: 0.25rem;
+  margin-top: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-ink);
+  color: var(--color-surface);
+  font-family: var(--font-sans);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-regular);
+  border-radius: var(--radius-sm);
   white-space: nowrap;
   z-index: 10;
 }

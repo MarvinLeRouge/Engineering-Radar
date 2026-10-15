@@ -93,10 +93,14 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
             continue
         scored_by_category.setdefault(criterion.category_id, []).append((criterion, score))
 
+    category_scores: list[tuple[Category, Score]] = []
     for category_id, pairs in scored_by_category.items():
         category = session.get(Category, category_id)
         assert category is not None
-        _write_category_score(session, scoring_run, category, pairs)
+        category_score = _write_category_score(session, scoring_run, category, pairs)
+        category_scores.append((category, category_score))
+
+    _write_global_score(session, scoring_run, category_scores)
 
     return scoring_run
 
@@ -123,3 +127,28 @@ def _write_category_score(
     session.commit()
     session.refresh(category_score)
     return category_score
+
+
+def _write_global_score(
+    session: Session,
+    scoring_run: ScoringRun,
+    category_scores: list[tuple[Category, Score]],
+) -> None:
+    """Weighted average of category scores by category.weight, same pattern as
+    _write_category_score's criterion-to-category aggregation one level up.
+
+    Left as None (not 0) when no category was scored at all -- a repository
+    with nothing yet audited has no global score, not the worst one.
+    """
+    if not category_scores:
+        return
+
+    total_weight = sum(category.weight for category, _ in category_scores)
+    weighted_sum = sum(category.weight * score.value for category, score in category_scores)
+    scoring_run.global_score = weighted_sum / total_weight
+    scoring_run.global_confidence = max(
+        (score.confidence for _, score in category_scores), key=lambda c: _CONFIDENCE_RANK[c]
+    )
+    session.add(scoring_run)
+    session.commit()
+    session.refresh(scoring_run)

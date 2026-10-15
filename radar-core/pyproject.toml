@@ -1,7 +1,7 @@
 [project]
 name = "radar-core"
 version = "0.1.0"
-description = "Shared data model (SQLModel) and Alembic migrations for Portfolio-Engineering-Radar."
+description = "Shared data model (SQLModel) and Alembic migrations for Engineering-Radar."
 requires-python = ">=3.12"
 dependencies = [
     "sqlmodel>=0.0.22",

@@ -543,7 +543,7 @@ Modified files:
 - [ ] **Step 1: Commit the plan document**
 
 ```bash
-cd /home/mlr/projets/Portfolio-Engineering-Radar
+cd /home/mlr/projets/Engineering-Radar
 git add docs/superpowers/plans/2026-09-24-radar-audit-dependency-audit-lockfile-dispatch.md
 git commit -m "docs: write radar-audit dependency-audit lockfile-dispatch implementation plan"
 ```

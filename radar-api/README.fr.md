@@ -4,10 +4,10 @@
 
 # radar-api
 
-Service FastAPI minimal pour [Portfolio-Engineering-Radar](../README.fr.md).
+Service FastAPI minimal pour [Engineering-Radar](../README.fr.md).
 
 `radar-api` expose des points d'accès en lecture sur le modèle de données de
-Portfolio-Engineering-Radar (dépôts, audits, scores, findings, roadmap) ainsi
+Engineering-Radar (dépôts, audits, scores, findings, roadmap) ainsi
 que des points d'accès en écriture restreints, confirmés uniquement par un
 humain.
 
@@ -34,6 +34,18 @@ humain.
 - `PATCH /roadmap-items/{roadmap_item_id}/status` — met à jour le statut d'un élément de roadmap ; la transition vers `DONE` requiert un `done_evidence_id` référençant une ligne `Evidence` liée à l'un des findings de l'élément de roadmap.
 
 ## Lancement en local
+
+Copie `.env.example` (racine du repo) vers `.env`, renseigne un vrai
+`RADAR_API_KEY`, puis charge-le dans le shell avant de lancer le serveur
+(depuis la racine du repo, pas depuis `radar-api/`) :
+
+    set -a && source .env && set +a
+    uv run --package radar-api uvicorn radar_api.main:app --reload
+
+Ni `radar-api` ni `radar-audit` ne chargent `.env` automatiquement (voir la
+politique "never assumes a default" de `config.py`) — il faut le sourcer dans
+chaque nouveau shell. Sans fichier `.env`, exporter directement les deux
+variables fonctionne aussi :
 
     export RADAR_DATABASE_URL="sqlite:///$(pwd)/radar.db"
     export RADAR_API_KEY="votre-cle-secrete"
@@ -71,7 +83,7 @@ production pour l'instant.
 
 ## Badge de qualité
 
-Tout dépôt audité par Portfolio-Engineering-Radar peut lier un badge
+Tout dépôt audité par Engineering-Radar peut lier un badge
 shields.io de type [endpoint](https://shields.io/badges/endpoint-badge) dans
 son README, alimenté par `GET /repositories/{repository_id}/badge`. Rien
 d'autre (aucun contenu de rapport, aucun score) n'est jamais écrit dans le

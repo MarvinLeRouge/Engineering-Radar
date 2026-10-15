@@ -2,9 +2,12 @@ import pytest
 from radar_audit.normalizers.shared import (
     CriterionNotFoundError,
     add_finding_with_recommendation,
+    find_prod_compose,
     get_criterion,
     get_or_create_scoring_run,
+    get_repository_path,
     has_success_payload,
+    iter_source_files,
 )
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
@@ -127,3 +130,49 @@ def test_add_finding_with_recommendation_links_a_recommendation_to_the_finding(d
         select(Recommendation).where(Recommendation.finding_id == finding.id)
     ).one()
     assert recommendation.text == "Do the thing that fixes it."
+
+
+def test_find_prod_compose_returns_none_when_absent(tmp_path):
+    assert find_prod_compose(tmp_path) is None
+
+
+def test_find_prod_compose_finds_docker_compose_prod_first(tmp_path):
+    (tmp_path / "docker-compose.prod.yml").write_text("services: {}\n")
+    (tmp_path / "compose.prod.yaml").write_text("services: {}\n")
+
+    found = find_prod_compose(tmp_path)
+
+    assert found == tmp_path / "docker-compose.prod.yml"
+
+
+def test_iter_source_files_prunes_vendored_directories_instead_of_filtering_after(tmp_path):
+    (tmp_path / "app.py").write_text("print('real code')\n")
+    node_modules = tmp_path / "node_modules" / "some-package"
+    node_modules.mkdir(parents=True)
+    (node_modules / "index.js").write_text("console.log('vendored')\n")
+    venv = tmp_path / ".venv" / "lib"
+    venv.mkdir(parents=True)
+    (venv / "installed.py").write_text("print('vendored')\n")
+
+    found = {str(p.relative_to(tmp_path)) for p in iter_source_files(tmp_path)}
+
+    assert found == {"app.py"}
+
+
+def test_get_repository_path_resolves_from_scoring_run(db_session):
+    repo = Repository(name="repo", path="/tmp/repo-under-test")
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+
+    audit = Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False)
+    db_session.add(audit)
+    db_session.commit()
+    db_session.refresh(audit)
+
+    methodology_version = seed_taxonomy(db_session)
+    scoring_run = get_or_create_scoring_run(db_session, audit, methodology_version)
+
+    path = get_repository_path(db_session, scoring_run)
+
+    assert str(path) == "/tmp/repo-under-test"

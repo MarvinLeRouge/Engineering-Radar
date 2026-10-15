@@ -1,5 +1,6 @@
 docs/work-in-progress/
 graphify-out/
+.env
 .serena/
 .venv/
 __pycache__/

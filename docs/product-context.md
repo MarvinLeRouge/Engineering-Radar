@@ -10,7 +10,7 @@ themselves, see [`docs/quality-framework.md`](quality-framework.md).
 
 ## What this is
 
-Portfolio Engineering Radar is a local, offline-first audit system for a
+Engineering Radar is a local, offline-first audit system for a
 personal portfolio of software repositories. It runs a fixed set of
 static-analysis and tooling checks against each repository, normalizes
 the raw results into scored findings against the Quality Framework, and
@@ -33,5 +33,6 @@ of the audited repositories to change anything about themselves.
 
 ## Current scope
 
-- Audit engine (`radar-audit`) and data model (`radar-core`): in progress, see [`docs/roadmap.md`](roadmap.md)
-- Dashboard and report generation: not started yet
+- Data model (`radar-core`): stable
+- Audit engine (`radar-audit`): operational, 8 of 15 Quality Framework categories covered, see [`docs/roadmap.md`](roadmap.md)
+- Reporting, API and dashboard: in place, the dashboard is still being refined
