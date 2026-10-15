@@ -4,7 +4,7 @@
 
 # Engineering Radar
 
-> Suivi de la qualité et amélioration continue, fondés sur des preuves, pour un portfolio de dépôts : plus de 20 outils d'analyse reconnus, un référentiel de scoring versionné, des findings priorisés et des ré-audits qui prouvent les progrès réels.
+> *Suivi de la qualité et amélioration continue, fondés sur des preuves, pour un portfolio de dépôts : plus de 20 outils d'analyse reconnus, un référentiel de scoring versionné, des findings priorisés et des ré-audits qui prouvent les progrès réels.*
 
 **Engineering Radar** est une plateforme locale de pilotage de la qualité d'ingénierie conçue pour évaluer, comparer, prioriser et améliorer continuellement un ensemble de projets logiciels.
 

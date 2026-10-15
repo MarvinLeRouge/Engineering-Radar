@@ -4,7 +4,7 @@
 
 # Engineering Radar
 
-> Evidence-based quality tracking and continuous improvement for a portfolio of repositories: 20+ recognized analysis tools, a versioned scoring framework, prioritized findings, and re-audits that prove real progress.
+> *Evidence-based quality tracking and continuous improvement for a portfolio of repositories: 20+ recognized analysis tools, a versioned scoring framework, prioritized findings, and re-audits that prove real progress.*
 
 **Engineering Radar** is a local-first engineering quality platform designed to assess, compare, prioritize, and continuously improve a portfolio of software projects.
 
