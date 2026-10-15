@@ -325,6 +325,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(roadmap)* Tick FEAT-015 (category 9 Observability)
 - *(root)* Move French community-health docs into docs/i18n/fr
 - *(roadmap)* Note human-verdict persistence and score-exclusion gap
+- *(readme)* Reframe project around evidence-based quality tracking
 
 ### 🧪 Testing
 

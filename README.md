@@ -4,11 +4,11 @@
 
 # Engineering Radar
 
-> Evidence-based, AI-assisted quality monitoring and continuous improvement for software portfolios.
+> Evidence-based quality tracking and continuous improvement for a portfolio of repositories: 20+ recognized analysis tools, a versioned scoring framework, prioritized findings, and re-audits that prove real progress.
 
 **Engineering Radar** is a local-first engineering quality platform designed to assess, compare, prioritize, and continuously improve a portfolio of software projects.
 
-The project is being designed for a fullstack web developer working across multiple repositories and technology stacks. Its purpose is not to replace engineering judgment with an AI-generated score, but to combine deterministic analysis tools, evidence-based assessment, a versioned quality framework, and AI-assisted reasoning into a coherent improvement system.
+The project is being designed for a fullstack web developer working across multiple repositories and technology stacks. Its purpose is not to replace engineering judgment with a generated score, but to combine deterministic analysis tools, evidence-based assessment, a versioned quality framework, and human review into a coherent improvement system.
 
 ## Project vision
 
@@ -49,7 +49,7 @@ The system should make it possible to answer:
 
 ### Evidence before scoring
 
-Scores must be supported by observable evidence whenever possible. Deterministic tools should provide measurements and findings; AI should primarily interpret, correlate, prioritize, and explain them.
+Scores must be supported by observable evidence whenever possible. Deterministic tools provide the measurements and findings; human judgment stays in the loop: findings can be marked as false positives, criteria are recalibrated against observed false positives and false negatives, and any judgment-based criterion requires human confirmation before it affects a score.
 
 ### Versioned quality methodology
 
@@ -93,7 +93,7 @@ An improvement is not considered complete merely because code was changed. The s
 - Historical quality snapshots
 - Portfolio quality trends
 - Local dashboard
-- AI-assisted analysis and planning
+- Human verdicts on findings (false positives, won't fix)
 - Self-auditing of Engineering Radar itself
 
 ## Target environment
@@ -130,7 +130,9 @@ The methodology must be established before the first full portfolio assessment.
 
 **Phase 4: system implementation, in progress.**
 
-The data model (`radar-core`) and the tool orchestration/normalization engine (`radar-audit`) are implemented and under active development. `radar-audit` currently covers Quality Framework categories 1 (Architecture & design), 2 (Code quality), 3 (Testing & reliability), 4 (Security), and 5 (Maintainability); the remaining categories, the reporting/publication pipeline (findings and recommendations rendering, a minimal API, a quality-assessment badge, and the local dashboard), are still to come. See `docs/roadmap.md` for the detailed, up-to-date status.
+The data model (`radar-core`) is stable and the audit engine (`radar-audit`) is operational. It currently covers 8 of the 15 Quality Framework categories: 1 (Architecture & design), 2 (Code quality), 3 (Testing & reliability), 4 (Security), 5 (Maintainability), 7 (DevOps / CI-CD), 8 (Documentation) and 9 (Observability / operations). Category 6 (Performance) is deferred, since its only criterion requires the audited repository's own running server; categories 10 to 15 are still to come.
+
+The reporting pipeline is in place: per-criterion results with an explicit scored / not applicable / not yet audited state, prioritized findings, stored recommendations, a minimal API (`radar-api`), a quality-assessment badge, and a local dashboard (`radar-dashboard`), still being refined. Next steps are the full portfolio audit, then the prioritized improvement roadmap and continuous re-audits. See `docs/roadmap.md` for the detailed, up-to-date status.
 
 ## Documentation
 
