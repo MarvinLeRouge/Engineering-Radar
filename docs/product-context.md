@@ -33,5 +33,6 @@ of the audited repositories to change anything about themselves.
 
 ## Current scope
 
-- Audit engine (`radar-audit`) and data model (`radar-core`): in progress, see [`docs/roadmap.md`](roadmap.md)
-- Dashboard and report generation: not started yet
+- Data model (`radar-core`): stable
+- Audit engine (`radar-audit`): operational, 8 of 15 Quality Framework categories covered, see [`docs/roadmap.md`](roadmap.md)
+- Reporting, API and dashboard: in place, the dashboard is still being refined
