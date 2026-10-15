@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 from radar_core.enums import ScoreLevel
+from radar_core.finding_ordering import sort_findings_by_priority
 from radar_core.models.audit import Audit
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
@@ -81,13 +82,21 @@ def get_repository(
 @router.get("/{repository_id}/report", response_model=RepositoryReport)
 def get_repository_report(
     repository_id: int,
+    scoring_run_id: int | None = None,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> RepositoryReport:
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
 
-    scoring_run = _latest_scoring_run(session, repository_id)
+    if scoring_run_id is not None:
+        scoring_run = session.exec(
+            select(ScoringRun)
+            .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
+            .where(ScoringRun.id == scoring_run_id, Audit.repository_id == repository_id)
+        ).first()
+    else:
+        scoring_run = _latest_scoring_run(session, repository_id)
     if scoring_run is None:
         raise HTTPException(status_code=404, detail="no score found for this repository")
 
@@ -106,7 +115,7 @@ def get_repository_report(
 
     findings = session.exec(select(Finding).where(Finding.scoring_run_id == scoring_run.id)).all()
     findings_by_criterion: dict[int | None, list[Finding]] = {}
-    for finding in findings:
+    for finding in sort_findings_by_priority(findings):
         findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
 
     finding_ids = [f.id for f in findings if f.id is not None]

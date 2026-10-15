@@ -134,6 +134,18 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add Docker deployment and Traefik /api proxy
 - *(radar-dashboard)* Readable repository URLs and severity-grouped findings
 - *(radar-dashboard)* Add a visible open/closed arrow to severity chips
+- *(radar-audit)* Add ActionlintRunner for criterion 7.1
+- *(radar-audit)* Add normalize_ci_health for criterion 7.1
+- *(radar-audit)* Add get_repository_path and normalize_traefik_parity for criterion 7.2
+- *(radar-audit)* Add normalize_container_build_hardening for criterion 7.3
+- *(radar-audit)* Add normalize_deployment_automation for criterion 7.4
+- *(radar-audit)* Add category 8 Documentation normalizers
+- *(radar-audit)* Add category 9 Observability normalizers (FEAT-015)
+- *(radar-core)* Add generic Finding.magnitude and shared priority sort (FEAT-016)
+- *(radar-dashboard)* Visual refresh with spacing/type tokens and a staggered hierarchy
+- *(radar-dashboard)* Add a severity summary at the top of the report
+- *(radar-api,radar-dashboard)* Global score history with a Trends tab
+- *(radar-api,radar-dashboard)* Per-category score history, metric selector and drill-down (FEAT-020)
 
 ### 🐛 Bug Fixes
 
@@ -199,6 +211,17 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Use non-null assertion instead of optional chaining in client tests
 - *(radar-dashboard)* Guard loading ref with try/finally in RepositoryListView
 - *(radar-dashboard)* Resolve final-review findings (DONE evidence picker, refetch flash, remaining em dash)
+- *(radar-audit)* Update test_cli.py's expected tool names for ActionlintRunner
+- *(radar-audit)* Update hardcoded normalizer registry count
+- *(radar-audit)* Detect dict-form Traefik labels with unquoted booleans
+- *(radar-audit)* Correct container build hardening, deployment automation and actionlint mount
+- *(radar-audit)* Create a finding for every complexity violation, not just the worst
+- *(radar-audit)* Exclude markdown and gitignored paths from false-positive findings
+- *(radar-audit)* Sort module-size findings by line count within severity
+- *(radar-audit)* Scan each subproject's container image separately
+- *(radar-audit)* Weight Dockerfile hardening score by finding severity
+- *(radar-audit)* Compute and persist the global score
+- *(radar-dashboard)* Keyboard-fallback score list reflects selected metrics (FIX-007)
 
 ### 🚜 Refactor
 
@@ -296,6 +319,15 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add implementation plan for radar-dashboard
 - *(roadmap)* Mark item E (radar-dashboard) and the reporting pipeline as complete
 - *(quality-framework)* Record 6.1 (frontend performance) as deferred, not excluded
+- *(radar-audit)* Add category 7 (DevOps/CI-CD) design spec
+- *(radar-audit)* Add implementation plan for category 7 (DevOps/CI-CD)
+- *(roadmap)* Migrate to Section/TYPE-NNN task nomenclature
+- *(roadmap)* Tick FEAT-014 (category 8 Documentation)
+- *(roadmap)* Tick FEAT-015 (category 9 Observability)
+- *(root)* Move French community-health docs into docs/i18n/fr
+- *(roadmap)* Note human-verdict persistence and score-exclusion gap
+- *(readme)* Reframe project around evidence-based quality tracking
+- Align readme tagline with repository description
 
 ### 🧪 Testing
 
@@ -323,3 +355,6 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add local post-commit hook for changelog generation
 - *(radar-api)* Apply ruff formatting
 - *(radar-dashboard)* Scaffold Vue 3 + Vite + Vitest project
+- *(radar-dashboard)* Bump source-map-js to patch the event-loop DoS advisory
+- Project renaming
+- *(env)* Add a gitignored .env and a committed .env.example template

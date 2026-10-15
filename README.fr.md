@@ -2,19 +2,19 @@
 
 ---
 
-# Portfolio Engineering Radar
+# Engineering Radar
 
-> Suivi de la qualité d'ingénierie et amélioration continue, assistés par l'IA et fondés sur des preuves, pour un portfolio de projets logiciels.
+> *Suivi de la qualité et amélioration continue, fondés sur des preuves, pour un portfolio de dépôts : plus de 20 outils d'analyse reconnus, un référentiel de scoring versionné, des findings priorisés et des ré-audits qui prouvent les progrès réels.*
 
-**Portfolio Engineering Radar** est une plateforme locale de pilotage de la qualité d'ingénierie conçue pour évaluer, comparer, prioriser et améliorer continuellement un ensemble de projets logiciels.
+**Engineering Radar** est une plateforme locale de pilotage de la qualité d'ingénierie conçue pour évaluer, comparer, prioriser et améliorer continuellement un ensemble de projets logiciels.
 
-Le projet est conçu pour un développeur web fullstack travaillant sur plusieurs repositories et plusieurs stacks technologiques. Son objectif n'est pas de remplacer le jugement d'ingénierie par une note générée par une IA, mais de combiner des analyses déterministes, une évaluation fondée sur des preuves, un référentiel de qualité versionné et un raisonnement assisté par IA au sein d'un système cohérent d'amélioration.
+Le projet est conçu pour un développeur web fullstack travaillant sur plusieurs repositories et plusieurs stacks technologiques. Son objectif n'est pas de remplacer le jugement d'ingénierie par une note automatique, mais de combiner des analyses déterministes, une évaluation fondée sur des preuves, un référentiel de qualité versionné et une revue humaine au sein d'un système cohérent d'amélioration.
 
 ## Vision du projet
 
 La gestion de plusieurs applications pose un problème difficile à résoudre repository par repository : les projets individuels peuvent progresser alors que le portfolio reste globalement hétérogène.
 
-Portfolio Engineering Radar vise à mettre en place une boucle continue :
+Engineering Radar vise à mettre en place une boucle continue :
 
 ```text
 Repositories
@@ -49,7 +49,7 @@ Le système doit permettre de répondre notamment aux questions suivantes :
 
 ### Les preuves avant la notation
 
-Les notes doivent être appuyées autant que possible par des éléments observables. Les outils déterministes doivent fournir les mesures et les findings ; l'IA doit principalement les interpréter, les mettre en relation, les prioriser et les expliquer.
+Les notes doivent être appuyées autant que possible par des éléments observables. Les outils déterministes fournissent les mesures et les findings ; le jugement humain reste dans la boucle : un finding peut être marqué comme faux positif, les critères sont recalibrés au regard des faux positifs et faux négatifs observés, et tout critère reposant sur un jugement exige une confirmation humaine avant d'influer sur une note.
 
 ### Une méthodologie de qualité versionnée
 
@@ -93,8 +93,8 @@ Une amélioration n'est pas considérée comme terminée simplement parce que du
 - Snapshots historiques de qualité
 - Évolution des indicateurs du portfolio
 - Dashboard local
-- Analyse et planification assistées par IA
-- Auto-évaluation de Portfolio Engineering Radar
+- Verdicts humains sur les findings (faux positifs, won't fix)
+- Auto-évaluation de Engineering Radar
 
 ## Environnement cible
 
@@ -130,7 +130,9 @@ La méthodologie doit être établie avant le premier audit complet du portfolio
 
 **Phase 4 : implémentation du système, en cours.**
 
-Le modèle de données (`radar-core`) et le moteur d'orchestration/normalisation des outils (`radar-audit`) sont implémentés et en développement actif. `radar-audit` couvre actuellement les catégories 1 (Architecture & conception), 2 (Qualité du code), 3 (Tests & fiabilité), 4 (Sécurité) et 5 (Maintenabilité) du Quality Framework ; les catégories restantes ainsi que le pipeline de reporting/publication (rendu des findings et recommandations, API minimale, badge d'évaluation qualité, dashboard local) restent à faire. Voir `docs/roadmap.md` pour l'état détaillé et à jour.
+Le modèle de données (`radar-core`) est stable et le moteur d'audit (`radar-audit`) est opérationnel. Il couvre actuellement 8 des 15 catégories du Quality Framework : 1 (Architecture & conception), 2 (Qualité du code), 3 (Tests & fiabilité), 4 (Sécurité), 5 (Maintenabilité), 7 (DevOps / CI-CD), 8 (Documentation) et 9 (Observabilité / opérations). La catégorie 6 (Performance) est différée, son unique critère nécessitant que le dépôt audité soit lancé ; les catégories 10 à 15 restent à faire.
+
+Le pipeline de reporting est en place : résultats par critère avec un état explicite (noté / non applicable / pas encore audité), findings priorisés, recommandations stockées, API minimale (`radar-api`), badge d'évaluation qualité et dashboard local (`radar-dashboard`), encore en cours d'amélioration. Prochaines étapes : l'audit complet du portfolio, puis la roadmap d'amélioration priorisée et les ré-audits continus. Voir `docs/roadmap.md` pour l'état détaillé et à jour.
 
 ## Documentation
 

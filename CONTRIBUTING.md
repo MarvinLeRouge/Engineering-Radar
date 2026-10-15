@@ -1,8 +1,8 @@
-[🇫🇷 Version française](CONTRIBUTING.fr.md) | 🇬🇧 English version
+[🇫🇷 Version française](docs/i18n/fr/CONTRIBUTING.fr.md) | 🇬🇧 English version
 
 ---
 
-# Contributing to Portfolio Engineering Radar
+# Contributing to Engineering Radar
 
 This is primarily a personal project. External contributions (bug reports, fixes, small improvements) are welcome but limited in scope.
 
@@ -14,8 +14,8 @@ This is primarily a personal project. External contributions (bug reports, fixes
 ## Local setup
 
 ```bash
-git clone https://github.com/MarvinLeRouge/Portfolio-Engineering-Radar.git
-cd Portfolio-Engineering-Radar
+git clone https://github.com/MarvinLeRouge/Engineering-Radar.git
+cd Engineering-Radar
 uv sync
 uv run pre-commit install
 ```
