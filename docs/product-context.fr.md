@@ -35,5 +35,6 @@ ce soit à eux-mêmes.
 
 ## Périmètre actuel
 
-- Moteur d'audit (`radar-audit`) et modèle de données (`radar-core`) : en cours, voir [`docs/roadmap.md`](roadmap.fr.md)
-- Dashboard et génération de rapports : pas encore commencés
+- Modèle de données (`radar-core`) : stable
+- Moteur d'audit (`radar-audit`) : opérationnel, 8 des 15 catégories du Quality Framework couvertes, voir [`docs/roadmap.md`](roadmap.fr.md)
+- Reporting, API et dashboard : en place, le dashboard est encore en cours d'amélioration
