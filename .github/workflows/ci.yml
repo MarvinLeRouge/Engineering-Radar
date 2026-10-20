@@ -63,6 +63,8 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
