@@ -39,6 +39,47 @@ describe('FindingCard', () => {
     expect(wrapper.text()).toContain('upgrade the dependency')
   })
 
+  it('renders no location line when the finding has no file', () => {
+    const wrapper = mount(FindingCard, { props: { finding } })
+
+    expect(wrapper.find('.finding-card__location').exists()).toBe(false)
+  })
+
+  it('renders file:line when both are present', () => {
+    const withLocation = { ...finding, file: 'src/app.py', line: 42 }
+    const wrapper = mount(FindingCard, { props: { finding: withLocation } })
+
+    expect(wrapper.find('.finding-card__location').text()).toBe('src/app.py:42')
+  })
+
+  it('renders just the file when there is no line', () => {
+    const withLocation = { ...finding, file: 'src/app.py', line: null }
+    const wrapper = mount(FindingCard, { props: { finding: withLocation } })
+
+    expect(wrapper.find('.finding-card__location').text()).toBe('src/app.py')
+  })
+
+  it('renders the line-only format when there is a line but no file, even with the default showFile', () => {
+    const withLocation = { ...finding, file: null, line: 5 }
+    const wrapper = mount(FindingCard, { props: { finding: withLocation } })
+
+    expect(wrapper.find('.finding-card__location').text()).toBe('Line 5')
+  })
+
+  it('renders only the line, not the file, when showFile is false', () => {
+    const withLocation = { ...finding, file: 'src/app.py', line: 42 }
+    const wrapper = mount(FindingCard, { props: { finding: withLocation, showFile: false } })
+
+    expect(wrapper.find('.finding-card__location').text()).toBe('Line 42')
+  })
+
+  it('renders no location line when showFile is false and there is no line', () => {
+    const withLocation = { ...finding, file: 'src/app.py', line: null }
+    const wrapper = mount(FindingCard, { props: { finding: withLocation, showFile: false } })
+
+    expect(wrapper.find('.finding-card__location').exists()).toBe(false)
+  })
+
   it('submits a verdict change and emits updated', async () => {
     vi.mocked(client.updateFindingVerdict).mockResolvedValueOnce(undefined)
     const wrapper = mount(FindingCard, { props: { finding } })

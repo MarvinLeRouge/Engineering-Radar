@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 
 class VitestRunner:
@@ -83,7 +84,7 @@ class VitestRunner:
                 )
 
             report = json.loads(report_path.read_text())
-            raw_output = self._to_raw_output(report)
+            raw_output = self._to_raw_output(report, target_path)
 
             coverage_summary_path = coverage_dir / "coverage-summary.json"
             if has_coverage_provider and coverage_summary_path.exists():
@@ -101,7 +102,7 @@ class VitestRunner:
                 duration_ms=duration_ms,
             )
 
-    def _to_raw_output(self, report: dict[str, object]) -> dict[str, object]:
+    def _to_raw_output(self, report: dict[str, object], target_path: Path) -> dict[str, object]:
         total = report.get("numTotalTests", 0)
         passed = report.get("numPassedTests", 0)
         failed = report.get("numFailedTests", 0)
@@ -123,6 +124,7 @@ class VitestRunner:
                         }
                     )
 
+        relativize_file_field(failures, target_path)
         return {
             "tests": {"total": total, "passed": passed, "failed": failed, "skipped": skipped},
             "failures": failures,

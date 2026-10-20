@@ -72,7 +72,7 @@ def test_reports_failures_with_file(tmp_path):
     assert result.raw_output["tests"]["failed"] == 1
     failures = result.raw_output["failures"]
     assert len(failures) == 1
-    assert failures[0]["file"] is not None
+    assert failures[0]["file"] == "src/add.test.js"
 
 
 @pytest.mark.slow

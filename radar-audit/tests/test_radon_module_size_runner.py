@@ -17,9 +17,8 @@ def test_reports_sloc_per_python_file(tmp_path):
     result = runner.run(repo_path, exclude_paths=[])
 
     assert result.exit_code == 0
-    mod_key = str(repo_path / "pkg" / "mod.py")
-    assert mod_key in result.raw_output
-    assert result.raw_output[mod_key]["sloc"] == 2
+    assert "pkg/mod.py" in result.raw_output
+    assert result.raw_output["pkg/mod.py"]["sloc"] == 2
 
 
 def test_excludes_paths_passed_via_exclude_paths(tmp_path):
@@ -35,8 +34,8 @@ def test_excludes_paths_passed_via_exclude_paths(tmp_path):
     runner = RadonModuleSizeRunner()
     result = runner.run(repo_path, exclude_paths=[repo_path / "vendored"])
 
-    assert str(repo_path / "pkg" / "mod.py") in result.raw_output
-    assert str(repo_path / "vendored" / "dep.py") not in result.raw_output
+    assert "pkg/mod.py" in result.raw_output
+    assert "vendored/dep.py" not in result.raw_output
 
 
 def test_reports_tool_identity():

@@ -31,6 +31,20 @@ def test_reports_a_type_error(tmp_path):
     assert any(d["severity"] == "error" for d in diagnostics)
 
 
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"src/a.py": "def add(a: int, b: int) -> int:\n    return a + b\n\nadd('x', 1)\n"},
+    )
+
+    runner = MypyRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[])
+
+    diagnostics = result.raw_output["diagnostics"]
+    assert any(d["file"] == "a.py" for d in diagnostics)
+
+
 def test_reports_tool_identity():
     runner = MypyRunner()
 

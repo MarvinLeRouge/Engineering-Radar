@@ -38,7 +38,9 @@ class StaticLocRunner:
                 continue
             if self._is_skipped(file_path, target_path, exclude_paths, gitignore_spec):
                 continue
-            per_file[str(file_path)] = self._count_non_blank_lines(file_path)
+            per_file[str(file_path.relative_to(target_path))] = self._count_non_blank_lines(
+                file_path
+            )
 
         duration_ms = int((time.monotonic() - start) * 1000)
         return RawToolOutput(

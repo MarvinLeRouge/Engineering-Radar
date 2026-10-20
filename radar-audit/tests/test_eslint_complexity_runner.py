@@ -35,6 +35,18 @@ def test_reports_low_complexity_on_a_simple_function(tmp_path):
 
 
 @pytest.mark.slow
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/a.js": _SIMPLE_FUNCTION})
+    _write_package_json(repo_path)
+
+    runner = EslintComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert any(c["file"] == "src/a.js" for c in result.raw_output["complexities"])
+
+
+@pytest.mark.slow
 def test_reports_high_complexity_on_a_branchy_function(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(repo_path, files={"src/a.js": _COMPLEX_FUNCTION})

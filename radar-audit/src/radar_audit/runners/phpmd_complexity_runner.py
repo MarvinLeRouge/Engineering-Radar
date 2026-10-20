@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 _COMPLEXITY_PATTERN = re.compile(r"Cyclomatic Complexity of (\d+)")
 
@@ -105,6 +106,7 @@ class PhpmdComplexityRunner:
                         }
                     )
 
+        relativize_file_field(violations, target_path)
         return RawToolOutput(
             command=" ".join(command),
             raw_output={"violations": violations},

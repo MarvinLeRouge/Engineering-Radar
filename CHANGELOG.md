@@ -146,6 +146,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Add a severity summary at the top of the report
 - *(radar-api,radar-dashboard)* Global score history with a Trends tab
 - *(radar-api,radar-dashboard)* Per-category score history, metric selector and drill-down (FEAT-020)
+- *(radar-dashboard)* Show finding file path/line, group by file, relativize paths
 
 ### 🐛 Bug Fixes
 

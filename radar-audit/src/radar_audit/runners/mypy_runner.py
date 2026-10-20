@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 _SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
 
@@ -56,6 +57,7 @@ class MypyRunner:
             except json.JSONDecodeError:
                 continue
 
+        relativize_file_field(diagnostics, target_path)
         total_files = self._count_python_files(target_path, exclude_paths)
         return RawToolOutput(
             command=" ".join(command),

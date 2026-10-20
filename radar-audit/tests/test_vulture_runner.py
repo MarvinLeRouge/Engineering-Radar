@@ -4,21 +4,12 @@ from tests.git_helpers import init_git_repo
 
 _CLEAN_MODULE = "def add(a, b):\n    return a + b\n\nadd(1, 2)\n"
 
-_DEAD_CODE_MODULE = (
-    "def add(a, b):\n" "    return a + b\n" "\n" "def unused_helper():\n" "    return 42\n"
-)
+_DEAD_CODE_MODULE = "def add(a, b):\n    return a + b\n\ndef unused_helper():\n    return 42\n"
 
-_UNREACHABLE_CODE_MODULE = "def f():\n" "    return 1\n" "    print('dead')\n"
+_UNREACHABLE_CODE_MODULE = "def f():\n    return 1\n    print('dead')\n"
 
 _CLI_ENTRYPOINT_MODULE = (
-    "import typer\n"
-    "\n"
-    "app = typer.Typer()\n"
-    "\n"
-    "\n"
-    "@app.command()\n"
-    "def main():\n"
-    "    print('hi')\n"
+    "import typer\n\napp = typer.Typer()\n\n\n@app.command()\ndef main():\n    print('hi')\n"
 )
 
 
@@ -63,6 +54,17 @@ def test_ignores_typer_command_decorated_entrypoints(tmp_path):
 
     findings = result.raw_output["findings"]
     assert not any(f["name"] == "main" for f in findings)
+
+
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/a.py": _DEAD_CODE_MODULE})
+
+    runner = VultureRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[])
+
+    findings = result.raw_output["findings"]
+    assert any(f["file"] == "a.py" for f in findings)
 
 
 def test_excludes_paths_passed_via_exclude_paths(tmp_path):

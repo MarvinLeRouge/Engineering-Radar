@@ -3,12 +3,16 @@ import { mount } from '@vue/test-utils'
 import CriterionFindings from '../CriterionFindings.vue'
 import type { FindingReport } from '@/api/client'
 
-function makeFinding(id: number, severity: FindingReport['severity']): FindingReport {
+function makeFinding(
+  id: number,
+  severity: FindingReport['severity'],
+  file: string | null = null,
+): FindingReport {
   return {
     id,
     severity,
     description: `finding ${id}`,
-    file: null,
+    file,
     line: null,
     status: 'OPEN',
     human_verdict: 'UNREVIEWED',
@@ -93,5 +97,63 @@ describe('CriterionFindings', () => {
     await wrapper.findComponent({ name: 'FindingCard' }).vm.$emit('updated')
 
     expect(wrapper.emitted('updated')).toHaveLength(1)
+  })
+
+  it('groups same-severity findings sharing a file under one heading', async () => {
+    const findings = [
+      makeFinding(1, 'HIGH', 'src/a.py'),
+      makeFinding(2, 'HIGH', 'src/a.py'),
+      makeFinding(3, 'HIGH', 'src/b.py'),
+    ]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+
+    const headings = wrapper.findAll('.criterion-findings__file-heading')
+    expect(headings.map((h) => h.text())).toEqual(['src/a.py', 'src/b.py'])
+
+    const cards = wrapper.findAllComponents({ name: 'FindingCard' })
+    expect(cards).toHaveLength(3)
+    expect(cards.every((c) => c.props('showFile') === false)).toBe(true)
+  })
+
+  it('merges a non-contiguous file reappearance into its earlier cluster', async () => {
+    const findings = [
+      makeFinding(1, 'HIGH', 'src/a.py'),
+      makeFinding(2, 'HIGH', 'src/b.py'),
+      makeFinding(3, 'HIGH', 'src/a.py'),
+    ]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+
+    const headings = wrapper.findAll('.criterion-findings__file-heading')
+    expect(headings.map((h) => h.text())).toEqual(['src/a.py', 'src/b.py'])
+
+    const cards = wrapper.findAllComponents({ name: 'FindingCard' })
+    expect(cards.map((c) => c.props('finding').id)).toEqual([1, 3, 2])
+  })
+
+  it('renders no file heading and leaves showFile true for a fileless finding', async () => {
+    const findings = [makeFinding(1, 'HIGH', null)]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+    await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+
+    expect(wrapper.find('.criterion-findings__file-heading').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'FindingCard' }).props('showFile')).toBe(true)
+  })
+
+  it('does not mix file groups across different severities', async () => {
+    const findings = [makeFinding(1, 'CRITICAL', 'src/a.py'), makeFinding(2, 'LOW', 'src/a.py')]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const chips = wrapper.findAll('[data-testid="severity-chip"]')
+    await chips[0]!.trigger('click')
+    await chips[1]!.trigger('click')
+
+    const headings = wrapper.findAll('.criterion-findings__file-heading')
+    expect(headings).toHaveLength(2)
+    expect(headings.every((h) => h.text() === 'src/a.py')).toBe(true)
   })
 })
