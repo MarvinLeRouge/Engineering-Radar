@@ -225,6 +225,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(ci)* Install pnpm in the radar-audit slow job
 - *(ci)* Pin pnpm version in the radar-audit slow job setup
 - *(radar-audit)* Derive Pint result from exit code, not its self-reported shape
+- *(ci)* Move continue-on-error to the slow test step, not the job
 
 ### 🚜 Refactor
 

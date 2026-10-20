@@ -53,7 +53,6 @@ jobs:
   radar-audit-slow:
     name: radar-audit (slow, non-blocking)
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +79,7 @@ jobs:
         run: uv sync --locked
 
       - name: Run slow tests (real npx/composer fetches, needs network)
+        continue-on-error: true
         run: uv run --package radar-audit pytest radar-audit/tests -m "slow" -q
 
   radar-api:
