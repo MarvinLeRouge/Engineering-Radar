@@ -222,7 +222,10 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Weight Dockerfile hardening score by finding severity
 - *(radar-audit)* Compute and persist the global score
 - *(radar-dashboard)* Keyboard-fallback score list reflects selected metrics (FIX-007)
+- *(ci)* Install pnpm in the radar-audit slow job
+- *(ci)* Pin pnpm version in the radar-audit slow job setup
 - *(radar-audit)* Derive Pint result from exit code, not its self-reported shape
+- *(ci)* Move continue-on-error to the slow test step, not the job
 - *(radar-audit)* Pass each PHPMD exclude pattern as its own flag
 - *(radar-audit)* Use the unversioned system Python for pip-audit's workaround
 
@@ -361,3 +364,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Bump source-map-js to patch the event-loop DoS advisory
 - Project renaming
 - *(env)* Add a gitignored .env and a committed .env.example template
+- *(ci)* Add GitHub Actions pipeline with per-package coverage gates

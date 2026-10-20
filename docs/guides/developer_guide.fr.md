@@ -82,15 +82,25 @@ Par défaut, la CLI lit `radar-audit/portfolio.yaml` ; passer `--config` pour po
 ## Tests
 
 ```bash
-uv run --package radar-core pytest
-uv run --package radar-audit pytest
+uv run --package radar-core pytest radar-core/tests --cov=radar_core
+uv run --package radar-audit pytest radar-audit/tests --cov=radar_audit
+uv run --package radar-api pytest radar-api/tests --cov=radar_api
+cd radar-dashboard && npm run test:coverage
 ```
 
-Certains tests `radar-audit` sont marqués `slow` (vrais téléchargements `npx`/`npm` nécessitant un accès réseau) et sont exclus par défaut dans les environnements de type CI ; lancer `pytest -m slow` explicitement pour les inclure.
+Certains tests `radar-audit` sont marqués `slow` (vrais téléchargements `npx`/`composer` nécessitant un accès réseau et, pour les runners PHP, une chaîne d'outils PHP/Composer locale). Lancer `pytest -m "not slow"` pour les ignorer localement ; la CI les exécute dans un job séparé, non bloquant (voir ci-dessous).
+
+## Pipeline CI
+
+`.github/workflows/ci.yml` s'exécute à chaque push et pull request vers `main` :
+
+- `radar-core`, `radar-api` et `radar-audit` (rapide, `-m "not slow"`) lancent les tests avec un seuil de couverture de 80% et bloquent la PR en cas d'échec.
+- `radar-audit` (lent) lance séparément les tests dépendant de `npx`/`composer` et ne bloque pas la PR.
+- `radar-dashboard` lance Vitest avec un seuil de couverture de 80% et bloque la PR en cas d'échec.
 
 ## Gates de qualité du code
 
-`ruff` (lint + format) et `mypy --strict` s'exécutent sur les deux packages via des hooks pre-commit (`.pre-commit-config.yaml`). Il n'y a pas encore de pipeline CI les appliquant à distance (voir [`docs/roadmap.md`](../roadmap.fr.md)). Installer et lancer les hooks localement avant d'ouvrir une pull request :
+`ruff` (lint + format) et `mypy --strict` s'exécutent sur `radar-core` et `radar-audit` via des hooks pre-commit (`.pre-commit-config.yaml`) ; la CI ne duplique pas ces vérifications. Installer et lancer les hooks localement avant d'ouvrir une pull request :
 
 ```bash
 uv run pre-commit install

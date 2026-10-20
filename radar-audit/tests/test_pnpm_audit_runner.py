@@ -1,6 +1,7 @@
 import json
 import subprocess
 
+import pytest
 from radar_audit.runners.pnpm_audit_runner import PnpmAuditRunner
 
 from tests.git_helpers import init_git_repo
@@ -29,6 +30,7 @@ def test_reports_no_manifest(tmp_path):
     assert result.raw_output == {"manifest_found": False}
 
 
+@pytest.mark.slow
 def test_reports_no_vulnerabilities_on_empty_dependencies(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
@@ -44,6 +46,7 @@ def test_reports_no_vulnerabilities_on_empty_dependencies(tmp_path):
     assert result.raw_output["vulnerabilities"] == []
 
 
+@pytest.mark.slow
 def test_reports_vulnerabilities_on_a_known_vulnerable_pin(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
@@ -63,6 +66,7 @@ def test_reports_vulnerabilities_on_a_known_vulnerable_pin(tmp_path):
     assert all(v["severity"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"} for v in vulnerabilities)
 
 
+@pytest.mark.slow
 def test_dispatches_to_npm_audit_when_package_lock_json_is_present(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
@@ -86,6 +90,7 @@ def test_dispatches_to_npm_audit_when_package_lock_json_is_present(tmp_path):
     assert all(v["severity"] in {"CRITICAL", "HIGH", "MEDIUM", "LOW"} for v in vulnerabilities)
 
 
+@pytest.mark.slow
 def test_prefers_npm_lockfile_when_multiple_lockfiles_are_present(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
@@ -195,6 +200,7 @@ def test_pnpm_parser_reports_fix_available_when_a_patched_version_exists():
     assert vulnerabilities[0]["fix_available"] is True
 
 
+@pytest.mark.slow
 def test_dispatches_to_yarn_audit_when_yarn_lock_is_present(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
