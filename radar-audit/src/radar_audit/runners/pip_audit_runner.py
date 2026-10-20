@@ -10,7 +10,10 @@ from radar_audit.runner import RawToolOutput
 
 # uv-managed Python builds ship without ensurepip, which breaks pip-audit's own
 # ephemeral venv creation unless forced onto the system Python -- per toolchain.md.
-_PIP_AUDIT_PYTHON = "/usr/bin/python3.13"
+# Unversioned on purpose: /usr/bin/python3.13 is only guaranteed to exist on the
+# machine it happened to be written on, not on every Linux box (confirmed broken
+# on the GitHub Actions ubuntu-24.04 runner, which ships python3.12 as default).
+_PIP_AUDIT_PYTHON = "/usr/bin/python3"
 
 
 class PipAuditRunner:
