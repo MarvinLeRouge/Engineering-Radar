@@ -227,6 +227,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Derive Pint result from exit code, not its self-reported shape
 - *(ci)* Move continue-on-error to the slow test step, not the job
 - *(radar-audit)* Pass each PHPMD exclude pattern as its own flag
+- *(radar-audit)* Use the unversioned system Python for pip-audit's workaround
 
 ### 🚜 Refactor
 
