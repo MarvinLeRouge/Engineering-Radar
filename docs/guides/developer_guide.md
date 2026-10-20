@@ -81,15 +81,25 @@ By default the CLI reads `radar-audit/portfolio.yaml`; pass `--config` to point 
 ## Tests
 
 ```bash
-uv run --package radar-core pytest
-uv run --package radar-audit pytest
+uv run --package radar-core pytest radar-core/tests --cov=radar_core
+uv run --package radar-audit pytest radar-audit/tests --cov=radar_audit
+uv run --package radar-api pytest radar-api/tests --cov=radar_api
+cd radar-dashboard && npm run test:coverage
 ```
 
-Some `radar-audit` tests are marked `slow` (real `npx`/`npm` fetches that need network access) and are excluded by default in CI-like environments; run `pytest -m slow` explicitly to include them.
+Some `radar-audit` tests are marked `slow` (real `npx`/`composer` fetches that need network access and, for the PHP runners, a local PHP/Composer toolchain). Run `pytest -m "not slow"` to skip them locally; CI runs them in a separate, non-blocking job (see below).
+
+## CI pipeline
+
+`.github/workflows/ci.yml` runs on every push and pull request to `main`:
+
+- `radar-core`, `radar-api`, and `radar-audit` (fast, `-m "not slow"`) run tests with an 80% coverage gate and block the PR on failure.
+- `radar-audit` (slow) runs the `npx`/`composer`-dependent tests separately and does not block the PR.
+- `radar-dashboard` runs Vitest with an 80% coverage gate and blocks the PR on failure.
 
 ## Code quality gates
 
-`ruff` (lint + format) and `mypy --strict` run on both packages via pre-commit hooks (`.pre-commit-config.yaml`). There is no CI pipeline yet enforcing these remotely (see [`docs/roadmap.md`](../roadmap.md)). Install and run the hooks locally before opening a pull request:
+`ruff` (lint + format) and `mypy --strict` run on `radar-core` and `radar-audit` via pre-commit hooks (`.pre-commit-config.yaml`); CI does not duplicate these checks. Install and run the hooks locally before opening a pull request:
 
 ```bash
 uv run pre-commit install

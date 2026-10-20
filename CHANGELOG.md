@@ -358,3 +358,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Bump source-map-js to patch the event-loop DoS advisory
 - Project renaming
 - *(env)* Add a gitignored .env and a committed .env.example template
+- *(ci)* Add GitHub Actions pipeline with per-package coverage gates

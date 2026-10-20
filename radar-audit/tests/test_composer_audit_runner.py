@@ -1,6 +1,7 @@
 import json
 import subprocess
 
+import pytest
 from radar_audit.runners.composer_audit_runner import ComposerAuditRunner
 
 from tests.git_helpers import init_git_repo
@@ -23,6 +24,7 @@ def test_reports_no_manifest(tmp_path):
     assert result.raw_output == {"manifest_found": False}
 
 
+@pytest.mark.slow
 def test_reports_no_vulnerabilities_on_a_clean_dependency(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
@@ -41,6 +43,7 @@ def test_reports_no_vulnerabilities_on_a_clean_dependency(tmp_path):
     assert result.raw_output["vulnerabilities"] == []
 
 
+@pytest.mark.slow
 def test_reports_vulnerabilities_on_a_known_vulnerable_dependency(tmp_path):
     repo_path = tmp_path / "repo"
     # "audit.block-insecure: false" is required -- Composer 2.9+ refuses to *install*
@@ -85,6 +88,7 @@ def test_reports_a_failed_audit_when_dependencies_are_neither_locked_nor_install
     assert "vulnerabilities" not in result.raw_output
 
 
+@pytest.mark.slow
 def test_audits_the_lockfile_when_vendor_is_not_installed(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
