@@ -224,6 +224,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Keyboard-fallback score list reflects selected metrics (FIX-007)
 - *(ci)* Install pnpm in the radar-audit slow job
 - *(ci)* Pin pnpm version in the radar-audit slow job setup
+- *(radar-audit)* Derive Pint result from exit code, not its self-reported shape
 
 ### 🚜 Refactor
 

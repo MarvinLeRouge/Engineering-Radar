@@ -34,6 +34,31 @@ def test_reports_pass_on_correctly_formatted_php(tmp_path):
 
 
 @pytest.mark.slow
+def test_reports_pass_on_correctly_formatted_php_without_agent_env_vars(tmp_path, monkeypatch):
+    # Pint silently switches its --format=json output to a different, agent-only
+    # shape ({"tool": "pint", "result": ...}) when it detects known AI-coding-agent
+    # env vars (CLAUDECODE, CLAUDE_CODE, AI_AGENT, ...). CI runners, and most real
+    # shells, don't set these, so PintRunner must not depend on that agent-only
+    # shape. Stripping the vars reproduces Pint's real --format=json output (the
+    # native PHP-CS-Fixer reporter: {"about": ..., "files": [...], ...}).
+    for var in ("CLAUDECODE", "CLAUDE_CODE", "AI_AGENT"):
+        monkeypatch.delenv(var, raising=False)
+
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/A.php": "<?php\n\nclass A {}\n"})
+    _install_local_pint(repo_path)
+
+    runner = PintRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    # Confirms this actually exercised the native (non-agent) shape, not just a
+    # value that happens to match in both shapes.
+    assert "about" in result.raw_output
+    assert result.raw_output["result"] == "passed"
+
+
+@pytest.mark.slow
 def test_reports_fail_on_badly_formatted_php(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(repo_path, files={"src/A.php": "<?php\nclass A{\npublic function f(){}\n}\n"})
