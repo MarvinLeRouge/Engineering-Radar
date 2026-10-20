@@ -223,6 +223,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Compute and persist the global score
 - *(radar-dashboard)* Keyboard-fallback score list reflects selected metrics (FIX-007)
 - *(radar-audit)* Derive Pint result from exit code, not its self-reported shape
+- *(radar-audit)* Pass each PHPMD exclude pattern as its own flag
 
 ### 🚜 Refactor
 

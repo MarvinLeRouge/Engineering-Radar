@@ -49,7 +49,10 @@ class PhpmdComplexityRunner:
                 "codesize,unusedcode",
             ]
 
-            # Build exclude patterns: always exclude vendor/*, plus any exclude_paths
+            # Build exclude patterns: always exclude vendor/*, plus any exclude_paths.
+            # PHPMD's --exclude takes one pattern per flag occurrence ("multiple
+            # values allowed" per its own --help) -- a single comma-joined value is
+            # silently ignored, confirmed empirically.
             patterns = ["vendor/*"]
             for excluded in exclude_paths:
                 try:
@@ -57,7 +60,8 @@ class PhpmdComplexityRunner:
                 except ValueError:
                     continue
                 patterns.append(f"{relative}/*")
-            command.append(f"--exclude={','.join(patterns)}")
+            for pattern in patterns:
+                command.append(f"--exclude={pattern}")
 
             completed = subprocess.run(
                 command, capture_output=True, text=True, timeout=self.timeout_s
