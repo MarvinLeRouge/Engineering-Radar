@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_path_keys
 
 _SKIP_GLOB_SUFFIXES = (
     "/.venv/*",
@@ -41,7 +42,9 @@ class RadonModuleSizeRunner:
         duration_ms = int((time.monotonic() - start) * 1000)
 
         try:
-            raw_output: dict[str, object] = json.loads(completed.stdout)
+            raw_output: dict[str, object] = relativize_path_keys(
+                json.loads(completed.stdout), target_path
+            )
         except json.JSONDecodeError:
             raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
 

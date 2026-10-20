@@ -29,7 +29,7 @@ def test_reports_violations_on_unused_import(tmp_path):
     # it to be the only violation.
     f401_violations = [v for v in violations if v["code"] == "F401"]
     assert len(f401_violations) == 1
-    assert f401_violations[0]["filename"].endswith("a.py")
+    assert f401_violations[0]["filename"] == "a.py"
     assert result.raw_output["total_files"] == 1
 
 

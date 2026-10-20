@@ -3,11 +3,7 @@ from radar_audit.runners.docvet_runner import DocvetRunner
 from tests.git_helpers import init_git_repo
 
 _FULLY_DOCUMENTED_MODULE = (
-    '"""Module docstring."""\n'
-    "\n"
-    "def add(a, b):\n"
-    '    """Add two numbers."""\n'
-    "    return a + b\n"
+    '"""Module docstring."""\n\ndef add(a, b):\n    """Add two numbers."""\n    return a + b\n'
 )
 
 _PARTIALLY_DOCUMENTED_MODULE = (
@@ -41,6 +37,17 @@ def test_reports_partial_coverage_and_a_finding_on_an_undocumented_function(tmp_
     assert result.exit_code == 0
     assert result.raw_output["presence_coverage"]["percentage"] < 100.0
     assert any(f["symbol"] == "subtract" for f in result.raw_output["findings"])
+
+
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/a.py": _PARTIALLY_DOCUMENTED_MODULE})
+
+    runner = DocvetRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[])
+
+    findings = result.raw_output["findings"]
+    assert any(f["file"] == "a.py" for f in findings)
 
 
 def test_excludes_paths_passed_via_exclude_paths(tmp_path):

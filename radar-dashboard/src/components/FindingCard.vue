@@ -5,6 +5,7 @@
       <span class="finding-card__severity" :class="severityClass">{{ finding.severity }}</span>
       <span class="finding-card__description">{{ finding.description }}</span>
     </div>
+    <p v-if="locationLabel" class="finding-card__location">{{ locationLabel }}</p>
     <p v-if="finding.recommendation" class="finding-card__recommendation">
       {{ finding.recommendation }}
     </p>
@@ -35,7 +36,9 @@ import { computed, ref } from 'vue'
 import type { FindingReport } from '@/api/client'
 import { ApiError, updateFindingStatus, updateFindingVerdict } from '@/api/client'
 
-const props = defineProps<{ finding: FindingReport }>()
+const props = withDefaults(defineProps<{ finding: FindingReport; showFile?: boolean }>(), {
+  showFile: true,
+})
 const emit = defineEmits<{ updated: [] }>()
 
 const verdict = ref(props.finding.human_verdict)
@@ -43,6 +46,19 @@ const status = ref(props.finding.status)
 const errorMessage = ref<string | null>(null)
 
 const severityClass = computed(() => `finding-card__severity--${props.finding.severity.toLowerCase()}`)
+
+// `showFile` is false when a parent already groups findings under their own
+// file heading (CriterionFindings.vue); repeating the path on every card
+// would be redundant there, but the line number alone still earns its keep.
+// Independent of that flag, a finding with a line but no file (a legitimate,
+// if unusual, data shape) always falls back to the line-only format.
+const locationLabel = computed(() => {
+  const { file, line } = props.finding
+  if (props.showFile && file) {
+    return line ? `${file}:${line}` : file
+  }
+  return line ? `Line ${line}` : null
+})
 
 function handleError(error: unknown): void {
   if (error instanceof ApiError && error.status === 401) {
@@ -118,6 +134,14 @@ async function submitStatus(): Promise<void> {
 
 .finding-card__description {
   font-size: var(--text-body);
+}
+
+.finding-card__location {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  color: var(--color-ink-faint);
+  margin-bottom: var(--space-1);
+  word-break: break-all;
 }
 
 .finding-card__recommendation {

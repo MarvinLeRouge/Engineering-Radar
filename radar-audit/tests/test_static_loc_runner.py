@@ -18,9 +18,9 @@ def test_counts_non_blank_lines_per_source_file(tmp_path):
     result = runner.run(repo_path, exclude_paths=[])
 
     files = result.raw_output["files"]
-    assert files[str(repo_path / "src" / "a.js")] == 2
-    assert files[str(repo_path / "src" / "b.php")] == 2
-    assert str(repo_path / "README.md") not in files
+    assert files["src/a.js"] == 2
+    assert files["src/b.php"] == 2
+    assert "README.md" not in files
     assert result.exit_code == 0
 
 
@@ -39,7 +39,7 @@ def test_skips_vendor_and_node_modules_directories(tmp_path):
     result = runner.run(repo_path, exclude_paths=[])
 
     files = result.raw_output["files"]
-    assert set(files) == {str(repo_path / "src" / "a.js")}
+    assert set(files) == {"src/a.js"}
 
 
 def test_skips_htmlcov_directory_but_not_files_merely_named_htmlcov(tmp_path):
@@ -57,10 +57,7 @@ def test_skips_htmlcov_directory_but_not_files_merely_named_htmlcov(tmp_path):
     result = runner.run(repo_path, exclude_paths=[])
 
     files = result.raw_output["files"]
-    assert set(files) == {
-        str(repo_path / "src" / "a.js"),
-        str(repo_path / "src" / "htmlcov_report.js"),
-    }
+    assert set(files) == {"src/a.js", "src/htmlcov_report.js"}
 
 
 def test_reports_tool_identity():
@@ -89,10 +86,10 @@ def test_counts_files_even_when_repo_path_contains_skip_dirname(tmp_path):
     result = runner.run(repo_root, exclude_paths=[])
 
     files = result.raw_output["files"]
-    assert str(repo_root / "src" / "a.js") in files
-    assert files[str(repo_root / "src" / "a.js")] == 1
-    assert str(repo_root / "main.php") in files
-    assert files[str(repo_root / "main.php")] == 2
+    assert "src/a.js" in files
+    assert files["src/a.js"] == 1
+    assert "main.php" in files
+    assert files["main.php"] == 2
 
 
 def test_skips_gitignored_paths(tmp_path):
@@ -112,4 +109,4 @@ def test_skips_gitignored_paths(tmp_path):
     result = runner.run(repo_path, exclude_paths=[])
 
     files = result.raw_output["files"]
-    assert set(files) == {str(repo_path / "src" / "a.js")}
+    assert set(files) == {"src/a.js"}

@@ -35,6 +35,16 @@ def test_reports_high_complexity_on_a_branchy_function(tmp_path):
     assert blocks[0]["complexity"] >= 11
 
 
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/a.py": _SIMPLE_FUNCTION})
+
+    runner = RadonComplexityRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[])
+
+    assert "a.py" in result.raw_output
+
+
 def test_reports_tool_identity():
     runner = RadonComplexityRunner()
 

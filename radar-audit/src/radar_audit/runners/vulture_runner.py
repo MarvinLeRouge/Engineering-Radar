@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 _SKIP_GLOB_SUFFIXES = (
     "/.venv/*",
@@ -79,6 +80,8 @@ class VultureRunner:
                         "confidence": int(unreachable_match.group("confidence")),
                     }
                 )
+
+        relativize_file_field(findings, target_path)
 
         return RawToolOutput(
             command=" ".join(command),

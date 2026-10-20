@@ -45,6 +45,18 @@ def test_reports_high_complexity_on_a_branchy_method(tmp_path):
 
 
 @pytest.mark.slow
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/A.php": _COMPLEX_METHOD})
+
+    runner = PhpmdComplexityRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    violations = result.raw_output["violations"]
+    assert any(v["file"] == "src/A.php" for v in violations)
+
+
+@pytest.mark.slow
 def test_excludes_paths_passed_via_exclude_paths(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(

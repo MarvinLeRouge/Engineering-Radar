@@ -51,6 +51,20 @@ def test_reports_violations_on_unused_variable(tmp_path):
 
 
 @pytest.mark.slow
+def test_reports_a_file_path_relative_to_target_path(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path, files={"src/a.js": "export function add(a, b) {\n  return a + b;\n}\n"}
+    )
+    _write_package_json(repo_path, "eslint src")
+
+    runner = EslintLintRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert any(e["filePath"] == "src/a.js" for e in result.raw_output["results"])
+
+
+@pytest.mark.slow
 def test_falls_back_to_target_path_when_no_lint_script(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 
 class EslintLintRunner:
@@ -59,6 +60,7 @@ class EslintLintRunner:
                 duration_ms=duration_ms,
             )
 
+        relativize_file_field(results, target_path, key="filePath")
         return RawToolOutput(
             command=" ".join(command),
             raw_output={"results": results},

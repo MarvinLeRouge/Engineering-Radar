@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 # docvet's built-in `exclude` default, as reported by `docvet config`.
 _DOCVET_DEFAULT_EXCLUDES = ("tests", "scripts")
@@ -38,7 +39,7 @@ class DocvetRunner:
             if entry not in exclude_entries:
                 exclude_entries.append(entry)
 
-        config_content = "[tool.docvet]\n" f"exclude = {json.dumps(exclude_entries)}\n"
+        config_content = f"[tool.docvet]\nexclude = {json.dumps(exclude_entries)}\n"
 
         with tempfile.NamedTemporaryFile(
             "w", suffix=".toml", delete=False, dir=target_path
@@ -69,6 +70,8 @@ class DocvetRunner:
             raw_output = json.loads(completed.stdout)
         except json.JSONDecodeError:
             raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+        else:
+            relativize_file_field(raw_output.get("findings", []), target_path)
 
         return RawToolOutput(
             command=" ".join(command),

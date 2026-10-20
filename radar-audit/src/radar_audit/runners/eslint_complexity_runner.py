@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import relativize_file_field
 
 _AUDIT_CONFIG = 'module.exports = [{ rules: { complexity: ["error", 0] } }];\n'
 _COMPLEXITY_PATTERN = re.compile(r"complexity of (\d+)")
@@ -83,6 +84,7 @@ class EslintComplexityRunner:
                         }
                     )
 
+        relativize_file_field(complexities, target_path)
         return RawToolOutput(
             command=" ".join(command),
             raw_output={"complexities": complexities},
