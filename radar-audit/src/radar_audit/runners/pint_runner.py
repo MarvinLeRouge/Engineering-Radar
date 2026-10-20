@@ -37,9 +37,23 @@ class PintRunner:
         duration_ms = int((time.monotonic() - start) * 1000)
 
         try:
-            raw_output = json.loads(completed.stdout)
+            parsed = json.loads(completed.stdout)
         except json.JSONDecodeError:
+            parsed = None
+
+        raw_output: dict[str, object]
+        if not isinstance(parsed, dict):
             raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+        else:
+            raw_output = parsed
+            # Pint silently swaps its --format=json output for a different,
+            # agent-only shape ({"tool": "pint", "result": ...}) when it detects
+            # known AI-coding-agent env vars (CLAUDECODE, CLAUDE_CODE, AI_AGENT,
+            # ...). Outside that detection it returns PHP-CS-Fixer's native json
+            # report instead, which has no "result" key. The command always runs
+            # with --test, so the outcome is binary: always set "result" from the
+            # process exit code, overriding whatever either shape self-reports.
+            raw_output["result"] = "passed" if completed.returncode == 0 else "fail"
 
         return RawToolOutput(
             command=" ".join(command),
