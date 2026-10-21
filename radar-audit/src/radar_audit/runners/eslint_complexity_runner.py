@@ -12,7 +12,7 @@ from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
 
 _AUDIT_CONFIG = 'module.exports = [{ rules: { complexity: ["error", 0] } }];\n'
-_COMPLEXITY_PATTERN = re.compile(r"complexity of (\d+)")
+_COMPLEXITY_PATTERN = re.compile(r"^(.+) has a complexity of (\d+)")
 _ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build")
 
 
@@ -80,7 +80,10 @@ class EslintComplexityRunner:
                         {
                             "file": entry["filePath"],
                             "line": message.get("line"),
-                            "complexity": int(match.group(1)),
+                            # e.g. "Method 'foo'"/"Arrow function" -- the rule's own
+                            # message prefix, with no enclosing-class qualifier.
+                            "name": match.group(1),
+                            "complexity": int(match.group(2)),
                         }
                     )
 

@@ -316,3 +316,41 @@ def test_returns_none_when_phpdoc_checker_result_has_no_usable_payload(db_sessio
     score = normalize_docstring_coverage(db_session, scoring_run, criterion, [tool_result])
 
     assert score is None
+
+
+def test_two_docvet_findings_in_the_same_file_get_different_fingerprints(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _docvet_result(
+        audit,
+        0.0,
+        findings=[
+            {
+                "file": "src/a.py",
+                "line": 1,
+                "symbol": "foo",
+                "rule": "missing-docstring",
+                "message": "Public function has no docstring",
+                "category": "required",
+                "severity": "high",
+            },
+            {
+                "file": "src/a.py",
+                "line": 5,
+                "symbol": "bar",
+                "rule": "missing-docstring",
+                "message": "Public function has no docstring",
+                "category": "required",
+                "severity": "high",
+            },
+        ],
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_docstring_coverage(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint

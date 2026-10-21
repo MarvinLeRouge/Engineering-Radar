@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -44,16 +45,26 @@ def normalize_sast_findings(
         for result in tool_result.raw_output["results"]:
             raw_severity = result["extra"]["severity"]
             severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
+            resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM)
+            file = result["path"]
+            # Semgrep's own "fingerprint" is purpose-built to survive code
+            # motion and uniquely identify a finding instance -- unlike
+            # check_id+message, which repeat verbatim if the same rule fires
+            # twice in one file.
+            semgrep_fingerprint = result["extra"].get("fingerprint", "")
             add_finding_with_recommendation(
                 session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
                     tool_result_id=tool_result.id,
-                    severity=_SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM),
+                    severity=resolved_severity,
                     description=f"{result['check_id']}: {result['extra']['message']}",
-                    file=result["path"],
+                    file=file,
                     line=result["start"]["line"],
+                    fingerprint=compute_fingerprint(
+                        criterion.id, resolved_severity, file, semgrep_fingerprint
+                    ),
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,

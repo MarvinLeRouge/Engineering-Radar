@@ -221,3 +221,47 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_unit_test_pass_rate(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def test_two_subprojects_crashing_the_same_tool_get_different_fingerprints(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    crashed_a = ToolResult(
+        audit_id=audit.id,
+        tool_name="pytest-cov",
+        tool_version="1.0.0",
+        subproject_path="services/a",
+        command="stub",
+        raw_output={
+            "tests": {"total": 5, "passed": 0, "failed": 5, "skipped": 0},
+            "failures": [],
+            "coverage_percent": None,
+        },
+        exit_code=2,
+        duration_ms=10,
+    )
+    crashed_b = ToolResult(
+        audit_id=audit.id,
+        tool_name="pytest-cov",
+        tool_version="1.0.0",
+        subproject_path="services/b",
+        command="stub",
+        raw_output={
+            "tests": {"total": 5, "passed": 0, "failed": 5, "skipped": 0},
+            "failures": [],
+            "coverage_percent": None,
+        },
+        exit_code=2,
+        duration_ms=10,
+    )
+    db_session.add(crashed_a)
+    db_session.add(crashed_b)
+    db_session.commit()
+
+    normalize_unit_test_pass_rate(db_session, scoring_run, criterion, [crashed_a, crashed_b])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    crash_findings = [f for f in findings if "exited abnormally" in (f.description or "")]
+    assert len(crash_findings) == 2
+    assert crash_findings[0].fingerprint != crash_findings[1].fingerprint

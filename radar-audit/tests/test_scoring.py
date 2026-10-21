@@ -1,14 +1,14 @@
 import pytest
 from radar_audit.cli import DEFAULT_RUNNERS
 from radar_audit.config import PortfolioConfig
-from radar_audit.normalizers.shared import get_criterion
+from radar_audit.normalizers.shared import add_finding_with_recommendation, get_criterion
 from radar_audit.orchestrator import execute_audit
 from radar_audit.scoring import (
     NoAuditFoundError,
     RepositoryNotFoundError,
     score_repository,
 )
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score
@@ -293,3 +293,149 @@ def test_score_repository_leaves_global_score_none_when_nothing_scored(db_sessio
 
     assert scoring_run.global_score is None
     assert scoring_run.global_confidence is None
+
+
+def _fake_fingerprinted_finding(fingerprint, description="stub finding"):
+    def _fake(session, scoring_run, criterion, tool_results):
+        add_finding_with_recommendation(
+            session,
+            Finding(
+                scoring_run_id=scoring_run.id,
+                criterion_id=criterion.id,
+                tool_result_id=None,
+                severity=FindingSeverity.LOW,
+                description=description,
+                fingerprint=fingerprint,
+                confidence=Confidence.HIGH,
+                status=FindingStatus.OPEN,
+                human_verdict=HumanVerdict.UNREVIEWED,
+            ),
+            "stub recommendation",
+        )
+        score = Score(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            level=ScoreLevel.CRITERION,
+            value=5.0,
+            confidence=Confidence.HIGH,
+        )
+        session.add(score)
+        session.commit()
+        session.refresh(score)
+        return score
+
+    return _fake
+
+
+def test_human_verdict_survives_a_second_scoring_run_via_fingerprint(
+    db_session, tmp_path, monkeypatch
+):
+    _audited_repo(db_session, tmp_path)
+    fingerprint = "stub-fingerprint-aaaa"
+    monkeypatch_target = "radar_audit.scoring.CRITERION_NORMALIZERS"
+
+    monkeypatch.setattr(
+        monkeypatch_target,
+        {
+            ("Maintainability", "Complexity hotspots"): _fake_fingerprinted_finding(fingerprint),
+        },
+    )
+
+    first_run = score_repository(db_session, "repo")
+    first_finding = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == first_run.id)
+    ).one()
+    first_finding.status = FindingStatus.RESOLVED
+    first_finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(first_finding)
+    db_session.commit()
+
+    second_run = score_repository(db_session, "repo")
+    second_finding = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == second_run.id)
+    ).one()
+
+    assert second_finding.detected_at != first_finding.detected_at
+    assert second_finding.fingerprint == fingerprint
+    assert second_finding.status == FindingStatus.RESOLVED
+    assert second_finding.human_verdict == HumanVerdict.FALSE_POSITIVE
+
+
+def test_human_verdict_does_not_leak_onto_an_unrelated_fingerprint(
+    db_session, tmp_path, monkeypatch
+):
+    _audited_repo(db_session, tmp_path)
+    monkeypatch_target = "radar_audit.scoring.CRITERION_NORMALIZERS"
+
+    monkeypatch.setattr(
+        monkeypatch_target,
+        {
+            ("Maintainability", "Complexity hotspots"): _fake_fingerprinted_finding(
+                "fingerprint-one"
+            ),
+        },
+    )
+    first_run = score_repository(db_session, "repo")
+    first_finding = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == first_run.id)
+    ).one()
+    first_finding.status = FindingStatus.RESOLVED
+    first_finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(first_finding)
+    db_session.commit()
+
+    monkeypatch.setattr(
+        monkeypatch_target,
+        {
+            ("Maintainability", "Complexity hotspots"): _fake_fingerprinted_finding(
+                "fingerprint-two"
+            ),
+        },
+    )
+    second_run = score_repository(db_session, "repo")
+    second_finding = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == second_run.id)
+    ).one()
+
+    assert second_finding.fingerprint == "fingerprint-two"
+    assert second_finding.status == FindingStatus.OPEN
+    assert second_finding.human_verdict == HumanVerdict.UNREVIEWED
+
+
+def test_human_verdict_survives_a_real_re_audit_on_a_new_commit(db_session, tmp_path, monkeypatch):
+    import subprocess
+
+    fingerprint = "stub-fingerprint-cross-audit"
+    monkeypatch.setattr(
+        "radar_audit.scoring.CRITERION_NORMALIZERS",
+        {("Maintainability", "Complexity hotspots"): _fake_fingerprinted_finding(fingerprint)},
+    )
+
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"a.txt": "one"})
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+
+    first_run = score_repository(db_session, "repo")
+    first_finding = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == first_run.id)
+    ).one()
+    first_finding.status = FindingStatus.RESOLVED
+    first_finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(first_finding)
+    db_session.commit()
+
+    (repo_path / "a.txt").write_text("two")
+    subprocess.run(["git", "add", "-A"], cwd=repo_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "second commit"], cwd=repo_path, check=True)
+    execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+
+    second_run = score_repository(db_session, "repo")
+    second_finding = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == second_run.id)
+    ).one()
+
+    assert second_run.id != first_run.id
+    assert second_finding.fingerprint == fingerprint
+    assert second_finding.status == FindingStatus.RESOLVED
+    assert second_finding.human_verdict == HumanVerdict.FALSE_POSITIVE

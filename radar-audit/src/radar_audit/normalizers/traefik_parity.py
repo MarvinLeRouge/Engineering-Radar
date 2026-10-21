@@ -5,6 +5,7 @@ from pathlib import Path
 
 import yaml
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -49,14 +50,16 @@ def normalize_traefik_parity(
 
     for service in sorted(union - both):
         missing_side = "prod" if service in local_services else "local"
+        description = f"Service '{service}' is Traefik-routed but missing a {missing_side} router"
         add_finding_with_recommendation(
             session,
             Finding(
                 scoring_run_id=scoring_run.id,
                 criterion_id=criterion.id,
                 severity=FindingSeverity.LOW,
-                description=(
-                    f"Service '{service}' is Traefik-routed but missing a {missing_side} router"
+                description=description,
+                fingerprint=compute_fingerprint(
+                    criterion.id, FindingSeverity.LOW, None, description
                 ),
                 confidence=Confidence.HIGH,
                 status=FindingStatus.OPEN,

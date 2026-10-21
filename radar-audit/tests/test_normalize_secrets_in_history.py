@@ -243,3 +243,35 @@ def test_redacted_match_on_a_fake_variable_is_still_pre_filtered(db_session):
     score = normalize_secrets_in_history(db_session, scoring_run, criterion, [tool_result])
 
     assert score.value == 8.0
+
+
+def test_two_hits_same_rule_same_file_get_different_fingerprints(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "findings": [
+                {
+                    "rule": "github-pat",
+                    "file": "config.py",
+                    "line": 1,
+                    "match": 'API_KEY = "ghp_tokenone"',
+                    "commit": "a",
+                },
+                {
+                    "rule": "github-pat",
+                    "file": "config.py",
+                    "line": 12,
+                    "match": 'API_KEY = "ghp_tokentwo"',
+                    "commit": "b",
+                },
+            ]
+        },
+    )
+
+    normalize_secrets_in_history(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint

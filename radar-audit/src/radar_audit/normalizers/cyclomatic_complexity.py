@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -59,13 +60,14 @@ def normalize_cyclomatic_complexity(
         worst_block = max(blocks, key=lambda b: int(b["complexity"]))
         for block in blocks:
             if int(block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
+                severity = FindingSeverity.MEDIUM
                 add_finding_with_recommendation(
                     session,
                     Finding(
                         scoring_run_id=scoring_run.id,
                         criterion_id=criterion.id,
                         tool_result_id=tool_result.id,
-                        severity=FindingSeverity.MEDIUM,
+                        severity=severity,
                         description=(
                             f"{block.get('name', 'function')} has cyclomatic complexity "
                             f"{block['complexity']}"
@@ -73,6 +75,15 @@ def normalize_cyclomatic_complexity(
                         file=block.get("file"),
                         line=block.get("line"),
                         magnitude=float(block["complexity"]),
+                        # The complexity score itself is deliberately excluded from the
+                        # label: it's the volatile part that churns on every edit, while
+                        # the qualified block name is stable.
+                        fingerprint=compute_fingerprint(
+                            criterion.id,
+                            severity,
+                            block.get("file"),
+                            block.get("name") or "function",
+                        ),
                         confidence=tool_confidence,
                         status=FindingStatus.OPEN,
                         human_verdict=HumanVerdict.UNREVIEWED,
@@ -133,10 +144,15 @@ def _extract_blocks(tool_result: ToolResult) -> list[dict[str, Any]]:
         blocks = []
         for file_path, entries in tool_result.raw_output.items():
             for entry in entries:
+                # radon qualifies methods with their own "classname" field,
+                # unused until now -- without it, two same-named methods on
+                # different classes in the same file would collide.
+                classname = entry.get("classname")
+                qualified_name = f"{classname}.{entry['name']}" if classname else entry["name"]
                 blocks.append(
                     {
                         "complexity": entry["complexity"],
-                        "name": entry["name"],
+                        "name": qualified_name,
                         "file": file_path,
                         "line": entry.get("lineno"),
                     }
@@ -144,11 +160,29 @@ def _extract_blocks(tool_result: ToolResult) -> list[dict[str, Any]]:
         return blocks
     if tool_result.tool_name == "eslint-complexity":
         return [
-            {"complexity": c["complexity"], "name": None, "file": c["file"], "line": c["line"]}
+            {
+                "complexity": c["complexity"],
+                "name": c.get("name"),
+                "file": c["file"],
+                "line": c["line"],
+            }
             for c in tool_result.raw_output.get("complexities", [])
         ]
     return [
-        {"complexity": v["complexity"], "name": None, "file": v["file"], "line": v["line"]}
+        {
+            "complexity": v["complexity"],
+            "name": _phpmd_qualified_name(v),
+            "file": v["file"],
+            "line": v["line"],
+        }
         for v in tool_result.raw_output.get("violations", [])
         if v.get("ruleset") == "codesize"
     ]
+
+
+def _phpmd_qualified_name(violation: dict[str, Any]) -> str | None:
+    class_name = violation.get("class")
+    method_name = violation.get("method")
+    if class_name and method_name:
+        return f"{class_name}.{method_name}"
+    return class_name or method_name

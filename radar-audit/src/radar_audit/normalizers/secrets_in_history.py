@@ -4,6 +4,7 @@ import re
 from typing import Any
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -56,6 +57,11 @@ def normalize_secrets_in_history(
                 any_pre_filtered = True
             else:
                 any_confirmed = True
+            # "match" is the actual matched secret text -- the only field that
+            # distinguishes two findings for the same rule in the same file
+            # (gitleaks' "match"/"secret" fields, unlike line numbers, are
+            # stable across unrelated edits elsewhere in the file).
+            label = f"{finding['rule']}: {finding['match']}"
             add_finding_with_recommendation(
                 session,
                 Finding(
@@ -66,6 +72,9 @@ def normalize_secrets_in_history(
                     description=f"{finding['rule']}: potential secret in {finding['file']}",
                     file=finding["file"],
                     line=finding["line"],
+                    fingerprint=compute_fingerprint(
+                        criterion.id, FindingSeverity.HIGH, finding["file"], label
+                    ),
                     confidence=Confidence.LOW if pre_filtered else Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,

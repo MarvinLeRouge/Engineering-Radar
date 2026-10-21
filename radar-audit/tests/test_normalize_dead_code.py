@@ -337,3 +337,103 @@ def test_unusable_knip_result_does_not_mask_another_tools_score(db_session):
     assert score is not None
     assert score.value == 6.0
     assert score.confidence == Confidence.MEDIUM
+
+
+def test_two_vulture_findings_same_kind_and_name_get_different_fingerprints(db_session, tmp_path):
+    (tmp_path / "src").mkdir()
+    lines = ["pass\n"] * 40
+    lines[2] = "total = 1  # first unused total\n"
+    lines[29] = "total = 2  # second unused total\n"
+    (tmp_path / "src" / "a.py").write_text("".join(lines))
+
+    repo = Repository(name="fixture", path=str(tmp_path))
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+    audit = Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False)
+    db_session.add(audit)
+    db_session.commit()
+    db_session.refresh(audit)
+    methodology_version = seed_taxonomy(db_session)
+    scoring_run = get_or_create_scoring_run(db_session, audit, methodology_version)
+    criterion = get_criterion(
+        db_session, methodology_version.id, "Maintainability", "Dead code / unused exports"
+    )
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="vulture",
+        tool_version="1.0.0",
+        subproject_path=".",
+        command="stub",
+        raw_output={
+            "findings": [
+                {
+                    "file": "src/a.py",
+                    "line": 3,
+                    "kind": "variable",
+                    "name": "total",
+                    "confidence": 60,
+                },
+                {
+                    "file": "src/a.py",
+                    "line": 30,
+                    "kind": "variable",
+                    "name": "total",
+                    "confidence": 60,
+                },
+            ]
+        },
+        exit_code=3,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_two_phpmd_unused_private_methods_in_different_classes_get_different_fingerprints(
+    db_session,
+):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="phpmd-codesize",
+        tool_version="1.0.0",
+        subproject_path=".",
+        command="stub",
+        raw_output={
+            "violations": [
+                {
+                    "ruleset": "unusedcode",
+                    "file": "src/a.php",
+                    "line": 10,
+                    "rule": "UnusedPrivateMethod",
+                    "class": "A",
+                    "method": "helper",
+                },
+                {
+                    "ruleset": "unusedcode",
+                    "file": "src/a.php",
+                    "line": 40,
+                    "rule": "UnusedPrivateMethod",
+                    "class": "B",
+                    "method": "helper",
+                },
+            ]
+        },
+        exit_code=2,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint

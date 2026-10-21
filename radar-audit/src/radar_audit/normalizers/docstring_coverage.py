@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -111,6 +112,11 @@ def _score_docvet(
     for finding in tool_result.raw_output.get("findings", []):
         rule = finding.get("rule", "missing-docstring")
         message = finding.get("message", "")
+        file = finding.get("file")
+        # docvet's own "message" is fully generic ("Public function has no
+        # docstring") -- its "symbol" field is what actually distinguishes two
+        # findings in the same file.
+        symbol = finding.get("symbol", "")
         add_finding_with_recommendation(
             session,
             Finding(
@@ -119,8 +125,11 @@ def _score_docvet(
                 tool_result_id=tool_result.id,
                 severity=FindingSeverity.LOW,
                 description=f"{rule}: {message}",
-                file=finding.get("file"),
+                file=file,
                 line=finding.get("line"),
+                fingerprint=compute_fingerprint(
+                    criterion.id, FindingSeverity.LOW, file, f"{symbol}: {rule}"
+                ),
                 confidence=Confidence.MEDIUM,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,
@@ -145,6 +154,10 @@ def _score_phpdoc_checker(
             continue
         errors_count += 1
         method_suffix = f"::{finding['method']}" if finding.get("method") else ""
+        description = (
+            f"{finding['type']} '{finding.get('class', '')}{method_suffix}' has no docblock"
+        )
+        file = finding.get("file")
         add_finding_with_recommendation(
             session,
             Finding(
@@ -152,11 +165,12 @@ def _score_phpdoc_checker(
                 criterion_id=criterion.id,
                 tool_result_id=tool_result.id,
                 severity=FindingSeverity.LOW,
-                description=(
-                    f"{finding['type']} '{finding.get('class', '')}{method_suffix}' has no docblock"
-                ),
-                file=finding.get("file"),
+                description=description,
+                file=file,
                 line=finding.get("line"),
+                fingerprint=compute_fingerprint(
+                    criterion.id, FindingSeverity.LOW, file, description
+                ),
                 confidence=Confidence.MEDIUM,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,

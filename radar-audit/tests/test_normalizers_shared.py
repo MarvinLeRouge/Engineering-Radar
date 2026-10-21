@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from radar_audit.normalizers.shared import (
     CriterionNotFoundError,
@@ -8,6 +10,7 @@ from radar_audit.normalizers.shared import (
     get_repository_path,
     has_success_payload,
     iter_source_files,
+    read_source_line,
 )
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
@@ -176,3 +179,29 @@ def test_get_repository_path_resolves_from_scoring_run(db_session):
     path = get_repository_path(db_session, scoring_run)
 
     assert str(path) == "/tmp/repo-under-test"
+
+
+def test_read_source_line_returns_the_stripped_target_line(tmp_path):
+    (tmp_path / "a.py").write_text("line one\n    line two  \nline three\n")
+
+    assert read_source_line(tmp_path, "a.py", 2) == "line two"
+
+
+def test_read_source_line_returns_none_when_file_is_none():
+    assert read_source_line(Path("/tmp"), None, 5) is None
+
+
+def test_read_source_line_returns_none_when_line_is_none(tmp_path):
+    (tmp_path / "a.py").write_text("line one\n")
+
+    assert read_source_line(tmp_path, "a.py", None) is None
+
+
+def test_read_source_line_returns_none_when_file_does_not_exist(tmp_path):
+    assert read_source_line(tmp_path, "missing.py", 1) is None
+
+
+def test_read_source_line_returns_none_when_line_is_out_of_range(tmp_path):
+    (tmp_path / "a.py").write_text("line one\n")
+
+    assert read_source_line(tmp_path, "a.py", 99) is None

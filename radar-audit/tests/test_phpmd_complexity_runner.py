@@ -108,3 +108,9 @@ def test_tags_codesize_and_unusedcode_violations_separately(tmp_path):
     unusedcode = [v for v in violations if v["ruleset"] == "unusedcode"]
     assert codesize and all("complexity" in v for v in codesize)
     assert unusedcode and all(v.get("rule") == "UnusedLocalVariable" for v in unusedcode)
+    assert all(v.get("class") == "A" for v in codesize)
+    assert any(v.get("method") == "classify" for v in codesize)
+    # UnusedLocalVariable, unlike UnusedPrivateMethod, carries no class/method
+    # attribute at all (confirmed empirically against real phpmd output) -- the
+    # key only expects the attribute to be present when phpmd provides it.
+    assert all(v.get("class") is None for v in unusedcode)

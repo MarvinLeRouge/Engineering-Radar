@@ -1,13 +1,19 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    get_repository_path,
+    has_success_payload,
+    read_source_line,
+)
 
 _RECOMMENDATION_TEXT = (
     "Apply the hadolint recommendation, for example pinning versions or using a non-root user."
@@ -41,6 +47,7 @@ def normalize_dockerfile_hardening(
     if not relevant:
         return None
 
+    repo_path = get_repository_path(session, scoring_run)
     total = 0
     worst = "NONE"
     for tool_result in relevant:
@@ -54,16 +61,27 @@ def normalize_dockerfile_hardening(
             for finding in findings:
                 raw_severity = finding.get("level", "")
                 severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
+                resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM)
+                file = entry["path"]
+                line = finding.get("line")
+                # Hadolint gives no per-instance identifier beyond rule code +
+                # line/column -- fall back to the flagged source line's own
+                # text, which survives unrelated edits elsewhere in the file.
+                source_line = read_source_line(repo_path, file, line)
+                label = f"{finding['code']}: {source_line or ''}"
                 add_finding_with_recommendation(
                     session,
                     Finding(
                         scoring_run_id=scoring_run.id,
                         criterion_id=criterion.id,
                         tool_result_id=tool_result.id,
-                        severity=_SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM),
+                        severity=resolved_severity,
                         description=f"{finding['code']}: {finding['message']}",
-                        file=entry["path"],
-                        line=finding.get("line"),
+                        file=file,
+                        line=line,
+                        fingerprint=compute_fingerprint(
+                            criterion.id, resolved_severity, file, label
+                        ),
                         confidence=Confidence.HIGH,
                         status=FindingStatus.OPEN,
                         human_verdict=HumanVerdict.UNREVIEWED,

@@ -360,3 +360,91 @@ def test_unusable_result_does_not_change_a_usable_radon_score(db_session):
 
     assert score is not None
     assert score.value == 6.0
+
+
+def test_two_radon_methods_with_the_same_name_on_different_classes_get_different_fingerprints(
+    db_session,
+):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="radon-cc",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "src/a.py": [
+                {
+                    "type": "method",
+                    "name": "run",
+                    "classname": "First",
+                    "complexity": 15,
+                    "lineno": 1,
+                },
+                {
+                    "type": "method",
+                    "name": "run",
+                    "classname": "Second",
+                    "complexity": 15,
+                    "lineno": 20,
+                },
+            ]
+        },
+        exit_code=0,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_two_phpmd_codesize_violations_on_different_classes_get_different_fingerprints(
+    db_session,
+):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="phpmd-codesize",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "violations": [
+                {
+                    "ruleset": "codesize",
+                    "file": "src/a.php",
+                    "line": 10,
+                    "complexity": 15,
+                    "class": "First",
+                    "method": "run",
+                },
+                {
+                    "ruleset": "codesize",
+                    "file": "src/a.php",
+                    "line": 40,
+                    "complexity": 15,
+                    "class": "Second",
+                    "method": "run",
+                },
+            ]
+        },
+        exit_code=2,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_cyclomatic_complexity(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint

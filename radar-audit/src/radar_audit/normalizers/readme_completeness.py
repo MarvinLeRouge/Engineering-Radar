@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -119,6 +120,7 @@ def _add_finding(
             criterion_id=criterion.id,
             severity=FindingSeverity.LOW,
             description=description,
+            fingerprint=compute_fingerprint(criterion.id, FindingSeverity.LOW, None, description),
             confidence=Confidence.MEDIUM,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,

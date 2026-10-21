@@ -236,3 +236,53 @@ def test_failed_dockerfile_is_excluded_and_the_other_one_scores_normally(db_sess
     score = normalize_dockerfile_hardening(db_session, scoring_run, criterion, [tool_result])
 
     assert score.value == 10.0
+
+
+def test_two_hits_same_rule_same_file_get_different_fingerprints(db_session, tmp_path):
+    (tmp_path / "Dockerfile").write_text(
+        "FROM ubuntu\nRUN apt-get install curl\nRUN apt-get install wget\n"
+    )
+    repo = Repository(name="repo", path=str(tmp_path))
+    db_session.add(repo)
+    db_session.commit()
+    db_session.refresh(repo)
+    audit = Audit(repository_id=repo.id, commit_sha="a" * 40, is_dirty=False)
+    db_session.add(audit)
+    db_session.commit()
+    db_session.refresh(audit)
+    methodology_version = seed_taxonomy(db_session)
+    scoring_run = get_or_create_scoring_run(db_session, audit, methodology_version)
+    criterion = get_criterion(
+        db_session, methodology_version.id, "Security", "Dockerfile hardening"
+    )
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "dockerfiles": [
+                {
+                    "path": "Dockerfile",
+                    "findings": [
+                        {
+                            "code": "DL3008",
+                            "level": "warning",
+                            "message": "Pin versions in apt-get install",
+                            "line": 2,
+                        },
+                        {
+                            "code": "DL3008",
+                            "level": "warning",
+                            "message": "Pin versions in apt-get install",
+                            "line": 3,
+                        },
+                    ],
+                }
+            ]
+        },
+    )
+
+    normalize_dockerfile_hardening(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint
