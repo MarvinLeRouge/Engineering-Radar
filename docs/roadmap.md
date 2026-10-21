@@ -97,6 +97,7 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 - [ ] Convert findings into prioritized improvement tasks
 - [ ] Compute ROI indicators (impact/effort/risk reduction, clearly marked as estimates)
 - [ ] Publish the living roadmap
+- [ ] Open question: does the dashboard's roadmap tab map directly onto `Recommendation` records (the pipeline currently stops there, per FEAT-009 -- nothing promotes a `Recommendation` into an `ImprovementTask`/`RoadmapItem` yet, which is why the tab always shows "No roadmap items yet"), or does it need its own distinct promotion/organization logic? The ROI prioritization formula (`criticality x files_impacted / files_to_fix`) is already settled -- still undecided: the grouping rule for bundling multiple findings into one task (by criterion? by identical recommendation text? by file?), and how items should be organized and prioritized for display in the tab itself
 
 ## Section 8 - Continuous tracking and re-audits
 
@@ -106,5 +107,6 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 - [ ] Detect resolved/new/regressed findings with evidence
 - [x] FEAT-022 - Persist human verdicts (`FALSE_POSITIVE`/`WONT_FIX`) across re-audits via a stable per-finding fingerprint (criterion + severity + file + a normalized, non-volatile label, hashed; deliberately excludes the line number and any other value that changes on unrelated edits -- see `docs/work-in-progress/finding-fingerprint-design.md`), since `Finding` rows are fully deleted and recreated on every `radar-audit score` pass
 - [ ] Exclude dismissed findings from both the report display (behind a "display excluded findings" toggle) and score computation -- the latter requires each normalizer individually, since bands aren't generically count-based (worst-value, worst-severity, and count-ratio banding all coexist)
+- [ ] Open question: evaluate an on-demand, possibly partial per-criterion score recalculation -- i.e. a "recalculate this criterion" action a user can trigger once one or more of its findings has `human_verdict != UNREVIEWED` or `status != OPEN`, instead of requiring a full re-audit for the score to reflect a dismissal. Closely related to the score-exclusion bullet above (same per-normalizer banding complication) but framed as an explicit user-triggered action rather than an automatic exclusion
 - [ ] Detect roadmap <-> code divergence
 - [ ] Track system self-metrics (score stability, false-positive rate, reproducibility)

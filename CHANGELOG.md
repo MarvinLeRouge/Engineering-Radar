@@ -337,6 +337,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(roadmap)* Note human-verdict persistence and score-exclusion gap
 - *(readme)* Reframe project around evidence-based quality tracking
 - Align readme tagline with repository description
+- *(roadmap)* Add two open questions to discuss for the next session
 
 ### 🧪 Testing
 
