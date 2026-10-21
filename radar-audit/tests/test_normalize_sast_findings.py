@@ -203,3 +203,41 @@ def test_crash_record_is_excluded_when_a_successful_scan_exists(db_session):
     score = normalize_sast_findings(db_session, scoring_run, criterion, [crashed, succeeded])
 
     assert score.value == 6.0
+
+
+def test_same_rule_twice_in_one_file_gets_different_fingerprints(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session,
+        audit,
+        {
+            "results": [
+                {
+                    "check_id": "python.lang.security.audit.subprocess-shell-true",
+                    "path": "src/vuln.py",
+                    "start": {"line": 4},
+                    "extra": {
+                        "severity": "ERROR",
+                        "message": "shell=True is dangerous",
+                        "fingerprint": "aaaa",
+                    },
+                },
+                {
+                    "check_id": "python.lang.security.audit.subprocess-shell-true",
+                    "path": "src/vuln.py",
+                    "start": {"line": 20},
+                    "extra": {
+                        "severity": "ERROR",
+                        "message": "shell=True is dangerous",
+                        "fingerprint": "bbbb",
+                    },
+                },
+            ]
+        },
+    )
+
+    normalize_sast_findings(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint

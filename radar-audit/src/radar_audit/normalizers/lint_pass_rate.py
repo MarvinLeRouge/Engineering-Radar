@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -72,12 +73,13 @@ def _score_ruff(
     violations = tool_result.raw_output.get("violations", [])
     flagged_files = {v["filename"] for v in violations}
     for violation in violations:
+        description = f"{violation['code']}: {violation['message']}"
         _add_finding(
             session,
             scoring_run,
             criterion,
             tool_result,
-            f"{violation['code']}: {violation['message']}",
+            description,
             file=violation["filename"],
             line=violation["location"]["row"],
         )
@@ -144,6 +146,7 @@ def _add_finding(
             description=description,
             file=file,
             line=line,
+            fingerprint=compute_fingerprint(criterion.id, FindingSeverity.LOW, file, description),
             confidence=Confidence.HIGH,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,

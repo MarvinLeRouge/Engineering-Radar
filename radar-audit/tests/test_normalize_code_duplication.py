@@ -84,3 +84,72 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_code_duplication(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def test_fingerprint_is_stable_across_line_shifts_but_tracks_the_fragment(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    same_fragment = "function add(a, b) { return a + b; }"
+    shifted = _jscpd_result(
+        audit.id,
+        15.0,
+        [
+            {
+                "firstFile": {"name": "a.js", "start": 1, "end": 20},
+                "secondFile": {"name": "b.js", "start": 1, "end": 20},
+                "fragment": same_fragment,
+            }
+        ],
+    )
+    unshifted = _jscpd_result(
+        audit.id,
+        15.0,
+        [
+            {
+                "firstFile": {"name": "a.js", "start": 10, "end": 29},
+                "secondFile": {"name": "b.js", "start": 40, "end": 59},
+                "fragment": same_fragment,
+            }
+        ],
+    )
+    db_session.add(shifted)
+    db_session.add(unshifted)
+    db_session.commit()
+
+    normalize_code_duplication(db_session, scoring_run, criterion, [shifted])
+    normalize_code_duplication(db_session, scoring_run, criterion, [unshifted])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint == findings[1].fingerprint
+
+
+def test_different_fragments_between_the_same_file_pair_get_different_fingerprints(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _jscpd_result(
+        audit.id,
+        15.0,
+        [
+            {
+                "firstFile": {"name": "a.js", "start": 1, "end": 20},
+                "secondFile": {"name": "b.js", "start": 1, "end": 20},
+                "fragment": "function add(a, b) { return a + b; }",
+            },
+            {
+                "firstFile": {"name": "a.js", "start": 30, "end": 49},
+                "secondFile": {"name": "b.js", "start": 30, "end": 49},
+                "fragment": "function sub(a, b) { return a - b; }",
+            },
+        ],
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_code_duplication(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    assert findings[0].fingerprint != findings[1].fingerprint

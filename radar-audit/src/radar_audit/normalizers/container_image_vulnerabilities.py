@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -38,14 +39,19 @@ def normalize_container_image_vulnerabilities(
     for tool_result in relevant:
         for vuln in tool_result.raw_output.get("vulnerabilities", []):
             severity = vuln.get("severity", "HIGH")
+            resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.HIGH)
+            description = f"{vuln['id']}: {vuln['pkg']}"
             add_finding_with_recommendation(
                 session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
                     tool_result_id=tool_result.id,
-                    severity=_SEVERITY_ENUM.get(severity, FindingSeverity.HIGH),
-                    description=f"{vuln['id']}: {vuln['pkg']}",
+                    severity=resolved_severity,
+                    description=description,
+                    fingerprint=compute_fingerprint(
+                        criterion.id, resolved_severity, None, description
+                    ),
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,

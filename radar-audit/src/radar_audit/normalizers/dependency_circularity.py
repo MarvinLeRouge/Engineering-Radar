@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -50,6 +51,7 @@ def normalize_dependency_circularity(
             continue
         cycles = _detect_cycles(tool_result)
         for cycle_nodes in cycles:
+            description = f"Circular dependency involving: {', '.join(sorted(cycle_nodes))}"
             add_finding_with_recommendation(
                 session,
                 Finding(
@@ -57,7 +59,10 @@ def normalize_dependency_circularity(
                     criterion_id=criterion.id,
                     tool_result_id=tool_result.id,
                     severity=FindingSeverity.MEDIUM,
-                    description=f"Circular dependency involving: {', '.join(sorted(cycle_nodes))}",
+                    description=description,
+                    fingerprint=compute_fingerprint(
+                        criterion.id, FindingSeverity.MEDIUM, None, description
+                    ),
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,

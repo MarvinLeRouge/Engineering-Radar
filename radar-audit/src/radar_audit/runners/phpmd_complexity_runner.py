@@ -93,6 +93,8 @@ class PhpmdComplexityRunner:
                                 "file": file_name,
                                 "line": int(violation.get("beginline", 0)),
                                 "complexity": int(match.group(1)),
+                                "class": violation.get("class"),
+                                "method": violation.get("method"),
                             }
                         )
                 elif ruleset == "Unused Code Rules":
@@ -103,6 +105,8 @@ class PhpmdComplexityRunner:
                             "line": int(violation.get("beginline", 0)),
                             "rule": violation.get("rule"),
                             "message": (violation.text or "").strip(),
+                            "class": violation.get("class"),
+                            "method": violation.get("method"),
                         }
                     )
 

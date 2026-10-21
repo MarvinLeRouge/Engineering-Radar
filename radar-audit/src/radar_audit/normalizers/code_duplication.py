@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -48,6 +49,16 @@ def normalize_code_duplication(
                 ),
                 file=first["name"],
                 line=first["start"],
+                # Label is jscpd's own "fragment" (the literal duplicated text),
+                # not the line ranges in the description above: those shift on
+                # any edit anywhere in either file, while the fragment only
+                # changes if the duplicated content itself is edited.
+                fingerprint=compute_fingerprint(
+                    criterion.id,
+                    FindingSeverity.LOW,
+                    first["name"],
+                    f"{second['name']}:{duplicate.get('fragment', '')}",
+                ),
                 confidence=Confidence.MEDIUM,
                 status=FindingStatus.OPEN,
                 human_verdict=HumanVerdict.UNREVIEWED,

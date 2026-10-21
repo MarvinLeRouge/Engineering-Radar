@@ -1,15 +1,21 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    get_repository_path,
+    read_source_line,
+)
 
 _USABLE_EXIT_CODES_BY_TOOL = {
     "vulture": {0, 3},
@@ -40,21 +46,27 @@ def normalize_dead_code(
     if not relevant:
         return None
 
+    repo_path = get_repository_path(session, scoring_run)
     worst_value: float | None = None
     worst_confidence: Confidence | None = None
     for tool_result in relevant:
         items = _extract_items(tool_result)
         for item in items:
+            label = _label_for_item(tool_result.tool_name, item, repo_path)
+            severity = FindingSeverity.LOW
             add_finding_with_recommendation(
                 session,
                 Finding(
                     scoring_run_id=scoring_run.id,
                     criterion_id=criterion.id,
                     tool_result_id=tool_result.id,
-                    severity=FindingSeverity.LOW,
+                    severity=severity,
                     description=item["description"],
                     file=item.get("file"),
                     line=item.get("line"),
+                    fingerprint=compute_fingerprint(
+                        criterion.id, severity, item.get("file"), label
+                    ),
                     confidence=_confidence_for_tool(tool_result.tool_name),
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
@@ -100,6 +112,8 @@ def _extract_items(tool_result: ToolResult) -> list[dict[str, Any]]:
             "description": f"{v.get('rule', 'unused code')}: {v.get('message', '')}",
             "file": v.get("file"),
             "line": v.get("line"),
+            "class": v.get("class"),
+            "method": v.get("method"),
         }
         for v in tool_result.raw_output.get("violations", [])
         if v.get("ruleset") == "unusedcode"
@@ -142,6 +156,26 @@ def _extract_knip_items(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 }
             )
     return items
+
+
+def _label_for_item(tool_name: str, item: dict[str, Any], repo_path: Path) -> str:
+    """Build the fingerprint label for a dead-code item.
+
+    Vulture gives no scope qualifier at all, and PHPMD's class/method
+    attributes are only present on some unusedcode rules (e.g.
+    UnusedPrivateMethod, not UnusedLocalVariable or UnusedPrivateField) --
+    both fall back to the flagged source line's own text, which disambiguates
+    same-named symbols in different scopes without being as volatile as a
+    line number.
+    """
+    if tool_name == "knip":
+        return str(item["description"])
+    class_name = item.get("class")
+    method_name = item.get("method")
+    if class_name and method_name:
+        return f"{class_name}.{method_name}: {item['description']}"
+    source_line = read_source_line(repo_path, item.get("file"), item.get("line"))
+    return f"{item['description']}: {source_line or ''}"
 
 
 def _is_usable(tool_result: ToolResult) -> bool:

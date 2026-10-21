@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -71,6 +72,15 @@ def normalize_unit_test_pass_rate(
                         f"{tests.get('total', 0)} tests "
                         f"({tests.get('passed', 0)} passed) - treating as a crashed run"
                     ),
+                    # Label deliberately drops the exact test counts (volatile on
+                    # nearly every run); subproject_path disambiguates multiple
+                    # subprojects crashing the same tool within one audit.
+                    fingerprint=compute_fingerprint(
+                        criterion.id,
+                        FindingSeverity.HIGH,
+                        None,
+                        f"{tool_result.tool_name}@{tool_result.subproject_path}: abnormal-exit",
+                    ),
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
                     human_verdict=HumanVerdict.UNREVIEWED,
@@ -92,6 +102,14 @@ def normalize_unit_test_pass_rate(
                     severity=FindingSeverity.LOW,
                     description=(
                         f"Coverage is {coverage_percent}%, below the {_COVERAGE_FLOOR}% floor"
+                    ),
+                    # Label drops the exact percentage (volatile); subproject_path
+                    # disambiguates multiple subprojects using the same tool.
+                    fingerprint=compute_fingerprint(
+                        criterion.id,
+                        FindingSeverity.LOW,
+                        None,
+                        f"{tool_result.tool_name}@{tool_result.subproject_path}: coverage-floor",
                     ),
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,
@@ -124,6 +142,9 @@ def _add_failure_finding(
     failure: dict[str, object],
 ) -> None:
     name = failure.get("name") or "unknown test"
+    file = failure.get("file")
+    file = file if isinstance(file, str) else None
+    description = f"Failing test: {name}"
     add_finding_with_recommendation(
         session,
         Finding(
@@ -131,9 +152,10 @@ def _add_failure_finding(
             criterion_id=criterion.id,
             tool_result_id=tool_result.id,
             severity=FindingSeverity.LOW,
-            description=f"Failing test: {name}",
-            file=failure.get("file"),
+            description=description,
+            file=file,
             line=failure.get("line"),
+            fingerprint=compute_fingerprint(criterion.id, FindingSeverity.LOW, file, description),
             confidence=Confidence.HIGH,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,

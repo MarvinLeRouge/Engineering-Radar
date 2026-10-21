@@ -7,6 +7,7 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
@@ -110,6 +111,31 @@ def get_repository_path(session: Session, scoring_run: ScoringRun) -> Path:
     return Path(repository.path)
 
 
+def read_source_line(target_path: Path, file: str | None, line: int | None) -> str | None:
+    """Read the exact text of a flagged source line, for a fingerprint label
+    component when the underlying tool gives no better per-instance
+    identifier (e.g. Vulture, Hadolint -- see
+    docs/work-in-progress/finding-fingerprint-design.md). The caller hashes
+    the resulting label as part of the overall fingerprint; this just reads
+    text, it doesn't hash anything itself.
+
+    Same staleness caveat as `get_repository_path`: reads the repository's
+    *current* on-disk state, which may not exactly match what the tool saw
+    if the repo has since changed. Returns None (never raises) when the
+    file/line can't be read, so a finding still gets a fingerprint -- just
+    one less precisely disambiguated -- rather than crashing the run.
+    """
+    if file is None or line is None:
+        return None
+    try:
+        lines = (target_path / file).read_text(encoding="utf-8", errors="ignore").splitlines()
+    except OSError:
+        return None
+    if not 1 <= line <= len(lines):
+        return None
+    return lines[line - 1].strip()
+
+
 def score_design_doc_evidence(
     session: Session,
     scoring_run: ScoringRun,
@@ -147,6 +173,7 @@ def score_design_doc_evidence(
             tool_result,
             missing_description,
             missing_recommendation,
+            missing_description,
         )
     elif non_blank_lines >= DESIGN_DOC_NON_TRIVIAL_LINE_THRESHOLD:
         value = 10.0
@@ -159,6 +186,11 @@ def score_design_doc_evidence(
             tool_result,
             trivial_description(found_path, non_blank_lines),
             trivial_recommendation(found_path),
+            # Normalized label, deliberately without `non_blank_lines`: the line
+            # count fluctuates on nearly every edit even while the doc stays
+            # "trivial", which would otherwise churn this finding's fingerprint
+            # and silently drop any human verdict set on it.
+            f"design-doc-trivial:{found_path}",
         )
 
     score = Score(
@@ -181,6 +213,7 @@ def _add_design_doc_finding(
     tool_result: ToolResult,
     description: str,
     recommendation_text: str,
+    label: str,
 ) -> None:
     add_finding_with_recommendation(
         session,
@@ -190,6 +223,7 @@ def _add_design_doc_finding(
             tool_result_id=tool_result.id,
             severity=FindingSeverity.LOW,
             description=description,
+            fingerprint=compute_fingerprint(criterion.id, FindingSeverity.LOW, None, label),
             confidence=Confidence.MEDIUM,
             status=FindingStatus.OPEN,
             human_verdict=HumanVerdict.UNREVIEWED,

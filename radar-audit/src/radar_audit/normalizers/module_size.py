@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
@@ -32,19 +33,26 @@ def normalize_module_size(
             if loc <= _COVERED_LOC_THRESHOLD:
                 covered += 1
             else:
+                severity = FindingSeverity.LOW
                 add_finding_with_recommendation(
                     session,
                     Finding(
                         scoring_run_id=scoring_run.id,
                         criterion_id=criterion.id,
                         tool_result_id=tool_result.id,
-                        severity=FindingSeverity.LOW,
+                        severity=severity,
                         description=(
                             f"{file_path} is {loc} non-blank lines, over the "
                             f"{_COVERED_LOC_THRESHOLD}-line threshold"
                         ),
                         file=file_path,
                         magnitude=float(loc),
+                        # Label is a constant: at most one finding per file for
+                        # this criterion, and the LOC count (already in the
+                        # displayed description) fluctuates on nearly every edit.
+                        fingerprint=compute_fingerprint(
+                            criterion.id, severity, file_path, "module-size-exceeded"
+                        ),
                         confidence=Confidence.MEDIUM,
                         status=FindingStatus.OPEN,
                         human_verdict=HumanVerdict.UNREVIEWED,

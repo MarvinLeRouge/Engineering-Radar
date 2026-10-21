@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
@@ -62,6 +62,7 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     existing_findings = session.exec(
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
+    carried_verdicts = _collect_carried_verdicts(session, repository)
     existing_finding_ids = [f.id for f in existing_findings if f.id is not None]
     existing_recommendations = session.exec(
         select(Recommendation).where(Recommendation.finding_id.in_(existing_finding_ids))  # type: ignore[attr-defined]
@@ -93,6 +94,8 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
             continue
         scored_by_category.setdefault(criterion.category_id, []).append((criterion, score))
 
+    _carry_forward_human_verdicts(session, scoring_run, carried_verdicts)
+
     category_scores: list[tuple[Category, Score]] = []
     for category_id, pairs in scored_by_category.items():
         category = session.get(Category, category_id)
@@ -103,6 +106,57 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     _write_global_score(session, scoring_run, category_scores)
 
     return scoring_run
+
+
+def _collect_carried_verdicts(
+    session: Session, repository: Repository
+) -> dict[str, tuple[FindingStatus, HumanVerdict]]:
+    """Collect the most recent human-set status/verdict per fingerprint, across every
+    `ScoringRun` this repository has ever had -- not just the current one.
+
+    A new commit gets a brand-new `Audit` and therefore a brand-new `ScoringRun`
+    (keyed on `(audit_id, methodology_version_id)`), whose own `Finding` rows start
+    out empty: scoping this lookup to only the current `scoring_run.id` would make
+    carry-forward a no-op on every real re-audit, the exact case it exists for.
+    Ordered by `ScoringRun.scored_at` ascending, so a dict comprehension's
+    last-write-wins semantics keep the most recent verdict per fingerprint.
+    """
+    historical_findings = session.exec(
+        select(Finding)
+        .join(ScoringRun, ScoringRun.id == Finding.scoring_run_id)  # type: ignore[arg-type]
+        .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
+        .where(Audit.repository_id == repository.id)
+        .order_by(ScoringRun.scored_at)  # type: ignore[arg-type]
+    ).all()
+    return {
+        finding.fingerprint: (finding.status, finding.human_verdict)
+        for finding in historical_findings
+        if finding.fingerprint is not None
+        and (
+            finding.status != FindingStatus.OPEN or finding.human_verdict != HumanVerdict.UNREVIEWED
+        )
+    }
+
+
+def _carry_forward_human_verdicts(
+    session: Session,
+    scoring_run: ScoringRun,
+    carried_verdicts: dict[str, tuple[FindingStatus, HumanVerdict]],
+) -> None:
+    if not carried_verdicts:
+        return
+    new_findings = session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    for finding in new_findings:
+        if finding.fingerprint is None:
+            continue
+        verdict = carried_verdicts.get(finding.fingerprint)
+        if verdict is None:
+            continue
+        finding.status, finding.human_verdict = verdict
+        session.add(finding)
+    session.commit()
 
 
 def _write_category_score(
