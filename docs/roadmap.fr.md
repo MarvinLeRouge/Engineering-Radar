@@ -98,6 +98,7 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 - [ ] Convertir les constats en tâches d'amélioration priorisées
 - [ ] Calculer les indicateurs de ROI (impact/effort/réduction de risque, clairement marqués comme des estimations)
 - [ ] Publier la roadmap vivante
+- [ ] Question ouverte : est-ce que l'onglet roadmap du dashboard correspond directement aux enregistrements `Recommendation` (le pipeline s'arrête là aujourd'hui, depuis FEAT-009 -- rien ne promeut encore une `Recommendation` en `ImprovementTask`/`RoadmapItem`, ce qui explique que l'onglet affiche toujours "Aucun élément de roadmap pour le moment"), ou a-t-il besoin de sa propre logique de promotion/organisation ? La formule de priorisation ROI (`criticité x fichiers_impactés / fichiers_à_corriger`) est déjà actée -- reste à décider : la règle de regroupement de plusieurs findings dans une même tâche (par critère ? par texte de recommandation identique ? par fichier ?), et comment organiser et prioriser l'affichage des éléments dans l'onglet lui-même
 
 ## Section 8 - Suivi continu et réaudits
 
@@ -107,5 +108,6 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 - [ ] Détecter les constats résolus/nouveaux/régressés avec preuves
 - [x] FEAT-022 - Faire persister les verdicts humains (`FALSE_POSITIVE`/`WONT_FIX`) entre réaudits via une empreinte stable par finding (critère + sévérité + fichier + un libellé normalisé et non volatile, hashé ; exclut délibérément le numéro de ligne et toute autre valeur qui change à chaque modification non liée -- voir `docs/work-in-progress/finding-fingerprint-design.md`), puisque les lignes `Finding` sont entièrement supprimées et recréées à chaque passage de `radar-audit score`
 - [ ] Exclure les findings écartés à la fois de l'affichage du rapport (derrière un bouton "afficher les findings exclus") et du calcul du score -- ce dernier point nécessite une adaptation de chaque normaliseur individuellement, les bandes de score n'étant pas toutes basées sur un simple comptage (valeur la plus défavorable, sévérité la plus défavorable, et ratio de comptage coexistent)
+- [ ] Question ouverte : évaluer un recalcul de score par critère à la demande, éventuellement partiel -- c'est-à-dire une action "recalculer ce critère" que l'utilisateur peut déclencher dès qu'un ou plusieurs de ses findings ont un `human_verdict != UNREVIEWED` ou un `status != OPEN`, plutôt que d'exiger un réaudit complet pour que le score reflète un écartement. Étroitement lié au point ci-dessus sur l'exclusion du calcul de score (même complication par normaliseur), mais pensé comme une action explicite déclenchée par l'utilisateur plutôt qu'une exclusion automatique
 - [ ] Détecter les divergences entre roadmap et code
 - [ ] Suivre les métriques internes du système (stabilité des scores, taux de faux positifs, reproductibilité)
