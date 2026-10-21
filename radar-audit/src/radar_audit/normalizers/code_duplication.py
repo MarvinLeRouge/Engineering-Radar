@@ -36,6 +36,7 @@ def normalize_code_duplication(
     for duplicate in tool_result.raw_output.get("duplicates", []):
         first = duplicate["firstFile"]
         second = duplicate["secondFile"]
+        duplicated_lines = first["end"] - first["start"] + 1
         add_finding_with_recommendation(
             session,
             Finding(
@@ -49,6 +50,7 @@ def normalize_code_duplication(
                 ),
                 file=first["name"],
                 line=first["start"],
+                magnitude=float(duplicated_lines),
                 # Label is jscpd's own "fragment" (the literal duplicated text),
                 # not the line ranges in the description above: those shift on
                 # any edit anywhere in either file, while the fragment only

@@ -153,3 +153,27 @@ def test_different_fragments_between_the_same_file_pair_get_different_fingerprin
     ).all()
     assert len(findings) == 2
     assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_finding_magnitude_is_the_duplicated_line_count(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _jscpd_result(
+        audit.id,
+        15.0,
+        [
+            {
+                "firstFile": {"name": "a.js", "start": 1, "end": 20},
+                "secondFile": {"name": "b.js", "start": 1, "end": 20},
+            }
+        ],
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_code_duplication(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 1
+    assert findings[0].magnitude == 20.0

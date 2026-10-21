@@ -69,3 +69,36 @@ def test_severity_takes_priority_over_magnitude():
 
 def test_empty_list_returns_empty_list():
     assert sort_findings_by_priority([]) == []
+
+
+def test_ties_on_magnitude_break_alphabetically_by_file():
+    zebra = _finding(FindingSeverity.LOW, magnitude=10.0, finding_id=1)
+    zebra.file = "zebra.py"
+    apple = _finding(FindingSeverity.LOW, magnitude=10.0, finding_id=2)
+    apple.file = "apple.py"
+
+    result = sort_findings_by_priority([zebra, apple])
+
+    assert [f.id for f in result] == [2, 1]
+
+
+def test_ties_on_file_break_alphabetically_by_description():
+    second = _finding(FindingSeverity.LOW, description="z finding", magnitude=5.0, finding_id=1)
+    second.file = "a.py"
+    first = _finding(FindingSeverity.LOW, description="a finding", magnitude=5.0, finding_id=2)
+    first.file = "a.py"
+
+    result = sort_findings_by_priority([second, first])
+
+    assert [f.id for f in result] == [2, 1]
+
+
+def test_ties_with_no_magnitude_at_all_break_alphabetically_by_file():
+    zebra = _finding(FindingSeverity.LOW, finding_id=1)
+    zebra.file = "zebra.py"
+    apple = _finding(FindingSeverity.LOW, finding_id=2)
+    apple.file = "apple.py"
+
+    result = sort_findings_by_priority([zebra, apple])
+
+    assert [f.id for f in result] == [2, 1]
