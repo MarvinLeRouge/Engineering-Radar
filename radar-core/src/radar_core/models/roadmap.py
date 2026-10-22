@@ -16,6 +16,16 @@ class ImprovementTask(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str
     description: str
+    criterion_id: int = Field(foreign_key="criterion.id", index=True)
+    # The grouping key's file component -- None for a repo-wide finding with no
+    # file (e.g. a dependency CVE), or for a criterion whose findings bypass
+    # file-based grouping entirely (dependency circularity, code duplication).
+    file: str | None = Field(default=None, index=True)
+    # Stable identity for "the same underlying task" across re-scoring runs --
+    # either a hash of (criterion_id, file), or a Finding.fingerprint reused
+    # verbatim for an atomic (bypass) task. Used to upsert instead of
+    # delete-and-recreate, so a human-set RoadmapItem survives a re-audit.
+    group_key: str = Field(unique=True, index=True)
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(UTCDateTime(), nullable=False),
@@ -39,7 +49,7 @@ class RoadmapItem(SQLModel, table=True):
             nullable=False,
         ),
     )
-    priority: int
+    priority: float
     estimated_effort: str | None = None
     estimated_impact: str | None = None
     promoted_at: datetime = Field(

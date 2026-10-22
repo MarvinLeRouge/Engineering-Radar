@@ -97,7 +97,7 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 - [ ] Convert findings into prioritized improvement tasks
 - [ ] Compute ROI indicators (impact/effort/risk reduction, clearly marked as estimates)
 - [ ] Publish the living roadmap
-- [ ] Open question: does the dashboard's roadmap tab map directly onto `Recommendation` records (the pipeline currently stops there, per FEAT-009 -- nothing promotes a `Recommendation` into an `ImprovementTask`/`RoadmapItem` yet, which is why the tab always shows "No roadmap items yet"), or does it need its own distinct promotion/organization logic? The ROI prioritization formula (`criticality x files_impacted / files_to_fix`) is already settled -- still undecided: the grouping rule for bundling multiple findings into one task (by criterion? by identical recommendation text? by file?), and how items should be organized and prioritized for display in the tab itself
+- [x] FEAT-023 - Promote `Finding`/`Recommendation` data into `ImprovementTask`/`RoadmapItem` rows so the dashboard's roadmap tab is populated automatically: grouped by `(criterion_id, file)` (bypassed, one finding per task, for dependency circularity, code duplication, and any finding with no file), `priority` computed as `worst_severity_in_group x files_impacted / files_to_fix` (float, 1 decimal), upserted by a stable group key so a human-set status/estimated_effort/done_at survives a re-audit the same way `Finding.fingerprint` already does (FEAT-022). Runs automatically at the end of every `radar-audit score`
 
 ## Section 8 - Continuous tracking and re-audits
 

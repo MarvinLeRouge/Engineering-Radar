@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from radar_core.enums import Confidence, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
+from radar_core.models.links import FindingImprovementTaskLink
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
@@ -13,6 +14,7 @@ from sqlmodel import Session, select
 
 from radar_audit.normalizers import CRITERION_NORMALIZERS
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
+from radar_audit.roadmap_promotion import promote_improvement_tasks
 from radar_audit.taxonomy.seed import seed_taxonomy
 
 _CONFIDENCE_RANK = {Confidence.HIGH: 0, Confidence.MEDIUM: 1, Confidence.LOW: 2}
@@ -69,10 +71,18 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     ).all()
     for existing_recommendation in existing_recommendations:
         session.delete(existing_recommendation)
-    # Flush the Recommendation deletes before deleting their parent Findings: SQLAlchemy's
-    # unit of work does not infer delete ordering across unrelated mapped classes (no
-    # relationship() is declared between Finding and Recommendation), so without this the
-    # two DELETE statements can be batched in an order that violates the FK constraint.
+    existing_task_links = session.exec(
+        select(FindingImprovementTaskLink).where(
+            FindingImprovementTaskLink.finding_id.in_(existing_finding_ids)  # type: ignore[attr-defined]
+        )
+    ).all()
+    for existing_task_link in existing_task_links:
+        session.delete(existing_task_link)
+    # Flush the Recommendation/link deletes before deleting their parent Findings:
+    # SQLAlchemy's unit of work does not infer delete ordering across unrelated mapped
+    # classes (no relationship() is declared between Finding and either of them), so
+    # without this the DELETE statements can be batched in an order that violates the
+    # FK constraint.
     session.flush()
     for existing_finding in existing_findings:
         session.delete(existing_finding)
@@ -95,6 +105,7 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
         scored_by_category.setdefault(criterion.category_id, []).append((criterion, score))
 
     _carry_forward_human_verdicts(session, scoring_run, carried_verdicts)
+    promote_improvement_tasks(session, scoring_run)
 
     category_scores: list[tuple[Category, Score]] = []
     for category_id, pairs in scored_by_category.items():

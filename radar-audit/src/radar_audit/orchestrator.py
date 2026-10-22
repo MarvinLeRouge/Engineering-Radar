@@ -6,6 +6,7 @@ from pathlib import Path
 
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
+from radar_core.models.links import FindingImprovementTaskLink
 from radar_core.models.repository import Repository
 from sqlmodel import Session, select
 
@@ -182,6 +183,13 @@ def execute_audit(
         ).all()
         for recommendation in stale_recommendations:
             session.delete(recommendation)
+        stale_task_links = session.exec(
+            select(FindingImprovementTaskLink).where(
+                FindingImprovementTaskLink.finding_id.in_(stale_finding_ids)  # type: ignore[attr-defined]
+            )
+        ).all()
+        for task_link in stale_task_links:
+            session.delete(task_link)
         session.flush()
         for finding in stale_findings:
             session.delete(finding)
