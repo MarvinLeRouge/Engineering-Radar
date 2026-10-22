@@ -9,7 +9,23 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 
-_ALWAYS_EXCLUDED_DIRNAMES = ("node_modules", "vendor", "dist", "build", "docs")
+_ALWAYS_EXCLUDED_DIRNAMES = (
+    "node_modules",
+    "vendor",
+    "dist",
+    "build",
+    "docs",
+    # Test files are expected to duplicate setup/fixture code across each
+    # other for independence -- confirmed empirically across this portfolio's
+    # real naming conventions: "tests" (GeoChallenge-Tracker, Summit-Stats),
+    # "test" (HexaRot's NestJS backend), "__tests__" (Summit-Stats' Vue
+    # frontend), "e2e" (Summit-Stats' Playwright suite, where spec files
+    # share a helpers/auth.js fixture).
+    "tests",
+    "test",
+    "__tests__",
+    "e2e",
+)
 _DOT_DIRECTORY_IGNORE_SUFFIX = "**/.*/**"
 # Code duplication (criterion 2.5) means source code, not prose: without an
 # explicit --format, jscpd also scans markdown and other text formats by
