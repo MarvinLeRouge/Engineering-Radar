@@ -148,6 +148,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api,radar-dashboard)* Per-category score history, metric selector and drill-down (FEAT-020)
 - *(radar-dashboard)* Show finding file path/line, group by file, relativize paths
 - *(radar-core,radar-audit)* Add finding fingerprint and carry human verdicts across re-audits
+- *(radar-core,radar-audit,radar-api)* Promote findings into roadmap items (Section 7)
 
 ### 🐛 Bug Fixes
 

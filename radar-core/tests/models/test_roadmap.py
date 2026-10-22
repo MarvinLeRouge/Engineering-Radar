@@ -67,7 +67,13 @@ def _make_finding(db_session) -> Finding:
 def test_improvement_task_links_to_finding_via_association_table(db_session):
     finding = _make_finding(db_session)
 
-    task = ImprovementTask(title="Rotate leaked credential", description="See finding evidence.")
+    task = ImprovementTask(
+        title="Rotate leaked credential",
+        description="See finding evidence.",
+        criterion_id=finding.criterion_id,
+        file=None,
+        group_key="link-test-key",
+    )
     db_session.add(task)
     db_session.commit()
     db_session.refresh(task)
@@ -80,8 +86,14 @@ def test_improvement_task_links_to_finding_via_association_table(db_session):
 
 
 def test_improvement_task_is_not_a_roadmap_item_until_promoted(db_session):
-    _make_finding(db_session)
-    task = ImprovementTask(title="Rotate leaked credential", description="See finding evidence.")
+    finding = _make_finding(db_session)
+    task = ImprovementTask(
+        title="Rotate leaked credential",
+        description="See finding evidence.",
+        criterion_id=finding.criterion_id,
+        file=None,
+        group_key="not-promoted-test-key",
+    )
     db_session.add(task)
     db_session.commit()
     db_session.refresh(task)
@@ -96,9 +108,82 @@ def test_improvement_task_is_not_a_roadmap_item_until_promoted(db_session):
     )
 
 
+def test_improvement_task_carries_its_grouping_key(db_session):
+    finding = _make_finding(db_session)
+    task = ImprovementTask(
+        title="Secrets in tracked history: config.py",
+        description="Rotate the exposed secret.",
+        criterion_id=finding.criterion_id,
+        file="config.py",
+        group_key="deadbeefcafef00d",
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    assert task.criterion_id == finding.criterion_id
+    assert task.file == "config.py"
+    assert task.group_key == "deadbeefcafef00d"
+
+
+def test_improvement_task_group_key_is_unique(db_session):
+    finding = _make_finding(db_session)
+    first = ImprovementTask(
+        title="A",
+        description="A",
+        criterion_id=finding.criterion_id,
+        file="a.py",
+        group_key="samekey",
+    )
+    db_session.add(first)
+    db_session.commit()
+
+    second = ImprovementTask(
+        title="B",
+        description="B",
+        criterion_id=finding.criterion_id,
+        file="b.py",
+        group_key="samekey",
+    )
+    db_session.add(second)
+
+    import pytest
+    from sqlalchemy.exc import IntegrityError
+
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+
+
+def test_roadmap_item_priority_accepts_a_rounded_float(db_session):
+    finding = _make_finding(db_session)
+    task = ImprovementTask(
+        title="Rotate leaked credential",
+        description="See finding evidence.",
+        criterion_id=finding.criterion_id,
+        file=None,
+        group_key="unique-fallback-key",
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    roadmap_item = RoadmapItem(improvement_task_id=task.id, status=RoadmapStatus.TODO, priority=7.3)
+    db_session.add(roadmap_item)
+    db_session.commit()
+    db_session.refresh(roadmap_item)
+
+    assert roadmap_item.priority == 7.3
+
+
 def test_roadmap_item_promotion_with_done_evidence(db_session):
     finding = _make_finding(db_session)
-    task = ImprovementTask(title="Rotate leaked credential", description="See finding evidence.")
+    task = ImprovementTask(
+        title="Rotate leaked credential",
+        description="See finding evidence.",
+        criterion_id=finding.criterion_id,
+        file=None,
+        group_key="done-evidence-test-key",
+    )
     db_session.add(task)
     db_session.commit()
     db_session.refresh(task)

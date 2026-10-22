@@ -12,7 +12,7 @@ class RoadmapItemRead(BaseModel):
     title: str
     description: str
     status: str
-    priority: int
+    priority: float
     estimated_effort: str | None
     estimated_impact: str | None
     promoted_at: datetime

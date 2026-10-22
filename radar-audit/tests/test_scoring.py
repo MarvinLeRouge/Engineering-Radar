@@ -439,3 +439,24 @@ def test_human_verdict_survives_a_real_re_audit_on_a_new_commit(db_session, tmp_
     assert second_finding.fingerprint == fingerprint
     assert second_finding.status == FindingStatus.RESOLVED
     assert second_finding.human_verdict == HumanVerdict.FALSE_POSITIVE
+
+
+def test_score_repository_promotes_findings_into_an_improvement_task(
+    db_session, tmp_path, monkeypatch
+):
+    from radar_core.models.roadmap import ImprovementTask
+
+    _audited_repo(db_session, tmp_path)
+    monkeypatch.setattr(
+        "radar_audit.scoring.CRITERION_NORMALIZERS",
+        {
+            ("Maintainability", "Complexity hotspots"): _fake_fingerprinted_finding(
+                "promotion-test-fingerprint"
+            ),
+        },
+    )
+
+    score_repository(db_session, "repo")
+
+    tasks = db_session.exec(select(ImprovementTask)).all()
+    assert len(tasks) == 1

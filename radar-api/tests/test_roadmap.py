@@ -64,7 +64,13 @@ def _make_finding_chain(db_session, repository, commit_sha="a" * 40):
 
 
 def _make_roadmap_item(db_session, finding, status=RoadmapStatus.TODO):
-    task = ImprovementTask(title="Fix it", description="...")
+    task = ImprovementTask(
+        title="Fix it",
+        description="...",
+        criterion_id=finding.criterion_id,
+        file=None,
+        group_key=f"fix-it-{finding.id}",
+    )
     db_session.add(task)
     db_session.commit()
     db_session.refresh(task)
@@ -112,7 +118,13 @@ def test_list_roadmap_items_deduplicates_item_linked_to_multiple_findings(client
     finding_a = _make_finding_chain(db_session, repo, commit_sha="a" * 40)
     finding_b = _make_finding_chain(db_session, repo, commit_sha="b" * 40)
 
-    task = ImprovementTask(title="Fix both", description="...")
+    task = ImprovementTask(
+        title="Fix both",
+        description="...",
+        criterion_id=finding_a.criterion_id,
+        file=None,
+        group_key="fix-both",
+    )
     db_session.add(task)
     db_session.commit()
     db_session.refresh(task)

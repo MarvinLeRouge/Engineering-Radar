@@ -109,7 +109,13 @@ def test_full_audit_to_roadmap_chain(db_session):
     db_session.add(criterion_score)
     db_session.commit()
 
-    task = ImprovementTask(title="Rotate leaked credential", description="See finding evidence.")
+    task = ImprovementTask(
+        title="Rotate leaked credential",
+        description="See finding evidence.",
+        criterion_id=criterion.id,
+        file="config.py",
+        group_key="end-to-end-test-key",
+    )
     db_session.add(task)
     db_session.commit()
     db_session.refresh(task)
