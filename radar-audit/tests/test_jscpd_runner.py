@@ -180,3 +180,114 @@ def test_excludes_markdown_files_from_the_scan(tmp_path):
     # jscpd names a clone as "<path>:<format>" (e.g. "CONTRIBUTING.md:bash"), so
     # check the path component, not the raw name string.
     assert all(not name.split(":")[0].endswith(".md") for name in duplicate_files)
+
+
+def test_excludes_tests_directory_from_the_scan(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
+            "tests/a.js": _DUPLICATE_A,
+            "tests/b.js": _DUPLICATE_B,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
+    duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
+        d["secondFile"]["name"] for d in result.raw_output["duplicates"]
+    }
+    assert all("tests" not in name for name in duplicate_files)
+
+
+def test_excludes_singular_test_directory_from_the_scan(tmp_path):
+    # HexaRot's NestJS backend uses "test/" (singular), confirmed empirically
+    # against the real checkout, not just "tests/" (GeoChallenge-Tracker,
+    # Summit-Stats).
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
+            "test/a.js": _DUPLICATE_A,
+            "test/b.js": _DUPLICATE_B,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
+    duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
+        d["secondFile"]["name"] for d in result.raw_output["duplicates"]
+    }
+    assert all("test" not in name for name in duplicate_files)
+
+
+def test_excludes_dunder_tests_directory_from_the_scan(tmp_path):
+    # Summit-Stats' Vue frontend uses "__tests__/", confirmed empirically.
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
+            "__tests__/a.js": _DUPLICATE_A,
+            "__tests__/b.js": _DUPLICATE_B,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
+    duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
+        d["secondFile"]["name"] for d in result.raw_output["duplicates"]
+    }
+    assert all("__tests__" not in name for name in duplicate_files)
+
+
+def test_excludes_e2e_directory_from_the_scan(tmp_path):
+    # Summit-Stats' Playwright suite uses "e2e/", with spec files sharing a
+    # helpers/auth.js fixture -- confirmed empirically against the real
+    # checkout.
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.js": _DUPLICATE_A,
+            "src/b.js": _DUPLICATE_B,
+            "e2e/a.spec.js": _DUPLICATE_A,
+            "e2e/b.spec.js": _DUPLICATE_B,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
+    duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
+        d["secondFile"]["name"] for d in result.raw_output["duplicates"]
+    }
+    assert all("e2e" not in name for name in duplicate_files)
+
+
+def test_does_not_exclude_a_directory_whose_name_merely_contains_test(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "testing-utils/a.js": _DUPLICATE_A,
+            "testing-utils/b.js": _DUPLICATE_B,
+        },
+    )
+
+    runner = JscpdRunner()
+    result = runner.run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["duplicates"]
