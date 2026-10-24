@@ -12,3 +12,6 @@ __pycache__/
 htmlcov/
 .superpowers/
 radar-audit/reports/
+
+# Tooling
+.codegraph
