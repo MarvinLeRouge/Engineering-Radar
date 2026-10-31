@@ -104,6 +104,8 @@ describe('repositories store', () => {
         improvement_task_id: 1,
         title: 'Fix it',
         description: '...',
+        category_name: 'Security',
+        criterion_name: 'SAST findings',
         status: 'TODO',
         priority: 1,
         estimated_effort: null,

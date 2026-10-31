@@ -21,6 +21,8 @@ const item: RoadmapItemRead = {
   improvement_task_id: 1,
   title: 'Fix it',
   description: 'a description',
+  category_name: 'Security',
+  criterion_name: 'SAST findings',
   status: 'IN_PROGRESS',
   priority: 1,
   estimated_effort: null,

@@ -55,6 +55,14 @@
     </section>
 
     <section v-else-if="tab === 'roadmap'">
+      <a
+        v-if="store.roadmap.length > 0"
+        href="#"
+        class="repository-detail-view__roadmap-export"
+        @click.prevent="exportRoadmapAsMarkdown"
+      >
+        Export as md
+      </a>
       <p v-if="store.roadmapLoading && !store.roadmap.length" class="repository-detail-view__status">
         Loading...
       </p>
@@ -96,6 +104,7 @@ import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
 import ScoreHistoryChart from '@/components/ScoreHistoryChart.vue'
 import { useRepositoriesStore } from '@/stores/repositories'
 import { extractRepositoryId } from '@/utils/slugify'
+import { downloadRoadmapMarkdown } from '@/utils/roadmapMarkdown'
 
 const route = useRoute()
 const router = useRouter()
@@ -119,6 +128,10 @@ function refetchRoadmap(): void {
   if (repositoryId !== null) {
     store.fetchRoadmap(repositoryId)
   }
+}
+
+function exportRoadmapAsMarkdown(): void {
+  downloadRoadmapMarkdown(store.roadmap)
 }
 
 function showLatestReport(): void {
@@ -248,6 +261,13 @@ onMounted(() => {
 
 .criterion__name {
   flex: 1;
+}
+
+.repository-detail-view__roadmap-export {
+  display: inline-block;
+  margin-bottom: var(--space-4);
+  color: var(--color-accent);
+  font-weight: var(--weight-medium);
 }
 
 .repository-detail-view__roadmap-list {

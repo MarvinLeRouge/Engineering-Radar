@@ -7,6 +7,7 @@ from radar_core.enums import RoadmapStatus
 from radar_core.models.audit import Audit
 from radar_core.models.finding import Evidence, Finding
 from radar_core.models.links import FindingImprovementTaskLink
+from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.roadmap import ImprovementTask, RoadmapItem
 from radar_core.models.scoring import ScoringRun
@@ -20,7 +21,10 @@ router = APIRouter(tags=["roadmap"])
 
 
 def _to_roadmap_item_read(
-    roadmap_item: RoadmapItem, improvement_task: ImprovementTask
+    roadmap_item: RoadmapItem,
+    improvement_task: ImprovementTask,
+    criterion: Criterion,
+    category: Category,
 ) -> RoadmapItemRead:
     assert roadmap_item.id is not None
     return RoadmapItemRead(
@@ -28,6 +32,8 @@ def _to_roadmap_item_read(
         improvement_task_id=roadmap_item.improvement_task_id,
         title=improvement_task.title,
         description=improvement_task.description,
+        category_name=category.name,
+        criterion_name=criterion.name,
         status=roadmap_item.status.value,
         priority=roadmap_item.priority,
         estimated_effort=roadmap_item.estimated_effort,
@@ -57,8 +63,10 @@ def list_roadmap_items(
         raise HTTPException(status_code=404, detail="repository not found")
 
     rows = session.exec(
-        select(RoadmapItem, ImprovementTask)
+        select(RoadmapItem, ImprovementTask, Criterion, Category)
         .join(ImprovementTask, ImprovementTask.id == RoadmapItem.improvement_task_id)  # type: ignore[arg-type]
+        .join(Criterion, Criterion.id == ImprovementTask.criterion_id)  # type: ignore[arg-type]
+        .join(Category, Category.id == Criterion.category_id)  # type: ignore[arg-type]
         .join(
             FindingImprovementTaskLink,
             FindingImprovementTaskLink.improvement_task_id == ImprovementTask.id,  # type: ignore[arg-type]
@@ -68,8 +76,12 @@ def list_roadmap_items(
         .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
         .where(Audit.repository_id == repository_id)
         .distinct()
+        .order_by(Category.order, Criterion.id, ImprovementTask.title)  # type: ignore[arg-type]
     ).all()
-    return [_to_roadmap_item_read(item, task) for item, task in rows]
+    return [
+        _to_roadmap_item_read(item, task, criterion, category)
+        for item, task, criterion, category in rows
+    ]
 
 
 @router.get(
@@ -147,4 +159,8 @@ def update_roadmap_item_status(
     session.refresh(roadmap_item)
     improvement_task = session.get(ImprovementTask, roadmap_item.improvement_task_id)
     assert improvement_task is not None
-    return _to_roadmap_item_read(roadmap_item, improvement_task)
+    criterion = session.get(Criterion, improvement_task.criterion_id)
+    assert criterion is not None
+    category = session.get(Category, criterion.category_id)
+    assert category is not None
+    return _to_roadmap_item_read(roadmap_item, improvement_task, criterion, category)

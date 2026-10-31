@@ -98,6 +98,7 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 - [ ] Compute ROI indicators (impact/effort/risk reduction, clearly marked as estimates)
 - [ ] Publish the living roadmap
 - [x] FEAT-023 - Promote `Finding`/`Recommendation` data into `ImprovementTask`/`RoadmapItem` rows so the dashboard's roadmap tab is populated automatically: grouped by `(criterion_id, file)` (bypassed, one finding per task, for dependency circularity, code duplication, and any finding with no file), `priority` computed as `worst_severity_in_group x files_impacted / files_to_fix` (float, 1 decimal), upserted by a stable group key so a human-set status/estimated_effort/done_at survives a re-audit the same way `Finding.fingerprint` already does (FEAT-022). Runs automatically at the end of every `radar-audit score`
+- [x] FEAT-024 - Add an "Export as md" link to the dashboard's roadmap tab: downloads `roadmap-corrections.md`, items sorted by category (H2) then criterion (H3), each rendered as a checkbox (checked when `DONE`) followed by its description, title stripped of its redundant criterion-name prefix
 
 ## Section 8 - Continuous tracking and re-audits
 

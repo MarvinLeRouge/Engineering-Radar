@@ -11,6 +11,8 @@ class RoadmapItemRead(BaseModel):
     improvement_task_id: int
     title: str
     description: str
+    category_name: str
+    criterion_name: str
     status: str
     priority: float
     estimated_effort: str | None
