@@ -77,6 +77,8 @@ export interface RoadmapItemRead {
   improvement_task_id: number
   title: string
   description: string
+  category_name: string
+  criterion_name: string
   status: string
   priority: number
   estimated_effort: string | null

@@ -384,3 +384,87 @@ def test_list_roadmap_items_includes_task_title_and_description(client, db_sessi
     body = response.json()
     assert body[0]["title"] == "Fix it"
     assert body[0]["description"] == "..."
+    assert body[0]["category_name"] == "Security"
+    assert body[0]["criterion_name"] == "SAST findings"
+
+
+def test_list_roadmap_items_sorted_by_category_order_then_criterion(client, db_session):
+    repo = _make_repository(db_session, "repo-roadmap-sorted")
+
+    audit = Audit(repository_id=repo.id, commit_sha="c" * 40, is_dirty=False)
+    db_session.add(audit)
+    db_session.commit()
+    db_session.refresh(audit)
+
+    methodology_version = MethodologyVersion(version_label=f"v-sorted-{repo.id}")
+    db_session.add(methodology_version)
+    db_session.commit()
+    db_session.refresh(methodology_version)
+
+    scoring_run = ScoringRun(audit_id=audit.id, methodology_version_id=methodology_version.id)
+    db_session.add(scoring_run)
+    db_session.commit()
+    db_session.refresh(scoring_run)
+
+    category_a = Category(
+        methodology_version_id=methodology_version.id, name="Z Category", weight=1.0, order=2
+    )
+    category_b = Category(
+        methodology_version_id=methodology_version.id, name="A Category", weight=1.0, order=1
+    )
+    db_session.add(category_a)
+    db_session.add(category_b)
+    db_session.commit()
+    db_session.refresh(category_a)
+    db_session.refresh(category_b)
+
+    criterion_a = Criterion(
+        category_id=category_a.id,
+        name="Criterion in Z",
+        description="...",
+        weight=1.0,
+        scoring_model=ScoringModel.FIXED_SCALE,
+    )
+    criterion_b = Criterion(
+        category_id=category_b.id,
+        name="Criterion in A",
+        description="...",
+        weight=1.0,
+        scoring_model=ScoringModel.FIXED_SCALE,
+    )
+    db_session.add(criterion_a)
+    db_session.add(criterion_b)
+    db_session.commit()
+    db_session.refresh(criterion_a)
+    db_session.refresh(criterion_b)
+
+    finding_a = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion_a.id,
+        severity=FindingSeverity.HIGH,
+        description="in z category",
+        confidence=Confidence.HIGH,
+    )
+    finding_b = Finding(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion_b.id,
+        severity=FindingSeverity.HIGH,
+        description="in a category",
+        confidence=Confidence.HIGH,
+    )
+    db_session.add(finding_a)
+    db_session.add(finding_b)
+    db_session.commit()
+    db_session.refresh(finding_a)
+    db_session.refresh(finding_b)
+
+    _make_roadmap_item(db_session, finding_a)
+    _make_roadmap_item(db_session, finding_b)
+
+    response = client.get(f"/repositories/{repo.id}/roadmap")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 2
+    assert body[0]["category_name"] == "A Category"
+    assert body[1]["category_name"] == "Z Category"

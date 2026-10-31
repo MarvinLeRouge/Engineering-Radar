@@ -99,6 +99,7 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 - [ ] Calculer les indicateurs de ROI (impact/effort/réduction de risque, clairement marqués comme des estimations)
 - [ ] Publier la roadmap vivante
 - [x] FEAT-023 - Promouvoir les données `Finding`/`Recommendation` en lignes `ImprovementTask`/`RoadmapItem` pour que l'onglet roadmap du dashboard se peuple automatiquement : regroupement par `(criterion_id, file)` (contourné, un finding par tâche, pour la circularité de dépendances, la duplication de code, et tout finding sans fichier), `priority` calculée comme `pire_sévérité_du_groupe x fichiers_impactés / fichiers_à_corriger` (flottant, 1 décimale), upsert via une clé de groupe stable pour qu'un statut/effort estimé/date de clôture posé par un humain survive à un réaudit, de la même façon que `Finding.fingerprint` le fait déjà (FEAT-022). Se déclenche automatiquement à la fin de chaque `radar-audit score`
+- [x] FEAT-024 - Ajouter un lien "Export as md" dans l'onglet roadmap du dashboard : télécharge `roadmap-corrections.md`, items triés par catégorie (H2) puis critère (H3), chacun rendu en checkbox (cochée si `DONE`) suivie de sa description, titre débarrassé de son préfixe redondant avec le nom du critère
 
 ## Section 8 - Suivi continu et réaudits
 
