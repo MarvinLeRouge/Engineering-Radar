@@ -272,6 +272,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract _score_tool_result dispatch out of normalize_docstring_coverage (FIX-020)
 - *(radar-audit)* Extract per-finding and scoring helpers out of normalize_secrets_in_history (FIX-020)
 - *(radar-audit)* Extract per-tool-result scoring out of normalize_dependency_circularity (FIX-020)
+- *(radar-audit)* Extract per-tool-result scoring out of normalize_dead_code (FIX-020)
 
 ### 📚 Documentation
 
