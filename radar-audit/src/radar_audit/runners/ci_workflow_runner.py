@@ -68,13 +68,11 @@ class CiWorkflowRunner:
         test_execution_found = False
         playwright_execution_found = False
         for workflow_file in workflow_files:
-            for run_value in self._run_steps(workflow_file):
-                for candidate in (run_value, *self._resolved_scripts(run_value, package_scripts)):
-                    lowered = candidate.lower()
-                    if any(keyword in lowered for keyword in _TEST_KEYWORDS):
-                        test_execution_found = True
-                    if any(keyword in lowered for keyword in _PLAYWRIGHT_KEYWORDS):
-                        playwright_execution_found = True
+            file_test_found, file_playwright_found = self._scan_workflow_file(
+                workflow_file, package_scripts
+            )
+            test_execution_found = test_execution_found or file_test_found
+            playwright_execution_found = playwright_execution_found or file_playwright_found
 
         duration_ms = int((time.monotonic() - start) * 1000)
         return RawToolOutput(
@@ -87,6 +85,20 @@ class CiWorkflowRunner:
             exit_code=0,
             duration_ms=duration_ms,
         )
+
+    def _scan_workflow_file(
+        self, workflow_file: Path, package_scripts: dict[str, str]
+    ) -> tuple[bool, bool]:
+        test_found = False
+        playwright_found = False
+        for run_value in self._run_steps(workflow_file):
+            for candidate in (run_value, *self._resolved_scripts(run_value, package_scripts)):
+                lowered = candidate.lower()
+                if any(keyword in lowered for keyword in _TEST_KEYWORDS):
+                    test_found = True
+                if any(keyword in lowered for keyword in _PLAYWRIGHT_KEYWORDS):
+                    playwright_found = True
+        return test_found, playwright_found
 
     def _run_steps(self, workflow_file: Path) -> list[str]:
         try:
