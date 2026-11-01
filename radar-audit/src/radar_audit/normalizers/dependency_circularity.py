@@ -50,30 +50,9 @@ def normalize_dependency_circularity(
 
     worst_value: float | None = None
     for tool_result in relevant:
-        if not _is_usable(tool_result):
+        value = _score_tool_result(session, scoring_run, criterion, tool_result)
+        if value is None:
             continue
-        cycles = _detect_cycles(tool_result)
-        for cycle_nodes in cycles:
-            description = f"Circular dependency involving: {', '.join(sorted(cycle_nodes))}"
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=FindingSeverity.MEDIUM,
-                    description=description,
-                    fingerprint=compute_fingerprint(
-                        criterion.id, FindingSeverity.MEDIUM, None, description
-                    ),
-                    confidence=Confidence.HIGH,
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                "Break the circular dependency by introducing an interface, applying "
-                "dependency inversion, or moving the shared code to a separate module.",
-            )
-        value = _band_value(len(cycles))
         if worst_value is None or value < worst_value:
             worst_value = value
 
@@ -91,6 +70,45 @@ def normalize_dependency_circularity(
     session.commit()
     session.refresh(score)
     return score
+
+
+def _score_tool_result(
+    session: Session, scoring_run: ScoringRun, criterion: Criterion, tool_result: ToolResult
+) -> float | None:
+    if not _is_usable(tool_result):
+        return None
+    cycles = _detect_cycles(tool_result)
+    for cycle_nodes in cycles:
+        _add_cycle_finding(session, scoring_run, criterion, tool_result, cycle_nodes)
+    return _band_value(len(cycles))
+
+
+def _add_cycle_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    cycle_nodes: frozenset[str],
+) -> None:
+    description = f"Circular dependency involving: {', '.join(sorted(cycle_nodes))}"
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=FindingSeverity.MEDIUM,
+            description=description,
+            fingerprint=compute_fingerprint(
+                criterion.id, FindingSeverity.MEDIUM, None, description
+            ),
+            confidence=Confidence.HIGH,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        "Break the circular dependency by introducing an interface, applying "
+        "dependency inversion, or moving the shared code to a separate module.",
+    )
 
 
 def _band_value(cycle_count: int) -> float:
