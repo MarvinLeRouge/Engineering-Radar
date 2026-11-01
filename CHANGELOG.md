@@ -241,6 +241,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Preserve human-set finding verdicts across a run rerun (FIX-015)
 - *(radar-api,radar-audit)* Run containers as a non-root user (FIX-016)
 - *(radar-audit)* Parse junit/clover/coverage XML reports with defusedxml (FIX-016)
+- *(ci)* Pin actions/checkout and actions/setup-node to a commit SHA (FIX-016)
 
 ### 🚜 Refactor
 
