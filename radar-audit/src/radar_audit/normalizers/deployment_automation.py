@@ -1,3 +1,5 @@
+"""Normalizer scoring deployment automation from CI workflows that push to a registry."""
+
 # radar-audit/src/radar_audit/normalizers/deployment_automation.py
 from __future__ import annotations
 
@@ -23,6 +25,7 @@ def normalize_deployment_automation(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score deployment automation by whether a CI workflow pushes images to a registry."""
     target_path = get_repository_path(session, scoring_run)
     workflows_dir = target_path / ".github" / "workflows"
     if not workflows_dir.is_dir():

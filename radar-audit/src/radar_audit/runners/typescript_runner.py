@@ -1,3 +1,5 @@
+"""Runner for tsc or vue-tsc, which type-checks the target's TypeScript project."""
+
 from __future__ import annotations
 
 import json
@@ -26,6 +28,7 @@ class TypeScriptRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs tsc or vue-tsc with --noEmit against the target and parses its diagnostics."""
         if not (target_path / "tsconfig.json").exists():
             # No tsconfig.json means this JS subproject doesn't opt into
             # TypeScript checking at all; running tsc anyway would just print

@@ -1,3 +1,5 @@
+"""Normalizer scoring docstring coverage from docvet and phpdoc-checker."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -39,6 +41,7 @@ def normalize_docstring_coverage(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score docstring coverage from docvet or phpdoc-checker, N/A for JS/TS-only repos."""
     worst_value: float | None = None
     worst_confidence: Confidence | None = None
 

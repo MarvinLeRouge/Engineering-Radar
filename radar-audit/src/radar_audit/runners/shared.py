@@ -1,3 +1,5 @@
+"""Shared helpers that relativize file paths in tool output."""
+
 from __future__ import annotations
 
 from pathlib import Path

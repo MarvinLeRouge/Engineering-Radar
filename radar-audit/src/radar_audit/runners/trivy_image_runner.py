@@ -1,3 +1,5 @@
+"""Runner for Trivy, which scans a locally built Docker image for HIGH and CRITICAL CVEs."""
+
 from __future__ import annotations
 
 import json
@@ -42,6 +44,7 @@ class TrivyImageRunner:
         self._scanned_images: set[str] = set()
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Finds the subproject's local Docker image and scans it with Trivy through Docker."""
         image = self._find_local_image(target_path)
         if image is None:
             return RawToolOutput(

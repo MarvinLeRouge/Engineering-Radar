@@ -1,3 +1,5 @@
+"""Runner for Laravel Pint, run from the target's local vendor/bin in test mode."""
+
 from __future__ import annotations
 
 import json
@@ -19,6 +21,7 @@ class PintRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs the target's local Pint in test mode and sets the result from the exit code."""
         local_bin = target_path / "vendor" / "bin" / "pint"
         if not local_bin.exists():
             return RawToolOutput(

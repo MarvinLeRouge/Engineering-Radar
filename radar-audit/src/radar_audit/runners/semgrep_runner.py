@@ -1,3 +1,5 @@
+"""Runner for Semgrep, which runs its auto ruleset for SAST findings."""
+
 from __future__ import annotations
 
 import json
@@ -24,6 +26,7 @@ class SemgrepRunner:
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs Semgrep with the auto ruleset in JSON mode and returns its results."""
         command = ["uvx", "semgrep", "--config", "auto", "--json"]
         for excluded in exclude_paths:
             try:

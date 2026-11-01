@@ -1,3 +1,5 @@
+"""Runner for Vitest, using the target's locally installed binary."""
+
 from __future__ import annotations
 
 import json
@@ -36,6 +38,7 @@ class VitestRunner:
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs the target's local Vitest with a JSON report and parses its results."""
         local_bin = target_path / "node_modules" / ".bin" / "vitest"
         if not local_bin.exists():
             return RawToolOutput(

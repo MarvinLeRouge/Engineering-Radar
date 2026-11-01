@@ -1,3 +1,5 @@
+"""Normalizer scoring pre-commit gate coverage of lint, format and type-check hooks."""
+
 # src/radar_audit/normalizers/precommit_gate.py
 from __future__ import annotations
 
@@ -69,6 +71,7 @@ def normalize_precommit_gate(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score pre-commit gate coverage of lint, format and type-check hooks per domain."""
     relevant = [r for r in tool_results if r.tool_name == "pre-commit-gate" and r.exit_code == 0]
     if not relevant:
         return None

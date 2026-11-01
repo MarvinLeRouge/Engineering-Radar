@@ -1,3 +1,5 @@
+"""Helpers for running Dockerized static-analysis tools."""
+
 from __future__ import annotations
 
 import subprocess

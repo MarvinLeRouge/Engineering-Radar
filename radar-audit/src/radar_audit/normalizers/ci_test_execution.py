@@ -1,3 +1,5 @@
+"""Normalizer scoring whether CI workflows execute a test command."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -19,6 +21,7 @@ def normalize_ci_test_execution(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score whether any CI workflow invokes a test command, from the ci-workflow scan."""
     relevant = [r for r in tool_results if r.tool_name == "ci-workflow" and r.exit_code == 0]
     if not relevant:
         return None

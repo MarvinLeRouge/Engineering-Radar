@@ -1,3 +1,5 @@
+"""Runner for pytest with coverage, run through uvx against the target's dependencies."""
+
 from __future__ import annotations
 
 import subprocess
@@ -24,6 +26,7 @@ class PytestCoverageRunner:
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs pytest with JUnit and coverage XML reports, then parses both."""
         with tempfile.TemporaryDirectory() as report_dir:
             junit_path = Path(report_dir) / "junit.xml"
             coverage_path = Path(report_dir) / "coverage.xml"

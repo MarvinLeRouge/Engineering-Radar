@@ -1,3 +1,5 @@
+"""Normalizer scoring CI workflow health from actionlint findings."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -24,6 +26,7 @@ def normalize_ci_health(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score CI workflow health from actionlint findings, banded by finding count."""
     relevant = [
         r
         for r in tool_results

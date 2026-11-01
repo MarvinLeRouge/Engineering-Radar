@@ -1,3 +1,5 @@
+"""Runner for PHPMD's codesize and unusedcode rulesets, run from a scratch Composer project."""
+
 from __future__ import annotations
 
 import re
@@ -24,6 +26,7 @@ class PhpmdComplexityRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs PHPMD from a scratch Composer project and collects its violations."""
         start = time.monotonic()
         with tempfile.TemporaryDirectory() as scratch_dir:
             scratch = Path(scratch_dir)

@@ -1,3 +1,5 @@
+"""Normalizer scoring secrets in git history from gitleaks findings."""
+
 from __future__ import annotations
 
 import re
@@ -40,6 +42,7 @@ def normalize_secrets_in_history(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score git history secrets from gitleaks findings, split into confirmed and pre-filtered."""
     # A failed gitleaks run (crash record, Docker unreachable, missing report) is
     # missing data, never a clean "no secrets" result.
     relevant = [

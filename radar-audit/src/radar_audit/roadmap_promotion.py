@@ -1,3 +1,5 @@
+"""Grouping of scoring findings into improvement tasks and roadmap items."""
+
 from __future__ import annotations
 
 import re

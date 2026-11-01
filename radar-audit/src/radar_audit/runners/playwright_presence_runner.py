@@ -1,3 +1,5 @@
+"""Detector for Playwright E2E test setup in JavaScript projects."""
+
 from __future__ import annotations
 
 import json
@@ -22,6 +24,7 @@ class PlaywrightPresenceRunner:
     timeout_s = 10
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Checks for a Playwright config file or @playwright/test devDependency, no subprocess."""
         start = time.monotonic()
 
         present = any((target_path / filename).exists() for filename in _CONFIG_FILENAMES)

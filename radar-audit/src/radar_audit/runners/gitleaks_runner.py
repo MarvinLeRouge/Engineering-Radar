@@ -1,3 +1,5 @@
+"""Runner for Gitleaks, which scans the Git history of a repo for committed secrets."""
+
 from __future__ import annotations
 
 import json
@@ -27,6 +29,7 @@ class GitleaksRunner:
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs Gitleaks in git-history mode through Docker and normalizes its findings."""
         with tempfile.TemporaryDirectory() as output_dir:
             args = [
                 "-v",

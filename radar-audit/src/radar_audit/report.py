@@ -1,3 +1,5 @@
+"""Markdown report rendering and writing for a scored repository."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -37,6 +39,7 @@ def _get_latest_scoring_run(
 
 
 def render_report(session: Session, repo_name: str) -> str:
+    """Render a repository's latest scoring run as Markdown, grouped by category and criterion."""
     repository = get_repository_by_name(session, repo_name)
     assert repository.id is not None
     scoring_run = _get_latest_scoring_run(session, repository.id, repository.name)
@@ -120,6 +123,7 @@ def _finding_location(finding: Finding) -> str:
 
 
 def write_report(markdown: str, repo_name: str, output_dir: Path) -> Path:
+    """Write the Markdown report to output_dir/<repo_name>/latest.md and return that path."""
     target_dir = output_dir / repo_name
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / "latest.md"

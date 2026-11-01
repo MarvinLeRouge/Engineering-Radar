@@ -1,3 +1,5 @@
+"""Normalizer scoring unit test pass rate and coverage from test runner results."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -36,6 +38,7 @@ def normalize_unit_test_pass_rate(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score unit test pass rate from pytest-cov, vitest and pest, one finding per failure."""
     relevant = []
     for r in tool_results:
         if r.tool_name not in _RELEVANT_TOOLS:

@@ -1,3 +1,5 @@
+"""Normalizer scoring error tracking from Sentry SDK presence and DSN configuration."""
+
 from __future__ import annotations
 
 import re
@@ -41,6 +43,7 @@ def normalize_error_tracking(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score error tracking from Sentry SDK presence and whether its DSN is env-sourced."""
     target_path = get_repository_path(session, scoring_run)
     candidate_dirs = sorted({subproject.path for subproject in discover_subprojects(target_path)})
 

@@ -1,3 +1,5 @@
+"""Matching of an audited repository's root .gitignore patterns against file paths."""
+
 from __future__ import annotations
 
 from pathlib import Path

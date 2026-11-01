@@ -1,3 +1,5 @@
+"""Registry mapping each audit criterion to the normalizer that scores it."""
+
 from __future__ import annotations
 
 from collections.abc import Callable

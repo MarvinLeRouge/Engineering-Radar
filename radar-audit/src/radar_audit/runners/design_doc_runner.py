@@ -1,3 +1,5 @@
+"""Runner that checks the repo for a design document or ADR directory."""
+
 from __future__ import annotations
 
 import time
@@ -20,6 +22,7 @@ class DesignDocRunner:
     timeout_s = 10
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Checks for DESIGN.md, ARCHITECTURE.md or an ADR directory and counts its lines."""
         start = time.monotonic()
 
         found_path, non_blank_lines = self._find_doc(target_path)

@@ -1,3 +1,5 @@
+"""Normalizer scoring module size from per-file non-blank line counts."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -21,6 +23,7 @@ def normalize_module_size(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score module size by the share of source files under the non-blank line threshold."""
     relevant = [r for r in tool_results if r.tool_name in _RELEVANT_TOOLS and r.exit_code == 0]
     if not relevant:
         return None

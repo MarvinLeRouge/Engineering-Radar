@@ -1,3 +1,5 @@
+"""Normalizer scoring API documentation tooling from declared FastAPI or L5-Swagger dependencies."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, ScoreLevel
@@ -30,6 +32,7 @@ def normalize_api_documentation(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score API documentation tooling from FastAPI or L5-Swagger declared dependencies."""
     target_path = get_repository_path(session, scoring_run)
     # A monorepo-style repo (e.g. separate backend/frontend subprojects) keeps
     # its manifest one level below the repo root, not at the root itself.

@@ -1,3 +1,5 @@
+"""Normalizer scoring structured logging from detected logging packages."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, ScoreLevel
@@ -30,6 +32,7 @@ def normalize_structured_logging(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score structured logging by detecting a Python or JavaScript structured logging package."""
     target_path = get_repository_path(session, scoring_run)
     candidate_dirs = sorted({subproject.path for subproject in discover_subprojects(target_path)})
 

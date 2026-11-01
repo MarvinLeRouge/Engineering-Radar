@@ -1,3 +1,5 @@
+"""Normalizer scoring declared dependency vulnerabilities from audit tools."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -32,6 +34,7 @@ def normalize_dependency_vulnerabilities(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score declared dependency vulnerabilities from pip-audit, pnpm-audit and composer-audit."""
     relevant = [
         r
         for r in tool_results

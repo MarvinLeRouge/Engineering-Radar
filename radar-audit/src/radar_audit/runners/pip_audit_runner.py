@@ -1,3 +1,5 @@
+"""Runner for pip-audit, which checks Python requirements for known vulnerabilities."""
+
 from __future__ import annotations
 
 import json
@@ -26,6 +28,7 @@ class PipAuditRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs pip-audit on requirements.txt through uvx and normalizes its vulnerabilities."""
         manifest = target_path / "requirements.txt"
         if not manifest.exists():
             return RawToolOutput(

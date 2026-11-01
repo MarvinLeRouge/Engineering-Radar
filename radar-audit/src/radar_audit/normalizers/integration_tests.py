@@ -1,3 +1,5 @@
+"""Normalizer scoring integration test presence from test file heuristics."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, ScoreLevel
@@ -13,6 +15,7 @@ def normalize_integration_tests(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score integration test presence from the ratio of integration to total test files."""
     relevant = [
         r for r in tool_results if r.tool_name == "integration-test-heuristic" and r.exit_code == 0
     ]

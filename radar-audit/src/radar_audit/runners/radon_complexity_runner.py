@@ -1,3 +1,5 @@
+"""Runner for radon's cyclomatic complexity analysis of Python code."""
+
 from __future__ import annotations
 
 import json
@@ -29,6 +31,7 @@ class RadonComplexityRunner:
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs radon cc in JSON mode over the Python subproject, skipping vendored directories."""
         patterns = [f"{target_path}{suffix}" for suffix in _SKIP_GLOB_SUFFIXES]
         patterns.extend(f"{excluded}/*" for excluded in exclude_paths)
         command = ["uvx", "radon", "cc", "--json", "-e", ",".join(patterns), str(target_path)]

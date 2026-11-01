@@ -1,3 +1,5 @@
+"""Detection of the stacked subprojects inside an audited repository."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,11 +15,14 @@ _MANIFEST_STACKS: dict[str, str] = {
 
 @dataclass(frozen=True)
 class SubProject:
+    """A subproject directory paired with the stack detected from its manifest files."""
+
     path: Path
     stack: str
 
 
 def discover_subprojects(repo_path: Path) -> list[SubProject]:
+    """List the repo root and its visible child directories that contain a stack manifest."""
     subprojects = [SubProject(path=repo_path, stack=stack) for stack in _manifests_at(repo_path)]
 
     for child in sorted(

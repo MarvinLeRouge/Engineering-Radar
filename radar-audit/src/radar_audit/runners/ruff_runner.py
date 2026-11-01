@@ -1,3 +1,5 @@
+"""Runner for Ruff's linter, which checks Python code with JSON output."""
+
 from __future__ import annotations
 
 import json
@@ -22,6 +24,7 @@ class RuffRunner:
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs ruff check in JSON mode over the Python subproject and counts its files."""
         command = [
             "uvx",
             "ruff",

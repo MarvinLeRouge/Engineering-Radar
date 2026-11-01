@@ -1,3 +1,5 @@
+"""Git worktree discovery used to exclude linked worktrees from audits."""
+
 from __future__ import annotations
 
 import subprocess

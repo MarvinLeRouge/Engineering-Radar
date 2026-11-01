@@ -1,3 +1,5 @@
+"""Runner for knip, which detects unused exports in JS/TS projects."""
+
 from __future__ import annotations
 
 import json
@@ -41,6 +43,7 @@ class KnipRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs knip with an audit-owned config over the detected entry points."""
         entries = [c for c in _DEFAULT_ENTRY_CANDIDATES if (target_path / c).exists()]
         if not entries:
             # No `issues` key: knip never analyzed anything, so the normalizer

@@ -1,3 +1,5 @@
+"""Runner for Pest, the PHP test framework, run from the target's local vendor/bin."""
+
 from __future__ import annotations
 
 import subprocess
@@ -25,6 +27,7 @@ class PestRunner:
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs the target's local Pest with JUnit and Clover reports, then parses both."""
         local_bin = target_path / "vendor" / "bin" / "pest"
         if not local_bin.exists():
             return RawToolOutput(

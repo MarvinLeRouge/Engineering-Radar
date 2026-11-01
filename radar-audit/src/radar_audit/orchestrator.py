@@ -1,3 +1,5 @@
+"""Planning and execution of a repository audit across all tool runners."""
+
 from __future__ import annotations
 
 import subprocess
@@ -19,6 +21,7 @@ from radar_audit.worktree import compute_exclude_paths
 
 
 def resolve_repository(session: Session, repo_path: Path, repo_name: str) -> Repository:
+    """Return the Repository row for repo_path, creating it if it does not exist yet."""
     existing = session.exec(select(Repository).where(Repository.path == str(repo_path))).first()
     if existing is not None:
         return existing
@@ -31,6 +34,7 @@ def resolve_repository(session: Session, repo_path: Path, repo_name: str) -> Rep
 
 
 def get_commit_sha(repo_path: Path) -> str:
+    """Return the HEAD commit SHA of the repository at repo_path."""
     result = subprocess.run(
         ["git", "-C", str(repo_path), "rev-parse", "HEAD"],
         capture_output=True,
@@ -41,6 +45,7 @@ def get_commit_sha(repo_path: Path) -> str:
 
 
 def is_dirty(repo_path: Path) -> bool:
+    """Tell whether the repository at repo_path has uncommitted changes."""
     result = subprocess.run(
         ["git", "-C", str(repo_path), "status", "--porcelain"],
         capture_output=True,
@@ -80,6 +85,8 @@ def get_or_create_audit(session: Session, repository: Repository) -> Audit:
 
 @dataclass(frozen=True)
 class AuditPlan:
+    """The resolved repository location, audited subprojects and excluded worktrees."""
+
     repository_name: str
     repository_path: Path
     subprojects: list[SubProject]
@@ -87,6 +94,7 @@ class AuditPlan:
 
 
 def plan_audit(config: PortfolioConfig, repo_name: str) -> AuditPlan:
+    """Resolve a repository's subprojects and excluded worktrees without running any tool."""
     repo_path = config.resolve_repo_path(repo_name)
     exclude_paths = compute_exclude_paths(repo_path)
     subprojects = [
@@ -127,6 +135,8 @@ def _subproject_exclusions(target_path: Path, subprojects: list[SubProject]) -> 
 
 @dataclass(frozen=True)
 class PlannedRun:
+    """One tool invocation to perform: the runner and the path it targets."""
+
     target_path: Path
     runner: ToolRunner
 
@@ -166,6 +176,7 @@ def execute_audit(
     repo_name: str,
     runners: list[ToolRunner],
 ) -> Audit:
+    """Run every planned tool for a repository and persist the results under an Audit row."""
     plan = plan_audit(config, repo_name)
 
     seed_taxonomy(session)

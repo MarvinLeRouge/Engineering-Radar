@@ -1,3 +1,5 @@
+"""Normalizer scoring architecture documentation for contributor onboarding."""
+
 from __future__ import annotations
 
 from radar_core.models.audit import ToolResult
@@ -19,6 +21,7 @@ def normalize_architecture_documentation(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score the existence and depth of architecture documentation for contributor onboarding."""
     return score_design_doc_evidence(
         session,
         scoring_run,
