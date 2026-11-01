@@ -46,16 +46,7 @@ def normalize_docstring_coverage(
     worst_confidence: Confidence | None = None
 
     for tool_result in tool_results:
-        if tool_result.tool_name == "docvet" and tool_result.exit_code in _DOCVET_USABLE_EXIT_CODES:
-            value = _score_docvet(session, scoring_run, criterion, tool_result)
-        elif (
-            tool_result.tool_name == "phpdoc-checker"
-            and tool_result.exit_code in _PHPDOC_CHECKER_USABLE_EXIT_CODES
-        ):
-            value = _score_phpdoc_checker(session, scoring_run, criterion, tool_result)
-        else:
-            continue
-
+        value = _score_tool_result(session, scoring_run, criterion, tool_result)
         if value is None:
             continue
         if worst_value is None or value < worst_value:
@@ -76,6 +67,19 @@ def normalize_docstring_coverage(
     session.commit()
     session.refresh(score)
     return score
+
+
+def _score_tool_result(
+    session: Session, scoring_run: ScoringRun, criterion: Criterion, tool_result: ToolResult
+) -> float | None:
+    if tool_result.tool_name == "docvet" and tool_result.exit_code in _DOCVET_USABLE_EXIT_CODES:
+        return _score_docvet(session, scoring_run, criterion, tool_result)
+    if (
+        tool_result.tool_name == "phpdoc-checker"
+        and tool_result.exit_code in _PHPDOC_CHECKER_USABLE_EXIT_CODES
+    ):
+        return _score_phpdoc_checker(session, scoring_run, criterion, tool_result)
+    return None
 
 
 def _score_js_ts_only(

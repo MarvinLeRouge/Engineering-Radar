@@ -269,6 +269,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract _scan_workflow_file out of CiWorkflowRunner.run (FIX-020)
 - *(radar-audit)* Extract per-result processing out of normalize_unit_test_pass_rate (FIX-020)
 - *(radar-audit)* Extract status/finding helpers out of normalize_e2e_tests (FIX-020)
+- *(radar-audit)* Extract _score_tool_result dispatch out of normalize_docstring_coverage (FIX-020)
 
 ### 📚 Documentation
 
