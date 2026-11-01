@@ -1,3 +1,5 @@
+"""Normalizer scoring Dockerfile hardening from hadolint findings and severities."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -38,6 +40,7 @@ def normalize_dockerfile_hardening(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score Dockerfile hardening from hadolint findings, banded by worst severity present."""
     # A crashed hadolint run carries no "dockerfiles" list and is missing data.
     relevant = [
         r

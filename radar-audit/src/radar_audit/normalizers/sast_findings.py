@@ -1,3 +1,5 @@
+"""Normalizer scoring static analysis findings from semgrep results."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -32,6 +34,7 @@ def normalize_sast_findings(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score static analysis findings from semgrep results, banded by worst severity present."""
     # A failed semgrep run (crash record, unparsable output, hard scan error) is
     # missing data, never a clean "no findings" result.
     relevant = [

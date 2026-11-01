@@ -1,3 +1,5 @@
+"""Seed the quality framework taxonomy (categories and criteria) from YAML into the database."""
+
 from __future__ import annotations
 
 from pathlib import Path

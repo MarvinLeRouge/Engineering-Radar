@@ -1,3 +1,5 @@
+"""Normalizer scoring dead code from vulture, knip and phpmd results."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -38,6 +40,7 @@ def normalize_dead_code(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score dead code by the count of unused items reported by vulture, knip and phpmd."""
     relevant = [
         r
         for r in tool_results

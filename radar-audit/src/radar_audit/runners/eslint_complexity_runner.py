@@ -1,3 +1,5 @@
+"""Runner for ESLint's complexity rule, using an audit-owned config with a zero threshold."""
+
 from __future__ import annotations
 
 import json
@@ -26,6 +28,7 @@ class EslintComplexityRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs ESLint with the complexity rule set to zero and collects each function's score."""
         with tempfile.NamedTemporaryFile(
             "w", suffix=".config.cjs", delete=False, dir=target_path
         ) as config_file:

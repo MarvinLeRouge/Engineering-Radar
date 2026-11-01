@@ -1,3 +1,5 @@
+"""Runner for PHPStan, with temporary composer and neon config swaps for Larastan."""
+
 from __future__ import annotations
 
 import json
@@ -19,6 +21,7 @@ class PhpstanRunner:
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Installs PHPStan, runs analysis, then restores the original composer files."""
         composer_json = target_path / "composer.json"
         composer_lock = target_path / "composer.lock"
         original_json = composer_json.read_bytes() if composer_json.exists() else None

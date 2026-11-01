@@ -1,3 +1,5 @@
+"""FastAPI application entry point that registers the radar-api routers."""
+
 from fastapi import FastAPI
 
 from radar_api.routers import findings, history, repositories, roadmap

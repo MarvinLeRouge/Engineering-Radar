@@ -1,3 +1,5 @@
+"""Runner that audits JS dependencies with npm, pnpm or yarn, based on the lockfile."""
+
 from __future__ import annotations
 
 import json
@@ -56,6 +58,7 @@ class PnpmAuditRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs the audit command matching the subproject's lockfile and parses its output."""
         manifest = target_path / "package.json"
         if not manifest.exists():
             return RawToolOutput(

@@ -1,3 +1,5 @@
+"""Scoring of a repository's latest audit into per-criterion, category and global scores."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -29,6 +31,7 @@ class NoAuditFoundError(ValueError):
 
 
 def get_repository_by_name(session: Session, repo_name: str) -> Repository:
+    """Return the Repository row named repo_name, raising if none exists."""
     repository = session.exec(select(Repository).where(Repository.name == repo_name)).first()
     if repository is None:
         raise RepositoryNotFoundError(
@@ -50,6 +53,7 @@ def _get_latest_audit(session: Session, repository: Repository) -> Audit:
 
 
 def score_repository(session: Session, repo_name: str) -> ScoringRun:
+    """Score a repository's latest audit, carrying human verdicts forward from earlier runs."""
     repository = get_repository_by_name(session, repo_name)
     audit = _get_latest_audit(session, repository)
     methodology_version = seed_taxonomy(session)

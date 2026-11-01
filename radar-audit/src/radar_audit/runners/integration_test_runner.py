@@ -1,3 +1,5 @@
+"""Heuristic runner that classifies test files as integration or unit tests."""
+
 from __future__ import annotations
 
 import time
@@ -23,6 +25,7 @@ class IntegrationTestRunner:
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Classifies each test file as integration or unit using filesystem heuristics."""
         start = time.monotonic()
 
         files: list[dict[str, object]] = []

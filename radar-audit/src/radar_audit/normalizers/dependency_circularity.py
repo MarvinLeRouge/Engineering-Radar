@@ -1,3 +1,5 @@
+"""Normalizer scoring module dependency cycles from dependency-cruiser and pydeps."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -41,6 +43,7 @@ def normalize_dependency_circularity(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score module dependency cycles found in dependency-cruiser or pydeps output."""
     relevant = [r for r in tool_results if r.tool_name in _RELEVANT_TOOLS and r.exit_code == 0]
     if not relevant:
         return None

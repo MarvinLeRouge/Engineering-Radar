@@ -1,3 +1,5 @@
+"""Normalizer scoring complexity hotspots across the complexity tools."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -31,6 +33,7 @@ def normalize_complexity_hotspots(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score complexity hotspots by counting functions above the outlier complexity threshold."""
     relevant = [
         r
         for r in tool_results
@@ -50,8 +53,7 @@ def normalize_complexity_hotspots(
         tool_confidence = _confidence_for_tool(tool_result.tool_name)
         for block in outliers:
             description = (
-                f"{block.get('name', 'function')} has cyclomatic complexity "
-                f"{block['complexity']}"
+                f"{block.get('name', 'function')} has cyclomatic complexity {block['complexity']}"
             )
             add_finding_with_recommendation(
                 session,

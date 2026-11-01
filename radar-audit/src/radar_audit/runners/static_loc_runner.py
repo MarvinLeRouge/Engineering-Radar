@@ -1,3 +1,5 @@
+"""Runner that counts non-blank lines of JS, TS, Vue and PHP files by filesystem walk."""
+
 from __future__ import annotations
 
 import time
@@ -23,6 +25,7 @@ class StaticLocRunner:
     timeout_s = 10
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Walks the target's source files and counts their non-blank lines, honoring .gitignore."""
         start = time.monotonic()
 
         # Treats target_path as the .gitignore root: correct when this runner

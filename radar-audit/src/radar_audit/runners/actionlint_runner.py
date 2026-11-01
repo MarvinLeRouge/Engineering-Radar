@@ -1,3 +1,5 @@
+"""Runner for actionlint, a GitHub Actions workflow linter run through Docker."""
+
 from __future__ import annotations
 
 import json
@@ -18,6 +20,7 @@ class ActionlintRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs actionlint in Docker against the target repo and returns its JSON findings."""
         completed, duration_ms = run_docker_command(
             [
                 "-v",

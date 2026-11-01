@@ -1,3 +1,5 @@
+"""Normalizer scoring container build hardening from hadolint findings."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, ScoreLevel
@@ -18,6 +20,7 @@ def normalize_container_build_hardening(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score container build hardening by the total hadolint finding count across Dockerfiles."""
     relevant = [
         r
         for r in tool_results

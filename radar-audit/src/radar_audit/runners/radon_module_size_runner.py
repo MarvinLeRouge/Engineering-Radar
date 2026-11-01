@@ -1,3 +1,5 @@
+"""Runner for radon's raw metrics, reporting per-file lines of code for Python modules."""
+
 from __future__ import annotations
 
 import json
@@ -29,6 +31,7 @@ class RadonModuleSizeRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs radon raw in JSON mode and returns per-file line metrics, skipping vendored code."""
         # Exclude glob patterns must be absolute (matching `target_path`'s own form).
         # radon's exclude matching was empirically found not to match relative globs
         # when radon is invoked with an absolute target_path.

@@ -1,3 +1,5 @@
+"""ORM models for improvement tasks and the roadmap items that promote them."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,6 +13,8 @@ from radar_core.types import UTCDateTime
 
 
 class ImprovementTask(SQLModel, table=True):
+    """A remediation task grouping the findings of one criterion within one file."""
+
     __tablename__ = "improvement_task"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -33,6 +37,8 @@ class ImprovementTask(SQLModel, table=True):
 
 
 class RoadmapItem(SQLModel, table=True):
+    """A roadmap entry promoting an improvement task, with its status and priority."""
+
     __tablename__ = "roadmap_item"
 
     id: int | None = Field(default=None, primary_key=True)

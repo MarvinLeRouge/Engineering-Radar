@@ -1,3 +1,5 @@
+"""Runner for mypy, which type-checks Python subprojects."""
+
 from __future__ import annotations
 
 import json
@@ -24,6 +26,7 @@ class MypyRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs mypy in JSON output mode, adding plugin requirements when a plugin is configured."""
         if self._has_plugin(target_path):
             command = ["uvx", "--with", "mypy"]
             requirements = target_path / "requirements.txt"

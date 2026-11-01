@@ -1,3 +1,5 @@
+"""Normalizer scoring Traefik routing parity between local and production compose files."""
+
 # radar-audit/src/radar_audit/normalizers/traefik_parity.py
 from __future__ import annotations
 
@@ -29,6 +31,7 @@ def normalize_traefik_parity(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score Traefik router parity between local and prod compose files, or N/A if none routed."""
     target_path = get_repository_path(session, scoring_run)
 
     local_services = _traefik_services(target_path / _LOCAL_COMPOSE_FILENAME)

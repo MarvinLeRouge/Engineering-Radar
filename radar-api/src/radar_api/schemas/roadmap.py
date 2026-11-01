@@ -1,3 +1,5 @@
+"""Pydantic schemas for roadmap item and evidence candidate responses and status updates."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from radar_core.enums import RoadmapStatus
 
 
 class RoadmapItemRead(BaseModel):
+    """Roadmap item as returned by the roadmap endpoints."""
+
     id: int
     improvement_task_id: int
     title: str
@@ -22,6 +26,8 @@ class RoadmapItemRead(BaseModel):
 
 
 class RoadmapItemStatusUpdate(BaseModel):
+    """Request body for changing a roadmap item status, with optional done evidence."""
+
     status: RoadmapStatus
     done_evidence_id: int | None = None
 
@@ -33,6 +39,8 @@ class RoadmapItemStatusUpdate(BaseModel):
 
 
 class EvidenceCandidate(BaseModel):
+    """Evidence row that can serve as done evidence for a roadmap item."""
+
     id: int
     finding_id: int
     evidence_type: str

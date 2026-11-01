@@ -1,3 +1,5 @@
+"""Normalizer scoring the architectural design document (DESIGN.md or ARCHITECTURE.md)."""
+
 from __future__ import annotations
 
 from radar_core.models.audit import ToolResult
@@ -14,6 +16,7 @@ def normalize_design_doc(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score a DESIGN.md or ARCHITECTURE.md that describes the system structure."""
     return score_design_doc_evidence(
         session,
         scoring_run,

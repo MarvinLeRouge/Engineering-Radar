@@ -1,3 +1,5 @@
+"""ORM model for the repositories tracked by the radar."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -9,6 +11,8 @@ from radar_core.types import UTCDateTime
 
 
 class Repository(SQLModel, table=True):
+    """A git repository tracked by the radar, identified by its local path."""
+
     __tablename__ = "repository"
 
     id: int | None = Field(default=None, primary_key=True)

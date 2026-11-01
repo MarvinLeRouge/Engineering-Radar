@@ -1,3 +1,5 @@
+"""Normalizer scoring the presence of a health check endpoint."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -23,6 +25,7 @@ def normalize_health_check(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score the presence of a health check route, or N/A without a production compose file."""
     target_path = get_repository_path(session, scoring_run)
 
     # Same N/A reasoning as D11 (criterion 7.2): no production compose file

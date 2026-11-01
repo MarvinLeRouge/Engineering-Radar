@@ -1,3 +1,5 @@
+"""Runner for jscpd, which detects code duplication across source files."""
+
 from __future__ import annotations
 
 import json
@@ -45,6 +47,7 @@ class JscpdRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs jscpd over the repo's source formats and returns its JSON duplication report."""
         with tempfile.TemporaryDirectory() as report_dir:
             ignore_patterns = [f"{target_path}/**/{name}/**" for name in _ALWAYS_EXCLUDED_DIRNAMES]
             ignore_patterns.append(f"{target_path}/{_DOT_DIRECTORY_IGNORE_SUFFIX}")

@@ -1,3 +1,5 @@
+"""Runner for the target's own lint scope, executed through an ephemeral ESLint."""
+
 # src/radar_audit/runners/eslint_lint_runner.py
 from __future__ import annotations
 
@@ -21,6 +23,7 @@ class EslintLintRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs ESLint over the target's lint script scope and returns its JSON results."""
         scope_tokens = self._resolve_lint_scope(target_path)
 
         # Filter out scope tokens that are explicitly excluded to avoid conflicts

@@ -1,3 +1,5 @@
+"""ORM models for scoring runs and the individual scores they produce."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,6 +13,8 @@ from radar_core.types import UTCDateTime
 
 
 class ScoringRun(SQLModel, table=True):
+    """One scoring pass over an audit, computed against a given methodology version."""
+
     __tablename__ = "scoring_run"
     __table_args__ = (
         UniqueConstraint(
@@ -40,6 +44,8 @@ class ScoringRun(SQLModel, table=True):
 
 
 class Score(SQLModel, table=True):
+    """A computed score for a criterion, a category or the global level of a scoring run."""
+
     __tablename__ = "score"
 
     id: int | None = Field(default=None, primary_key=True)

@@ -1,3 +1,5 @@
+"""Normalizer scoring type-check pass rate from mypy, tsc and phpstan results."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -22,6 +24,7 @@ def normalize_type_check_pass_rate(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score type-check pass rate from mypy, tsc and phpstan results across covered files."""
     relevant = [
         r
         for r in tool_results

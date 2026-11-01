@@ -1,3 +1,5 @@
+"""Priority ordering for findings by severity, magnitude, file and description."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence

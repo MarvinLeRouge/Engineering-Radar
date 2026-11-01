@@ -1,3 +1,5 @@
+"""Loading and validation of the portfolio.yaml repository list."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -13,16 +15,20 @@ class PortfolioConfigError(ValueError):
 
 @dataclass(frozen=True)
 class PortfolioConfig:
+    """Portfolio settings: the root folder holding the repositories and their names."""
+
     repos_root: Path
     repositories: list[str]
 
     def resolve_repo_path(self, name: str) -> Path:
+        """Return the absolute path of a listed repository, raising if it is not listed."""
         if name not in self.repositories:
             raise PortfolioConfigError(f"Repository '{name}' is not listed in portfolio.yaml")
         return (self.repos_root / name).resolve()
 
 
 def load_portfolio_config(path: Path) -> PortfolioConfig:
+    """Parse and validate a portfolio.yaml file into a PortfolioConfig."""
     raw: Any = yaml.safe_load(path.read_text())
 
     if not isinstance(raw, dict) or "repos_root" not in raw:

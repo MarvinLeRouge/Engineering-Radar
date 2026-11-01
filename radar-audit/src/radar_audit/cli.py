@@ -1,3 +1,5 @@
+"""Typer command-line interface for radar-audit (run, score and report commands)."""
+
 from __future__ import annotations
 
 import os
@@ -131,6 +133,7 @@ def run(
         DEFAULT_PORTFOLIO_YAML, "--config", help="Path to portfolio.yaml"
     ),
 ) -> None:
+    """Run the tool audits for one or all repositories, or print the plan with --dry-run."""
     if not all_repos and repo_name is None:
         raise typer.BadParameter("Provide a repository name or use --all")
 
@@ -173,6 +176,7 @@ def _print_plan(plan: AuditPlan) -> None:
 def score(
     repo_name: str = typer.Argument(..., help="Repository name (must already have an audit)"),
 ) -> None:
+    """Compute and persist the scoring run of a repository's latest audit."""
     try:
         engine = get_engine(_database_url())
         session = get_session(engine)
@@ -193,6 +197,7 @@ def report(
         DEFAULT_REPORTS_DIR, "--output-dir", help="Directory to write the report into"
     ),
 ) -> None:
+    """Render a repository's latest score as a Markdown report and write it to disk."""
     try:
         engine = get_engine(_database_url())
         session = get_session(engine)

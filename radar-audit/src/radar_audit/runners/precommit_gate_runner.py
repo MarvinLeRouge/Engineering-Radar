@@ -1,3 +1,5 @@
+"""Runner that detects the pre-commit hook framework and extracts its hook entries."""
+
 from __future__ import annotations
 
 import json
@@ -28,6 +30,7 @@ class PreCommitGateRunner:
     timeout_s = 10
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Detects the pre-commit, husky or lefthook framework and extracts its hook entries."""
         start = time.monotonic()
 
         precommit_config = target_path / _PRECOMMIT_CONFIG_FILENAME

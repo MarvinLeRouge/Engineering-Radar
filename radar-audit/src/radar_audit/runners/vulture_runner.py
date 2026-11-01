@@ -1,3 +1,5 @@
+"""Runner for vulture, which detects dead code in Python projects."""
+
 from __future__ import annotations
 
 import re
@@ -38,6 +40,7 @@ class VultureRunner:
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs vulture over the target with audit ignore decorators and parses its findings."""
         patterns = [f"{target_path}{suffix}" for suffix in _SKIP_GLOB_SUFFIXES]
         patterns.extend(f"{excluded}/*" for excluded in exclude_paths)
         command = [

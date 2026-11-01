@@ -1,3 +1,5 @@
+"""Normalizer scoring code duplication from jscpd results."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -24,6 +26,7 @@ def normalize_code_duplication(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score code duplication from the jscpd duplicated-line percentage and its duplicate blocks."""
     relevant = [r for r in tool_results if r.tool_name == "jscpd" and r.exit_code == 0]
     if not relevant:
         return None

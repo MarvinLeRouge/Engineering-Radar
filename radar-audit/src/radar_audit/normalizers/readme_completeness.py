@@ -1,3 +1,5 @@
+"""Normalizer scoring README completeness against standard section keywords."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -34,6 +36,7 @@ def normalize_readme_completeness(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score README completeness by the standard sections it documents."""
     target_path = get_repository_path(session, scoring_run)
     readme_path = _find_readme(target_path)
 

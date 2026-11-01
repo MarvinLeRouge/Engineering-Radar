@@ -1,3 +1,5 @@
+"""Normalizer scoring cyclomatic complexity from the worst function complexity."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -41,6 +43,7 @@ def normalize_cyclomatic_complexity(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score cyclomatic complexity by the worst function complexity across the complexity tools."""
     relevant = [
         r
         for r in tool_results

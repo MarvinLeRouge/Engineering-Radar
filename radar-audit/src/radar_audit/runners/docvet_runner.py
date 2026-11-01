@@ -1,3 +1,5 @@
+"""Runner for docvet, which checks Python docstring presence."""
+
 from __future__ import annotations
 
 import json
@@ -27,6 +29,7 @@ class DocvetRunner:
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs docvet's presence check with a scratch config restating its default excludes."""
         # A scratch `exclude` replaces docvet's defaults, so restate them.
         exclude_entries = list(_DOCVET_DEFAULT_EXCLUDES)
         for excluded in exclude_paths:

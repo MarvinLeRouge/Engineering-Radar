@@ -1,3 +1,5 @@
+"""Runner for composer audit, which checks PHP dependencies for known security advisories."""
+
 from __future__ import annotations
 
 import json
@@ -26,6 +28,7 @@ class ComposerAuditRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs composer audit on the PHP subproject and normalizes its advisories."""
         manifest = target_path / "composer.json"
         if not manifest.exists():
             return RawToolOutput(

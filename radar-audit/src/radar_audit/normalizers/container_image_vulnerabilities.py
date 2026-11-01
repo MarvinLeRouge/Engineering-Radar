@@ -1,3 +1,5 @@
+"""Normalizer scoring built container images from Trivy vulnerability reports."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -27,6 +29,7 @@ def normalize_container_image_vulnerabilities(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score built container images by their Trivy-reported vulnerabilities, one finding each."""
     relevant = [
         r
         for r in tool_results

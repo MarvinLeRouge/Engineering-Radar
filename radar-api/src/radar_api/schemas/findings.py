@@ -1,3 +1,5 @@
+"""Pydantic schemas for finding responses and finding update requests."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -7,6 +9,8 @@ from radar_core.enums import FindingStatus, HumanVerdict
 
 
 class FindingRead(BaseModel):
+    """Public representation of a finding returned by the findings endpoints."""
+
     id: int
     criterion_id: int
     severity: str
@@ -19,8 +23,12 @@ class FindingRead(BaseModel):
 
 
 class FindingVerdictUpdate(BaseModel):
+    """Request body for setting the human verdict of a finding."""
+
     human_verdict: HumanVerdict
 
 
 class FindingStatusUpdate(BaseModel):
+    """Request body for setting the status of a finding."""
+
     status: FindingStatus

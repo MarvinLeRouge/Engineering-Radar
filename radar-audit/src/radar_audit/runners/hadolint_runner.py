@@ -1,3 +1,5 @@
+"""Runner for Hadolint, which lints every discovered Dockerfile through Docker."""
+
 from __future__ import annotations
 
 import json
@@ -23,6 +25,7 @@ class HadolintRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Discovers the repo's Dockerfiles and lints each one with Hadolint through Docker."""
         dockerfiles = self._discover_dockerfiles(target_path, exclude_paths)
 
         results: list[dict[str, object]] = []

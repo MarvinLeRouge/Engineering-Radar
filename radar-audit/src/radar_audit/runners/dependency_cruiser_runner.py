@@ -1,3 +1,5 @@
+"""Runner for dependency-cruiser, which detects circular JS/TS module dependencies."""
+
 from __future__ import annotations
 
 import json
@@ -27,6 +29,7 @@ class DependencyCruiserRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Runs dependency-cruiser over the JS/TS subproject and returns its JSON output."""
         command = [
             "npx",
             "--package=dependency-cruiser",

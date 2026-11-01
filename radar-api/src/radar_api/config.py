@@ -1,3 +1,5 @@
+"""Environment-based configuration accessors for radar-api."""
+
 from __future__ import annotations
 
 import os
@@ -12,6 +14,7 @@ class MissingApiKeyError(RuntimeError):
 
 
 def get_database_url() -> str:
+    """Return RADAR_DATABASE_URL, raising MissingDatabaseUrlError if it is unset or empty."""
     url = os.environ.get("RADAR_DATABASE_URL")
     if not url:
         raise MissingDatabaseUrlError(
@@ -22,6 +25,7 @@ def get_database_url() -> str:
 
 
 def get_api_key() -> str:
+    """Return RADAR_API_KEY, raising MissingApiKeyError if it is unset or empty."""
     key = os.environ.get("RADAR_API_KEY")
     if not key:
         raise MissingApiKeyError(

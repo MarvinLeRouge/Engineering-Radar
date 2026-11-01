@@ -1,3 +1,5 @@
+"""Normalizer scoring lint pass rate from ruff, eslint and pint results."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -25,6 +27,7 @@ def normalize_lint_pass_rate(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score lint pass rate from ruff, eslint and pint results across covered files."""
     relevant = [
         r
         for r in tool_results

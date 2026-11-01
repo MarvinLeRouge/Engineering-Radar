@@ -1,3 +1,5 @@
+"""Protocol and data types shared by all audit tool runners."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,6 +9,8 @@ from typing import Literal, Protocol
 
 @dataclass(frozen=True)
 class RawToolOutput:
+    """Unprocessed result of one tool run: command, raw output, exit code and duration."""
+
     command: str
     raw_output: dict[str, object]
     exit_code: int
@@ -14,10 +18,14 @@ class RawToolOutput:
 
 
 class ToolRunner(Protocol):
+    """Interface every audit tool runner implements to execute one external tool."""
+
     tool_name: str
     tool_version: str
     supported_stacks: frozenset[str]
     scope: Literal["repo", "subproject"]
     timeout_s: int
 
-    def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput: ...
+    def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Execute the tool on target_path, skipping exclude_paths, and return its raw output."""
+        ...

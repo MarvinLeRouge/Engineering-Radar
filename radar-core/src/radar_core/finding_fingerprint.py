@@ -1,3 +1,5 @@
+"""Stable fingerprints identifying the same underlying finding across re-audits."""
+
 from __future__ import annotations
 
 import hashlib

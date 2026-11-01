@@ -1,3 +1,5 @@
+"""Helpers shared by normalizers: scoring-run lookup, finding creation and dependency readers."""
+
 from __future__ import annotations
 
 import json

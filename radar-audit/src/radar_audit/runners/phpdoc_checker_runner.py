@@ -1,3 +1,5 @@
+"""Runner for phpdoc-checker, which validates PHPDoc blocks in PHP code."""
+
 from __future__ import annotations
 
 import json
@@ -23,6 +25,7 @@ class PhpdocCheckerRunner:
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Installs phpdoc-checker in a scratch Composer project and runs it on the target."""
         start = time.monotonic()
         with tempfile.TemporaryDirectory() as scratch_dir:
             scratch = Path(scratch_dir)

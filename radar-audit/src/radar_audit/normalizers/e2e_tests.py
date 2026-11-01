@@ -1,3 +1,5 @@
+"""Normalizer scoring end-to-end test setup and CI wiring from Playwright presence."""
+
 from __future__ import annotations
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -21,6 +23,7 @@ def normalize_e2e_tests(
     criterion: Criterion,
     tool_results: list[ToolResult],
 ) -> Score | None:
+    """Score end-to-end test coverage from Playwright presence and whether CI runs it."""
     playwright_results = [
         r for r in tool_results if r.tool_name == "playwright-presence" and r.exit_code == 0
     ]

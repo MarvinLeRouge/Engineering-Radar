@@ -1,3 +1,5 @@
+"""Runner that detects test and Playwright invocations in GitHub Actions workflow files."""
+
 from __future__ import annotations
 
 import json
@@ -51,6 +53,7 @@ class CiWorkflowRunner:
     timeout_s = 10
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
+        """Scans the repo's workflow steps for test and Playwright commands, with no subprocess."""
         start = time.monotonic()
 
         workflows_dir = target_path / ".github" / "workflows"
