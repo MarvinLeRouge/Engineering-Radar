@@ -52,7 +52,18 @@ def promote_improvement_tasks(session: Session, scoring_run: ScoringRun) -> None
     if not findings:
         return
 
-    recommendation_by_finding = {
+    recommendation_by_finding = _build_recommendation_lookup(session, findings)
+    groups, group_criterion_and_file = _group_findings_by_task(session, findings)
+
+    for group_key, group_findings in groups.items():
+        criterion_id, file = group_criterion_and_file[group_key]
+        criterion = session.get(Criterion, criterion_id)
+        assert criterion is not None
+        _upsert_task(session, group_key, criterion, file, group_findings, recommendation_by_finding)
+
+
+def _build_recommendation_lookup(session: Session, findings: list[Finding]) -> dict[int, str]:
+    return {
         r.finding_id: r.text
         for r in session.exec(
             select(Recommendation).where(
@@ -63,6 +74,10 @@ def promote_improvement_tasks(session: Session, scoring_run: ScoringRun) -> None
         )
     }
 
+
+def _group_findings_by_task(
+    session: Session, findings: list[Finding]
+) -> tuple[dict[str, list[Finding]], dict[str, tuple[int, str | None]]]:
     groups: dict[str, list[Finding]] = {}
     group_criterion_and_file: dict[str, tuple[int, str | None]] = {}
     for finding in findings:
@@ -72,21 +87,19 @@ def promote_improvement_tasks(session: Session, scoring_run: ScoringRun) -> None
             continue
         criterion = session.get(Criterion, finding.criterion_id)
         assert criterion is not None
-        atomic = finding.file is None or criterion.name in _ATOMIC_CRITERION_NAMES
-        if atomic:
-            group_key = compute_task_group_key(
-                finding.criterion_id, finding.file, atomic_finding_fingerprint=finding.fingerprint
-            )
-        else:
-            group_key = compute_task_group_key(finding.criterion_id, finding.file)
+        group_key = _compute_group_key(finding, criterion)
         groups.setdefault(group_key, []).append(finding)
         group_criterion_and_file[group_key] = (finding.criterion_id, finding.file)
+    return groups, group_criterion_and_file
 
-    for group_key, group_findings in groups.items():
-        criterion_id, file = group_criterion_and_file[group_key]
-        criterion = session.get(Criterion, criterion_id)
-        assert criterion is not None
-        _upsert_task(session, group_key, criterion, file, group_findings, recommendation_by_finding)
+
+def _compute_group_key(finding: Finding, criterion: Criterion) -> str:
+    atomic = finding.file is None or criterion.name in _ATOMIC_CRITERION_NAMES
+    if atomic:
+        return compute_task_group_key(
+            finding.criterion_id, finding.file, atomic_finding_fingerprint=finding.fingerprint
+        )
+    return compute_task_group_key(finding.criterion_id, finding.file)
 
 
 def _upsert_task(
