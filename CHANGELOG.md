@@ -251,6 +251,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 ### 🚜 Refactor
 
 - *(radar-core)* Extract UTCDateTime into shared types module
+- *(radar-api)* Extract report-building helpers out of get_repository_report (FIX-020)
 
 ### 📚 Documentation
 
