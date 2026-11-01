@@ -1,3 +1,5 @@
+"""Repository endpoints: listing, detail, scored report and README badge."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -64,6 +66,7 @@ def _to_repository_read(session: Session, repository: Repository) -> RepositoryR
 def list_repositories(
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[RepositoryRead]:
+    """Return every registered repository with its latest global score and audit status."""
     repositories = session.exec(select(Repository)).all()
     return [_to_repository_read(session, repo) for repo in repositories]
 
@@ -73,6 +76,7 @@ def get_repository(
     repository_id: int,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> RepositoryRead:
+    """Return one repository with its latest global score and audit status, or 404 if unknown."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
@@ -85,6 +89,7 @@ def get_repository_report(
     scoring_run_id: int | None = None,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> RepositoryReport:
+    """Build the scored report of a repository from the requested or latest scoring run."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
@@ -196,6 +201,7 @@ def get_repository_badge(
     repository_id: int,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> BadgeResponse:
+    """Return a shields.io badge with the latest global score, or a grey placeholder if unscored."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")

@@ -1,3 +1,5 @@
+"""Endpoint returning the score history of a repository across its scoring runs."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -43,6 +45,7 @@ def get_score_history(
     repository_id: int,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[ScoreHistoryPoint]:
+    """Return one score history point per scoring run of a repository, oldest first."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")

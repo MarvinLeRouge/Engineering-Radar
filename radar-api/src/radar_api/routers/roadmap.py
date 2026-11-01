@@ -1,3 +1,5 @@
+"""Roadmap endpoints: listing items, reading evidence candidates and updating item status."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -59,6 +61,7 @@ def list_roadmap_items(
     repository_id: int,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[RoadmapItemRead]:
+    """Return the roadmap items of a repository, ordered by category, criterion and priority."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
@@ -98,6 +101,7 @@ def list_roadmap_item_evidence_candidates(
     roadmap_item_id: int,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[EvidenceCandidate]:
+    """Return the evidence rows of findings linked to a roadmap item, usable as done evidence."""
     roadmap_item = session.get(RoadmapItem, roadmap_item_id)
     if roadmap_item is None:
         raise HTTPException(status_code=404, detail="roadmap item not found")
@@ -131,6 +135,7 @@ def update_roadmap_item_status(
     payload: RoadmapItemStatusUpdate,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> RoadmapItemRead:
+    """Change a roadmap item status, requiring linked done evidence when the status is DONE."""
     roadmap_item = session.get(RoadmapItem, roadmap_item_id)
     if roadmap_item is None:
         raise HTTPException(status_code=404, detail="roadmap item not found")

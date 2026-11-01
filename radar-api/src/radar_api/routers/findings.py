@@ -1,3 +1,5 @@
+"""Endpoints listing audit findings and updating their human verdict and status."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -40,6 +42,7 @@ def list_findings(
     severity: FindingSeverity | None = Query(default=None),  # noqa: B008
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[FindingRead]:
+    """Return the latest scoring run's findings for a repository, optionally filtered."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
@@ -73,6 +76,7 @@ def update_finding_verdict(
     payload: FindingVerdictUpdate,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> FindingRead:
+    """Set the human verdict of a finding, rejecting the request if the verdict is unchanged."""
     finding = session.get(Finding, finding_id)
     if finding is None:
         raise HTTPException(status_code=404, detail="finding not found")
@@ -98,6 +102,7 @@ def update_finding_status(
     payload: FindingStatusUpdate,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> FindingRead:
+    """Set the status of a finding, rejecting the request if the status is unchanged."""
     finding = session.get(Finding, finding_id)
     if finding is None:
         raise HTTPException(status_code=404, detail="finding not found")

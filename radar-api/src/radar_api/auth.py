@@ -1,3 +1,5 @@
+"""API key authentication dependency for protected radar-api endpoints."""
+
 from __future__ import annotations
 
 import secrets
@@ -8,6 +10,7 @@ from radar_api.config import MissingApiKeyError, get_api_key
 
 
 def require_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    """Raise a 401 unless the X-API-Key header matches the configured RADAR_API_KEY."""
     try:
         expected = get_api_key()
     except MissingApiKeyError as err:
