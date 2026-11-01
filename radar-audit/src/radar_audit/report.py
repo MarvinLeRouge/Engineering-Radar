@@ -79,39 +79,67 @@ def render_report(session: Session, repo_name: str) -> str:
     ]
 
     for category in categories:
-        category_score = category_scores.get(category.id)
-
-        if category_score is None:
-            lines.append(f"## {category.order}. {category.name} -- Not yet audited")
-        else:
-            lines.append(
-                f"## {category.order}. {category.name} -- {category_score.value:.1f}/10 "
-                f"({category_score.confidence.value} confidence)"
+        lines.extend(
+            _render_category_block(
+                session,
+                category,
+                category_scores.get(category.id),
+                criterion_scores,
+                findings_by_criterion,
+                recommendation_by_finding,
             )
-
-        criteria = session.exec(
-            select(Criterion).where(Criterion.category_id == category.id).order_by(Criterion.id)  # type: ignore[arg-type]
-        ).all()
-        for criterion in criteria:
-            criterion_score = criterion_scores.get(criterion.id)
-            if criterion_score is None:
-                lines.append(f"- {criterion.name}: not scored this run")
-            elif criterion_score.na_reason is not None:
-                lines.append(f"- {criterion.name}: N/A -- {criterion_score.na_reason}")
-            else:
-                lines.append(f"- {criterion.name}: {criterion_score.value:.1f}/10")
-
-            for finding in findings_by_criterion.get(criterion.id, []):
-                lines.append(
-                    f"  - [{finding.severity.value}] {finding.description}"
-                    f"{_finding_location(finding)}"
-                )
-                recommendation = recommendation_by_finding.get(finding.id)
-                if recommendation is not None:
-                    lines.append(f"    -> {recommendation.text}")
-        lines.append("")
+        )
 
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _render_category_header(category: Category, category_score: Score | None) -> str:
+    if category_score is None:
+        return f"## {category.order}. {category.name} -- Not yet audited"
+    return (
+        f"## {category.order}. {category.name} -- {category_score.value:.1f}/10 "
+        f"({category_score.confidence.value} confidence)"
+    )
+
+
+def _render_criterion_status_line(criterion: Criterion, criterion_score: Score | None) -> str:
+    if criterion_score is None:
+        return f"- {criterion.name}: not scored this run"
+    if criterion_score.na_reason is not None:
+        return f"- {criterion.name}: N/A -- {criterion_score.na_reason}"
+    return f"- {criterion.name}: {criterion_score.value:.1f}/10"
+
+
+def _render_finding_lines(
+    finding: Finding, recommendation_by_finding: dict[int | None, Recommendation]
+) -> list[str]:
+    lines = [f"  - [{finding.severity.value}] {finding.description}{_finding_location(finding)}"]
+    recommendation = recommendation_by_finding.get(finding.id)
+    if recommendation is not None:
+        lines.append(f"    -> {recommendation.text}")
+    return lines
+
+
+def _render_category_block(
+    session: Session,
+    category: Category,
+    category_score: Score | None,
+    criterion_scores: dict[int | None, Score],
+    findings_by_criterion: dict[int | None, list[Finding]],
+    recommendation_by_finding: dict[int | None, Recommendation],
+) -> list[str]:
+    lines = [_render_category_header(category, category_score)]
+
+    criteria = session.exec(
+        select(Criterion).where(Criterion.category_id == category.id).order_by(Criterion.id)  # type: ignore[arg-type]
+    ).all()
+    for criterion in criteria:
+        criterion_score = criterion_scores.get(criterion.id)
+        lines.append(_render_criterion_status_line(criterion, criterion_score))
+        for finding in findings_by_criterion.get(criterion.id, []):
+            lines.extend(_render_finding_lines(finding, recommendation_by_finding))
+    lines.append("")
+    return lines
 
 
 def _finding_location(finding: Finding) -> str:
