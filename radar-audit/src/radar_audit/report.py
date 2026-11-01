@@ -46,28 +46,10 @@ def render_report(session: Session, repo_name: str) -> str:
     audit = session.get(Audit, scoring_run.audit_id)
     assert audit is not None
 
-    categories = session.exec(
-        select(Category)
-        .where(Category.methodology_version_id == scoring_run.methodology_version_id)
-        .order_by(Category.order)  # type: ignore[arg-type]
-    ).all()
-
-    scores = session.exec(select(Score).where(Score.scoring_run_id == scoring_run.id)).all()
-    category_scores = {s.category_id: s for s in scores if s.level == ScoreLevel.CATEGORY}
-    criterion_scores = {s.criterion_id: s for s in scores if s.level == ScoreLevel.CRITERION}
-
-    findings = session.exec(select(Finding).where(Finding.scoring_run_id == scoring_run.id)).all()
-    findings_by_criterion: dict[int | None, list[Finding]] = {}
-    for finding in sort_findings_by_priority(findings):
-        findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
-
-    finding_ids = [f.id for f in findings if f.id is not None]
-    recommendations = session.exec(
-        select(Recommendation).where(Recommendation.finding_id.in_(finding_ids))  # type: ignore[attr-defined]
-    ).all()
-    recommendation_by_finding: dict[int | None, Recommendation] = {
-        r.finding_id: r for r in recommendations
-    }
+    categories, category_scores, criterion_scores = _fetch_categories_and_scores(
+        session, scoring_run
+    )
+    findings_by_criterion, recommendation_by_finding = _fetch_findings_data(session, scoring_run)
 
     lines = [
         f"# Report: {repository.name}",
@@ -91,6 +73,39 @@ def render_report(session: Session, repo_name: str) -> str:
         )
 
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _fetch_categories_and_scores(
+    session: Session, scoring_run: ScoringRun
+) -> tuple[list[Category], dict[int | None, Score], dict[int | None, Score]]:
+    categories = session.exec(
+        select(Category)
+        .where(Category.methodology_version_id == scoring_run.methodology_version_id)
+        .order_by(Category.order)  # type: ignore[arg-type]
+    ).all()
+
+    scores = session.exec(select(Score).where(Score.scoring_run_id == scoring_run.id)).all()
+    category_scores = {s.category_id: s for s in scores if s.level == ScoreLevel.CATEGORY}
+    criterion_scores = {s.criterion_id: s for s in scores if s.level == ScoreLevel.CRITERION}
+    return list(categories), category_scores, criterion_scores
+
+
+def _fetch_findings_data(
+    session: Session, scoring_run: ScoringRun
+) -> tuple[dict[int | None, list[Finding]], dict[int | None, Recommendation]]:
+    findings = session.exec(select(Finding).where(Finding.scoring_run_id == scoring_run.id)).all()
+    findings_by_criterion: dict[int | None, list[Finding]] = {}
+    for finding in sort_findings_by_priority(findings):
+        findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
+
+    finding_ids = [f.id for f in findings if f.id is not None]
+    recommendations = session.exec(
+        select(Recommendation).where(Recommendation.finding_id.in_(finding_ids))  # type: ignore[attr-defined]
+    ).all()
+    recommendation_by_finding: dict[int | None, Recommendation] = {
+        r.finding_id: r for r in recommendations
+    }
+    return findings_by_criterion, recommendation_by_finding
 
 
 def _render_category_header(category: Category, category_score: Score | None) -> str:
