@@ -1,4 +1,5 @@
 from radar_audit.normalizers.complexity_hotspots import normalize_complexity_hotspots
+from radar_audit.normalizers.cyclomatic_complexity import normalize_cyclomatic_complexity
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.enums import Confidence
@@ -23,6 +24,13 @@ def _setup(db_session):
         db_session, methodology_version.id, "Maintainability", "Complexity hotspots"
     )
     return audit, scoring_run, criterion
+
+
+def _cyclomatic_criterion(db_session):
+    methodology_version = seed_taxonomy(db_session)
+    return get_criterion(
+        db_session, methodology_version.id, "Code quality", "Cyclomatic complexity"
+    )
 
 
 def _radon_result(audit, blocks):
@@ -210,10 +218,14 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     assert score is None
 
 
-def test_creates_no_finding_rows(db_session):
+def test_creates_a_finding_for_every_outlier_block(db_session):
     audit, scoring_run, criterion = _setup(db_session)
     tool_result = _radon_result(
-        audit, [{"type": "function", "name": "f", "complexity": 35, "rank": "F"}]
+        audit,
+        [
+            {"type": "function", "name": "f", "complexity": 35, "rank": "F", "lineno": 12},
+            {"type": "function", "name": "g", "complexity": 3, "rank": "A", "lineno": 20},
+        ],
     )
     db_session.add(tool_result)
     db_session.commit()
@@ -223,7 +235,33 @@ def test_creates_no_finding_rows(db_session):
     findings = db_session.exec(
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
-    assert findings == []
+    assert len(findings) == 1
+    assert findings[0].description == "f has cyclomatic complexity 35"
+    assert findings[0].file == "src/a.py"
+    assert findings[0].line == 12
+    assert findings[0].magnitude == 35.0
+    assert findings[0].criterion_id == criterion.id
+
+
+def test_finding_fingerprint_differs_from_cyclomatic_complexitys_for_the_same_block(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _radon_result(
+        audit, [{"type": "function", "name": "f", "complexity": 35, "rank": "F", "lineno": 12}]
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_complexity_hotspots(db_session, scoring_run, criterion, [tool_result])
+    normalize_cyclomatic_complexity(
+        db_session, scoring_run, _cyclomatic_criterion(db_session), [tool_result]
+    )
+
+    findings = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings) == 2
+    fingerprints = {f.fingerprint for f in findings}
+    assert len(fingerprints) == 2
 
 
 def _tool_result(audit, tool_name, raw_output, exit_code):
