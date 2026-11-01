@@ -262,6 +262,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract per-tool-result scoring out of normalize_complexity_hotspots (FIX-020)
 - *(radar-audit)* Split _pyproject_dependency_names by manifest format (FIX-020)
 - *(radar-audit)* Extract wipe/normalize/write phases out of score_repository (FIX-020)
+- *(radar-audit)* Extract exclude-pattern and violation-parsing helpers from PhpmdComplexityRunner (FIX-020)
 
 ### 📚 Documentation
 
