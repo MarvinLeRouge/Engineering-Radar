@@ -63,9 +63,9 @@ def _make_finding_chain(db_session, repository, commit_sha="a" * 40):
     return finding
 
 
-def _make_roadmap_item(db_session, finding, status=RoadmapStatus.TODO):
+def _make_roadmap_item(db_session, finding, status=RoadmapStatus.TODO, title="Fix it", priority=1):
     task = ImprovementTask(
-        title="Fix it",
+        title=title,
         description="...",
         criterion_id=finding.criterion_id,
         file=None,
@@ -78,7 +78,7 @@ def _make_roadmap_item(db_session, finding, status=RoadmapStatus.TODO):
     db_session.add(FindingImprovementTaskLink(finding_id=finding.id, improvement_task_id=task.id))
     db_session.commit()
 
-    roadmap_item = RoadmapItem(improvement_task_id=task.id, status=status, priority=1)
+    roadmap_item = RoadmapItem(improvement_task_id=task.id, status=status, priority=priority)
     db_session.add(roadmap_item)
     db_session.commit()
     db_session.refresh(roadmap_item)
@@ -468,3 +468,40 @@ def test_list_roadmap_items_sorted_by_category_order_then_criterion(client, db_s
     assert len(body) == 2
     assert body[0]["category_name"] == "A Category"
     assert body[1]["category_name"] == "Z Category"
+
+
+def test_list_roadmap_items_sorted_by_priority_desc_then_title_asc_within_criterion(
+    client, db_session
+):
+    repo = _make_repository(db_session, "repo-roadmap-priority-sort")
+    finding_low = _make_finding_chain(db_session, repo)
+
+    finding_high = Finding(
+        scoring_run_id=finding_low.scoring_run_id,
+        criterion_id=finding_low.criterion_id,
+        severity=FindingSeverity.HIGH,
+        description="another issue",
+        confidence=Confidence.HIGH,
+    )
+    finding_tie = Finding(
+        scoring_run_id=finding_low.scoring_run_id,
+        criterion_id=finding_low.criterion_id,
+        severity=FindingSeverity.HIGH,
+        description="yet another issue",
+        confidence=Confidence.HIGH,
+    )
+    db_session.add(finding_high)
+    db_session.add(finding_tie)
+    db_session.commit()
+    db_session.refresh(finding_high)
+    db_session.refresh(finding_tie)
+
+    _make_roadmap_item(db_session, finding_low, title="B item", priority=1)
+    _make_roadmap_item(db_session, finding_high, title="Z item", priority=5)
+    _make_roadmap_item(db_session, finding_tie, title="A item", priority=5)
+
+    response = client.get(f"/repositories/{repo.id}/roadmap")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["title"] for item in body] == ["A item", "Z item", "B item"]

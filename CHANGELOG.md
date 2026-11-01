@@ -234,6 +234,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Use the unversioned system Python for pip-audit's workaround
 - *(radar-core,radar-audit)* Sort code-duplication findings by line count, then alphabetically
 - *(radar-audit)* Exclude test directories from code-duplication scan
+- *(radar-api)* Sort roadmap items by priority desc then title within a criterion (FIX-013)
 
 ### 🚜 Refactor
 
