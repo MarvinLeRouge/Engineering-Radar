@@ -239,6 +239,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Upgrade Alpine OS packages in the nginx image (FIX-014)
 - *(radar-api)* Upgrade Debian OS packages in the python:3.12-slim image (FIX-014)
 - *(radar-audit)* Preserve human-set finding verdicts across a run rerun (FIX-015)
+- *(radar-api,radar-audit)* Run containers as a non-root user (FIX-016)
 
 ### 🚜 Refactor
 
