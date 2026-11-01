@@ -13,6 +13,7 @@ from radar_audit.orchestrator import (
 )
 from radar_audit.runner import RawToolOutput
 from radar_audit.scoring import score_repository
+from radar_core.enums import FindingStatus, HumanVerdict
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.repository import Repository
@@ -332,6 +333,41 @@ def test_execute_audit_after_score_does_not_raise_fk_integrity_error_on_rerun(db
     remaining_result_ids = {r.id for r in remaining_results}
     assert len(remaining_result_ids) > 0
     assert remaining_result_ids.isdisjoint(first_result_ids)
+
+
+def test_execute_audit_preserves_a_human_set_verdict_finding_across_rerun(db_session, tmp_path):
+    # Regression test for the run -> score -> (human marks a finding) -> run -> score
+    # sequence: execute_audit's stale-Finding cleanup used to delete every Finding tied
+    # to the audit's old ToolResult rows unconditionally, including ones a human had
+    # already set status/human_verdict on -- destroying that disposition before the
+    # next score_repository call ever got a chance to carry it forward by fingerprint,
+    # since run and score commit in separate sessions.
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+    scoring_run = score_repository(db_session, "repo")
+    findings_after_first_score = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    assert len(findings_after_first_score) >= 1
+    marked = findings_after_first_score[0]
+    marked.status = FindingStatus.WONT_FIX
+    marked.human_verdict = HumanVerdict.TRUE_POSITIVE
+    db_session.add(marked)
+    db_session.commit()
+    marked_fingerprint = marked.fingerprint
+
+    execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+    rescored_run = score_repository(db_session, "repo")
+    findings_after_rerun = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == rescored_run.id)
+    ).all()
+    carried = [f for f in findings_after_rerun if f.fingerprint == marked_fingerprint]
+    assert len(carried) == 1
+    assert carried[0].status == FindingStatus.WONT_FIX
+    assert carried[0].human_verdict == HumanVerdict.TRUE_POSITIVE
 
 
 def test_execute_audit_runs_multi_stack_runner_once_per_colocated_stacks(db_session, tmp_path):
