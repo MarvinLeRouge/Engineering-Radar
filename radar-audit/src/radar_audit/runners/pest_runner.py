@@ -3,9 +3,10 @@ from __future__ import annotations
 import subprocess
 import tempfile
 import time
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Literal
+
+import defusedxml.ElementTree as ET
 
 from radar_audit.runner import RawToolOutput
 
@@ -85,6 +86,7 @@ class PestRunner:
 
     def _parse_junit(self, junit_path: Path) -> dict[str, object]:
         root = ET.parse(junit_path).getroot()
+        assert root is not None
         # Pest's zero-tests case is a bare <testsuites/> with NO child <testsuite> at
         # all (unlike pytest, which still emits a tests="0" element) -- guard for it.
         suite = root.find("testsuite") if root.tag == "testsuites" else root
@@ -124,6 +126,7 @@ class PestRunner:
         if not clover_path.exists():
             return None
         root = ET.parse(clover_path).getroot()
+        assert root is not None
         metrics = root.find(".//project/metrics")
         if metrics is None:
             return None

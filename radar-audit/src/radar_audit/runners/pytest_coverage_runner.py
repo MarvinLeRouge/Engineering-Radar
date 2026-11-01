@@ -3,9 +3,10 @@ from __future__ import annotations
 import subprocess
 import tempfile
 import time
-import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Literal
+
+import defusedxml.ElementTree as ET
 
 from radar_audit.runner import RawToolOutput
 
@@ -88,6 +89,7 @@ class PytestCoverageRunner:
 
     def _parse_junit(self, junit_path: Path) -> dict[str, object]:
         root = ET.parse(junit_path).getroot()
+        assert root is not None
         suite = root.find("testsuite") if root.tag == "testsuites" else root
         if suite is None:
             return {"tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0}, "failures": []}
@@ -126,5 +128,6 @@ class PytestCoverageRunner:
         if not coverage_path.exists():
             return None
         root = ET.parse(coverage_path).getroot()
+        assert root is not None
         line_rate = root.get("line-rate")
         return round(float(line_rate) * 100, 2) if line_rate is not None else None
