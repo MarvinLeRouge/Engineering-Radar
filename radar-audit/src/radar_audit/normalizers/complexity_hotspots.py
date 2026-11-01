@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
+from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
 from radar_audit.normalizers.cyclomatic_complexity import _extract_blocks, _has_usable_payload
+from radar_audit.normalizers.shared import add_finding_with_recommendation
 
 _USABLE_EXIT_CODES_BY_TOOL = {
     "radon-cc": {0},
@@ -16,6 +19,10 @@ _USABLE_EXIT_CODES_BY_TOOL = {
 _OUTLIER_COMPLEXITY_THRESHOLD = 10
 _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (2, 8.0), (5, 6.0), (10, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
+_RECOMMENDATION_TEXT = (
+    "This function is a complexity hotspot: prioritize refactoring it over "
+    "lower-complexity functions elsewhere in the codebase."
+)
 
 
 def normalize_complexity_hotspots(
@@ -37,11 +44,43 @@ def normalize_complexity_hotspots(
     worst_confidence: Confidence | None = None
     for tool_result in relevant:
         blocks = _extract_blocks(tool_result)
-        outlier_count = sum(
-            1 for block in blocks if int(block["complexity"]) > _OUTLIER_COMPLEXITY_THRESHOLD
-        )
-        value = _band_value(outlier_count)
+        outliers = [
+            block for block in blocks if int(block["complexity"]) > _OUTLIER_COMPLEXITY_THRESHOLD
+        ]
         tool_confidence = _confidence_for_tool(tool_result.tool_name)
+        for block in outliers:
+            description = (
+                f"{block.get('name', 'function')} has cyclomatic complexity "
+                f"{block['complexity']}"
+            )
+            add_finding_with_recommendation(
+                session,
+                Finding(
+                    scoring_run_id=scoring_run.id,
+                    criterion_id=criterion.id,
+                    tool_result_id=tool_result.id,
+                    severity=FindingSeverity.MEDIUM,
+                    description=description,
+                    file=block.get("file"),
+                    line=block.get("line"),
+                    magnitude=float(block["complexity"]),
+                    # Same label convention as 2.3's finding for the same block
+                    # (qualified name, not the volatile complexity value), but a
+                    # different criterion_id -- so this fingerprint is distinct
+                    # from 2.3's for the exact same function, by design.
+                    fingerprint=compute_fingerprint(
+                        criterion.id,
+                        FindingSeverity.MEDIUM,
+                        block.get("file"),
+                        block.get("name") or "function",
+                    ),
+                    confidence=tool_confidence,
+                    status=FindingStatus.OPEN,
+                    human_verdict=HumanVerdict.UNREVIEWED,
+                ),
+                _RECOMMENDATION_TEXT,
+            )
+        value = _band_value(len(outliers))
         if worst_value is None or value < worst_value:
             worst_value = value
             worst_confidence = tool_confidence
