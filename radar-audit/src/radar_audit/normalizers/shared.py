@@ -282,28 +282,36 @@ def _package_name(spec: str) -> str:
 
 
 def _pyproject_dependency_names(data: dict[str, object]) -> set[str]:
+    return _pep621_dependency_names(data) | _poetry_dependency_names(data)
+
+
+def _pep621_dependency_names(data: dict[str, object]) -> set[str]:
     names: set[str] = set()
-
     project = data.get("project")
-    if isinstance(project, dict):
-        dependencies = project.get("dependencies")
-        if isinstance(dependencies, list):
-            names.update(_package_name(dep) for dep in dependencies if isinstance(dep, str))
-        optional = project.get("optional-dependencies")
-        if isinstance(optional, dict):
-            for group in optional.values():
-                if isinstance(group, list):
-                    names.update(_package_name(dep) for dep in group if isinstance(dep, str))
-
-    tool = data.get("tool")
-    if isinstance(tool, dict):
-        poetry = tool.get("poetry")
-        if isinstance(poetry, dict):
-            dependencies = poetry.get("dependencies")
-            if isinstance(dependencies, dict):
-                names.update(key.lower() for key in dependencies)
-
+    if not isinstance(project, dict):
+        return names
+    dependencies = project.get("dependencies")
+    if isinstance(dependencies, list):
+        names.update(_package_name(dep) for dep in dependencies if isinstance(dep, str))
+    optional = project.get("optional-dependencies")
+    if isinstance(optional, dict):
+        for group in optional.values():
+            if isinstance(group, list):
+                names.update(_package_name(dep) for dep in group if isinstance(dep, str))
     return names
+
+
+def _poetry_dependency_names(data: dict[str, object]) -> set[str]:
+    tool = data.get("tool")
+    if not isinstance(tool, dict):
+        return set()
+    poetry = tool.get("poetry")
+    if not isinstance(poetry, dict):
+        return set()
+    dependencies = poetry.get("dependencies")
+    if not isinstance(dependencies, dict):
+        return set()
+    return {key.lower() for key in dependencies}
 
 
 def python_dependency_names(candidate_dirs: list[Path]) -> set[str]:
