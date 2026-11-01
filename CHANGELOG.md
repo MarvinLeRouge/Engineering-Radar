@@ -236,6 +236,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Exclude test directories from code-duplication scan
 - *(radar-api)* Sort roadmap items by priority desc then title within a criterion (FIX-013)
 - *(radar-api)* Bump certifi and pin uv to patched versions (FIX-014)
+- *(radar-dashboard)* Upgrade Alpine OS packages in the nginx image (FIX-014)
 
 ### 🚜 Refactor
 
