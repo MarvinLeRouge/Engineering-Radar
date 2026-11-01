@@ -11,6 +11,7 @@ from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.roadmap import ImprovementTask, RoadmapItem
 from radar_core.models.scoring import ScoringRun
+from sqlalchemy import desc
 from sqlmodel import Session, select
 
 from radar_api.auth import require_api_key
@@ -76,7 +77,12 @@ def list_roadmap_items(
         .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
         .where(Audit.repository_id == repository_id)
         .distinct()
-        .order_by(Category.order, Criterion.id, ImprovementTask.title)  # type: ignore[arg-type]
+        .order_by(
+            Category.order,  # type: ignore[arg-type]
+            Criterion.id,  # type: ignore[arg-type]
+            desc(RoadmapItem.priority),  # type: ignore[arg-type]
+            ImprovementTask.title,
+        )
     ).all()
     return [
         _to_roadmap_item_read(item, task, criterion, category)
