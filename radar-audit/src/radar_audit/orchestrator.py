@@ -4,6 +4,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from radar_core.enums import FindingStatus, HumanVerdict
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.links import FindingImprovementTaskLink
@@ -177,7 +178,24 @@ def execute_audit(
         stale_findings = session.exec(
             select(Finding).where(Finding.tool_result_id.in_(existing_result_ids))  # type: ignore[union-attr]
         ).all()
-        stale_finding_ids = [f.id for f in stale_findings if f.id is not None]
+        # A human-set status/verdict must survive this rerun: run and score commit in
+        # separate sessions, so by the time score_repository's own carry-forward looks
+        # for it, it is too late if this cleanup already deleted the only copy. Detach
+        # these findings from the ToolResult about to be deleted instead of deleting
+        # them -- score_repository's own wipe-and-recreate (scoped by scoring_run_id)
+        # still finds and cleans them up, but only after reading their verdict for the
+        # fingerprint-based carry-forward (radar_audit.scoring._collect_carried_verdicts).
+        findings_to_delete = []
+        for finding in stale_findings:
+            if (
+                finding.status != FindingStatus.OPEN
+                or finding.human_verdict != HumanVerdict.UNREVIEWED
+            ):
+                finding.tool_result_id = None
+                session.add(finding)
+            else:
+                findings_to_delete.append(finding)
+        stale_finding_ids = [f.id for f in findings_to_delete if f.id is not None]
         stale_recommendations = session.exec(
             select(Recommendation).where(Recommendation.finding_id.in_(stale_finding_ids))  # type: ignore[attr-defined]
         ).all()
@@ -191,7 +209,7 @@ def execute_audit(
         for task_link in stale_task_links:
             session.delete(task_link)
         session.flush()
-        for finding in stale_findings:
+        for finding in findings_to_delete:
             session.delete(finding)
         session.flush()
     for result in existing_results:
