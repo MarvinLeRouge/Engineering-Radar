@@ -1,3 +1,5 @@
+"""Database engine and session factories, enforcing SQLite foreign keys on every connection."""
+
 import sqlite3
 
 from sqlalchemy import Engine, event
@@ -24,8 +26,10 @@ def _enable_sqlite_foreign_keys(
 
 
 def get_engine(database_url: str) -> Engine:
+    """Create a SQLModel engine for the given database URL."""
     return create_engine(database_url)
 
 
 def get_session(engine: Engine) -> Session:
+    """Open a new SQLModel session bound to the given engine."""
     return Session(engine)

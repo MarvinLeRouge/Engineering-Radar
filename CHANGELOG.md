@@ -245,6 +245,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Patch vite, undici, glob and minimatch vulnerabilities (FIX-017)
 - *(radar-audit)* Create a Finding per complexity hotspot (FIX-018)
 - *(radar-api)* Add missing module and symbol docstrings (FIX-019)
+- *(radar-core)* Add missing module and symbol docstrings (FIX-019)
 
 ### 🚜 Refactor
 

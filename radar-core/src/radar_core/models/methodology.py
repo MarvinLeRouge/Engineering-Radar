@@ -1,3 +1,5 @@
+"""ORM models for the scoring methodology: versions, categories and criteria."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,6 +13,8 @@ from radar_core.types import UTCDateTime
 
 
 class MethodologyVersion(SQLModel, table=True):
+    """A labelled, frozen version of the scoring methodology."""
+
     __tablename__ = "methodology_version"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -23,6 +27,8 @@ class MethodologyVersion(SQLModel, table=True):
 
 
 class Category(SQLModel, table=True):
+    """A weighted group of criteria within a methodology version."""
+
     __tablename__ = "category"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -33,6 +39,8 @@ class Category(SQLModel, table=True):
 
 
 class Criterion(SQLModel, table=True):
+    """A single scored check within a category, with its weight and scoring model."""
+
     __tablename__ = "criterion"
 
     id: int | None = Field(default=None, primary_key=True)

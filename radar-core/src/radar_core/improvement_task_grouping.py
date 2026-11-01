@@ -1,3 +1,5 @@
+"""Stable group keys for improvement tasks, so they can be upserted across re-scoring runs."""
+
 from __future__ import annotations
 
 import hashlib

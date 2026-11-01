@@ -1,3 +1,5 @@
+"""Custom SQLAlchemy column types for timezone-safe datetime storage."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -17,6 +19,7 @@ class UTCDateTime(TypeDecorator[datetime]):
     cache_ok = True
 
     def process_bind_param(self, value: datetime | None, dialect: Dialect) -> datetime | None:
+        """Convert timezone-aware datetimes to naive UTC before storing them."""
         if value is not None:
             if value.tzinfo is not None:
                 # Convert to UTC if timezone-aware
@@ -24,6 +27,7 @@ class UTCDateTime(TypeDecorator[datetime]):
         return value
 
     def process_result_value(self, value: datetime | None, dialect: Dialect) -> datetime | None:
+        """Attach UTC tzinfo to datetimes read back from the database."""
         if value is not None:
             # Add UTC timezone when retrieving from database
             return value.replace(tzinfo=UTC)

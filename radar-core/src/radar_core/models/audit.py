@@ -1,3 +1,5 @@
+"""ORM models for audit runs and the raw output of each tool they execute."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -10,6 +12,8 @@ from radar_core.types import UTCDateTime
 
 
 class Audit(SQLModel, table=True):
+    """One audit run of a repository at a given commit, with its network flags."""
+
     __tablename__ = "audit"
     __table_args__ = (
         Index(
@@ -35,6 +39,8 @@ class Audit(SQLModel, table=True):
 
 
 class ToolResult(SQLModel, table=True):
+    """Raw output, exit code and timing of one external tool run within an audit."""
+
     __tablename__ = "tool_result"
 
     id: int | None = Field(default=None, primary_key=True)

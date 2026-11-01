@@ -1,3 +1,5 @@
+"""ORM models for findings, their supporting evidence and their recommendations."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -11,6 +13,8 @@ from radar_core.types import UTCDateTime
 
 
 class Finding(SQLModel, table=True):
+    """A single issue detected in a repository by one criterion during a scoring run."""
+
     __tablename__ = "finding"
 
     id: int | None = Field(default=None, primary_key=True)
@@ -86,6 +90,8 @@ class Finding(SQLModel, table=True):
 
 
 class Evidence(SQLModel, table=True):
+    """A piece of supporting evidence attached to either a finding or a score."""
+
     __tablename__ = "evidence"
     __table_args__ = (
         CheckConstraint(
@@ -116,6 +122,8 @@ class Evidence(SQLModel, table=True):
 
 
 class Recommendation(SQLModel, table=True):
+    """Suggested remediation text for a finding."""
+
     __tablename__ = "recommendation"
 
     id: int | None = Field(default=None, primary_key=True)

@@ -1,3 +1,5 @@
+"""ORM model for point-in-time snapshots of the portfolio score."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -12,6 +14,8 @@ from radar_core.types import UTCDateTime
 
 
 class Snapshot(SQLModel, table=True):
+    """A record of the portfolio global score and its details at one moment."""
+
     __tablename__ = "snapshot"
 
     id: int | None = Field(default=None, primary_key=True)
