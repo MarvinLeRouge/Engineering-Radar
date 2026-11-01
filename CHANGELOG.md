@@ -256,6 +256,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract scoring helpers out of normalize_precommit_gate (FIX-020)
 - *(radar-audit)* Split IntegrationTestRunner._classify by stack (FIX-020)
 - *(radar-audit)* Extract _step_pushes_to_registry out of _is_wired_to_registry_push (FIX-020)
+- *(radar-audit)* Extract stale-cleanup and tool-execution out of execute_audit (FIX-020)
 
 ### 📚 Documentation
 
