@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /workspace
 
-RUN pip install --no-cache-dir uv
+RUN pip install --no-cache-dir "uv>=0.13.4"
 
 COPY pyproject.toml uv.lock ./
 COPY radar-core ./radar-core
