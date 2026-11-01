@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -114,21 +115,20 @@ def _traefik_services(compose_path: Path) -> set[str] | None:
     if not isinstance(services, dict):
         return set()
 
-    result: set[str] = set()
-    for name, definition in services.items():
-        if not isinstance(definition, dict):
-            continue
-        labels = definition.get("labels") or []
-        if isinstance(labels, dict):
-            enabled = labels.get("traefik.enable")
-            if isinstance(enabled, bool):
-                if enabled:
-                    result.add(name)
-            elif str(enabled).strip().strip('"').strip("'").lower() == "true":
-                result.add(name)
-            continue
-        if any(
-            str(label).strip().strip('"').strip("'") == "traefik.enable=true" for label in labels
-        ):
-            result.add(name)
-    return result
+    return {
+        name
+        for name, definition in services.items()
+        if isinstance(definition, dict) and _service_has_traefik_enabled(definition)
+    }
+
+
+def _service_has_traefik_enabled(definition: dict[str, Any]) -> bool:
+    labels = definition.get("labels") or []
+    if isinstance(labels, dict):
+        enabled = labels.get("traefik.enable")
+        if isinstance(enabled, bool):
+            return enabled
+        return str(enabled).strip().strip('"').strip("'").lower() == "true"
+    return any(
+        str(label).strip().strip('"').strip("'") == "traefik.enable=true" for label in labels
+    )
