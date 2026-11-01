@@ -68,17 +68,19 @@ def _is_wired_to_registry_push(workflow_path: Path) -> bool:
         if not isinstance(job, dict):
             continue
         for step in job.get("steps") or []:
-            if not isinstance(step, dict):
-                continue
-            uses = step.get("uses")
-            if isinstance(uses, str) and uses.startswith("docker/build-push-action"):
-                with_block = step.get("with")
-                if isinstance(with_block, dict) and _is_push_enabled(with_block.get("push")):
-                    return True
-            run = step.get("run")
-            if isinstance(run, str) and "docker push" in run:
+            if isinstance(step, dict) and _step_pushes_to_registry(step):
                 return True
     return False
+
+
+def _step_pushes_to_registry(step: dict[str, object]) -> bool:
+    uses = step.get("uses")
+    if isinstance(uses, str) and uses.startswith("docker/build-push-action"):
+        with_block = step.get("with")
+        if isinstance(with_block, dict) and _is_push_enabled(with_block.get("push")):
+            return True
+    run = step.get("run")
+    return isinstance(run, str) and "docker push" in run
 
 
 def _is_push_enabled(push_value: object) -> bool:

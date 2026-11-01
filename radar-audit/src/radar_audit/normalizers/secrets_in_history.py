@@ -36,6 +36,49 @@ def _is_pre_filtered(finding: dict[str, Any]) -> bool:
     return bool(_ENV_EXAMPLE_RE.search(finding["file"]))
 
 
+def _add_secret_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    finding: dict[str, Any],
+) -> bool:
+    pre_filtered = _is_pre_filtered(finding)
+    # "match" is the actual matched secret text -- the only field that
+    # distinguishes two findings for the same rule in the same file
+    # (gitleaks' "match"/"secret" fields, unlike line numbers, are
+    # stable across unrelated edits elsewhere in the file).
+    label = f"{finding['rule']}: {finding['match']}"
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=FindingSeverity.HIGH,
+            description=f"{finding['rule']}: potential secret in {finding['file']}",
+            file=finding["file"],
+            line=finding["line"],
+            fingerprint=compute_fingerprint(
+                criterion.id, FindingSeverity.HIGH, finding["file"], label
+            ),
+            confidence=Confidence.LOW if pre_filtered else Confidence.HIGH,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        _RECOMMENDATION_TEXT,
+    )
+    return pre_filtered
+
+
+def _score_value(any_confirmed: bool, any_pre_filtered: bool) -> float:
+    if any_confirmed:
+        return 2.0
+    if any_pre_filtered:
+        return 8.0
+    return 10.0
+
+
 def normalize_secrets_in_history(
     session: Session,
     scoring_run: ScoringRun,
@@ -55,45 +98,18 @@ def normalize_secrets_in_history(
     any_pre_filtered = False
     for tool_result in relevant:
         for finding in tool_result.raw_output["findings"]:
-            pre_filtered = _is_pre_filtered(finding)
+            pre_filtered = _add_secret_finding(
+                session, scoring_run, criterion, tool_result, finding
+            )
             if pre_filtered:
                 any_pre_filtered = True
             else:
                 any_confirmed = True
-            # "match" is the actual matched secret text -- the only field that
-            # distinguishes two findings for the same rule in the same file
-            # (gitleaks' "match"/"secret" fields, unlike line numbers, are
-            # stable across unrelated edits elsewhere in the file).
-            label = f"{finding['rule']}: {finding['match']}"
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=FindingSeverity.HIGH,
-                    description=f"{finding['rule']}: potential secret in {finding['file']}",
-                    file=finding["file"],
-                    line=finding["line"],
-                    fingerprint=compute_fingerprint(
-                        criterion.id, FindingSeverity.HIGH, finding["file"], label
-                    ),
-                    confidence=Confidence.LOW if pre_filtered else Confidence.HIGH,
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                _RECOMMENDATION_TEXT,
-            )
 
     # Severity bands per the category-4 spec's section 3.2 - resolved but provisional,
     # pending Phase 5 portfolio-wide calibration: confirmed finding scores 2.0, pre-filtered
     # finding scores 8.0, no findings score 10.0.
-    if any_confirmed:
-        value = 2.0
-    elif any_pre_filtered:
-        value = 8.0
-    else:
-        value = 10.0
+    value = _score_value(any_confirmed, any_pre_filtered)
 
     score = Score(
         scoring_run_id=scoring_run.id,

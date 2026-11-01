@@ -88,45 +88,11 @@ def normalize_precommit_gate(
     # (spec §7 point 3 -- lefthook is unverified against any real in-scope config).
     gate_confidence = Confidence.LOW if tier == "lefthook" else Confidence.HIGH
 
-    cells: dict[tuple[str, str], bool] = {
-        (validator_type, domain): False for domain in domains for validator_type in _VALIDATOR_TYPES
-    }
-    for entry in entries:
-        for classified in _classify_entry(entry):
-            if classified in cells:
-                cells[classified] = True
-
-    applicable = len(cells)
-    covered = sum(1 for is_covered in cells.values() if is_covered)
-    if covered == applicable:
-        value = 10.0
-    elif covered == 0:
-        value = 0.0
-    else:
-        value = (covered / applicable) * 10
-
-    for (validator_type, domain), is_covered in cells.items():
-        if not is_covered:
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=FindingSeverity.LOW,
-                    description=f"No pre-commit {validator_type} hook covers {domain}",
-                    fingerprint=compute_fingerprint(
-                        criterion.id,
-                        FindingSeverity.LOW,
-                        None,
-                        f"No pre-commit {validator_type} hook covers {domain}",
-                    ),
-                    confidence=gate_confidence,
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                f"Add a pre-commit {validator_type} hook covering {domain} to the gate config.",
-            )
+    cells = _compute_cells(domains, entries)
+    value = _gate_score_value(cells)
+    _create_missing_hook_findings(
+        session, scoring_run, criterion, tool_result, cells, gate_confidence
+    )
 
     score = Score(
         scoring_run_id=scoring_run.id,
@@ -145,6 +111,60 @@ def _domains_present(tool_results: list[ToolResult]) -> set[str]:
     return {
         _STACK_TOOL_NAMES[r.tool_name] for r in tool_results if r.tool_name in _STACK_TOOL_NAMES
     }
+
+
+def _compute_cells(
+    domains: set[str], entries: list[dict[str, str | None]]
+) -> dict[tuple[str, str], bool]:
+    cells: dict[tuple[str, str], bool] = {
+        (validator_type, domain): False for domain in domains for validator_type in _VALIDATOR_TYPES
+    }
+    for entry in entries:
+        for classified in _classify_entry(entry):
+            if classified in cells:
+                cells[classified] = True
+    return cells
+
+
+def _gate_score_value(cells: dict[tuple[str, str], bool]) -> float:
+    applicable = len(cells)
+    covered = sum(1 for is_covered in cells.values() if is_covered)
+    if covered == applicable:
+        return 10.0
+    if covered == 0:
+        return 0.0
+    return (covered / applicable) * 10
+
+
+def _create_missing_hook_findings(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    cells: dict[tuple[str, str], bool],
+    gate_confidence: Confidence,
+) -> None:
+    for (validator_type, domain), is_covered in cells.items():
+        if is_covered:
+            continue
+        description = f"No pre-commit {validator_type} hook covers {domain}"
+        add_finding_with_recommendation(
+            session,
+            Finding(
+                scoring_run_id=scoring_run.id,
+                criterion_id=criterion.id,
+                tool_result_id=tool_result.id,
+                severity=FindingSeverity.LOW,
+                description=description,
+                fingerprint=compute_fingerprint(
+                    criterion.id, FindingSeverity.LOW, None, description
+                ),
+                confidence=gate_confidence,
+                status=FindingStatus.OPEN,
+                human_verdict=HumanVerdict.UNREVIEWED,
+            ),
+            f"Add a pre-commit {validator_type} hook covering {domain} to the gate config.",
+        )
 
 
 def _classify_entry(entry: dict[str, str | None]) -> list[tuple[str, str]]:

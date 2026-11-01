@@ -56,44 +56,10 @@ def normalize_cyclomatic_complexity(
     worst_value: float | None = None
     worst_confidence: Confidence | None = None
     for tool_result in relevant:
-        blocks = _extract_blocks(tool_result)
-        if not blocks:
+        result = _score_tool_result(session, scoring_run, criterion, tool_result)
+        if result is None:
             continue
-        tool_confidence = _confidence_for_tool(tool_result.tool_name)
-        worst_block = max(blocks, key=lambda b: int(b["complexity"]))
-        for block in blocks:
-            if int(block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
-                severity = FindingSeverity.MEDIUM
-                add_finding_with_recommendation(
-                    session,
-                    Finding(
-                        scoring_run_id=scoring_run.id,
-                        criterion_id=criterion.id,
-                        tool_result_id=tool_result.id,
-                        severity=severity,
-                        description=(
-                            f"{block.get('name', 'function')} has cyclomatic complexity "
-                            f"{block['complexity']}"
-                        ),
-                        file=block.get("file"),
-                        line=block.get("line"),
-                        magnitude=float(block["complexity"]),
-                        # The complexity score itself is deliberately excluded from the
-                        # label: it's the volatile part that churns on every edit, while
-                        # the qualified block name is stable.
-                        fingerprint=compute_fingerprint(
-                            criterion.id,
-                            severity,
-                            block.get("file"),
-                            block.get("name") or "function",
-                        ),
-                        confidence=tool_confidence,
-                        status=FindingStatus.OPEN,
-                        human_verdict=HumanVerdict.UNREVIEWED,
-                    ),
-                    _RECOMMENDATION_TEXT,
-                )
-        value = _band_value(int(worst_block["complexity"]))
+        value, tool_confidence = result
         if worst_value is None or value < worst_value:
             worst_value = value
             worst_confidence = tool_confidence
@@ -112,6 +78,61 @@ def normalize_cyclomatic_complexity(
     session.commit()
     session.refresh(score)
     return score
+
+
+def _score_tool_result(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+) -> tuple[float, Confidence] | None:
+    blocks = _extract_blocks(tool_result)
+    if not blocks:
+        return None
+    tool_confidence = _confidence_for_tool(tool_result.tool_name)
+    worst_block = max(blocks, key=lambda b: int(b["complexity"]))
+    for block in blocks:
+        if int(block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
+            _add_complexity_finding(
+                session, scoring_run, criterion, tool_result, block, tool_confidence
+            )
+    value = _band_value(int(worst_block["complexity"]))
+    return value, tool_confidence
+
+
+def _add_complexity_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    block: dict[str, Any],
+    tool_confidence: Confidence,
+) -> None:
+    severity = FindingSeverity.MEDIUM
+    description = f"{block.get('name', 'function')} has cyclomatic complexity {block['complexity']}"
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=severity,
+            description=description,
+            file=block.get("file"),
+            line=block.get("line"),
+            magnitude=float(block["complexity"]),
+            # The complexity score itself is deliberately excluded from the
+            # label: it's the volatile part that churns on every edit, while
+            # the qualified block name is stable.
+            fingerprint=compute_fingerprint(
+                criterion.id, severity, block.get("file"), block.get("name") or "function"
+            ),
+            confidence=tool_confidence,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        _RECOMMENDATION_TEXT,
+    )
 
 
 def _band_value(complexity: int) -> float:

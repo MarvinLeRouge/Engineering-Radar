@@ -31,36 +31,8 @@ def normalize_e2e_tests(
         # No javascript sub-project ran PlaywrightPresenceRunner at all -> N/A.
         return None
 
-    ci_results = [r for r in tool_results if r.tool_name == "ci-workflow" and r.exit_code == 0]
-    ci_wired = bool(
-        ci_results and ci_results[0].raw_output.get("playwright_execution_found", False)
-    )
-
-    # Worst-status-wins across every javascript sub-project (spec section 7).
-    worst_status = min(
-        _status_for(bool(r.raw_output.get("present", False)), ci_wired) for r in playwright_results
-    )
-
-    if worst_status == _TODO:
-        _add_finding(
-            session,
-            scoring_run,
-            criterion,
-            playwright_results[0],
-            FindingSeverity.MEDIUM,
-            "Repo is web-facing but has no Playwright E2E test setup",
-            _RECOMMENDATION_TEXT_MISSING,
-        )
-    elif worst_status == _IN_PROGRESS:
-        _add_finding(
-            session,
-            scoring_run,
-            criterion,
-            playwright_results[0],
-            FindingSeverity.LOW,
-            "Playwright is present but not wired into any CI workflow",
-            _RECOMMENDATION_TEXT_NOT_WIRED,
-        )
+    worst_status = _worst_playwright_status(tool_results, playwright_results)
+    _add_status_finding(session, scoring_run, criterion, playwright_results[0], worst_status)
 
     score = Score(
         scoring_run_id=scoring_run.id,
@@ -79,6 +51,48 @@ def _status_for(present: bool, ci_wired: bool) -> int:
     if not present:
         return _TODO
     return _DONE if ci_wired else _IN_PROGRESS
+
+
+def _worst_playwright_status(
+    tool_results: list[ToolResult], playwright_results: list[ToolResult]
+) -> int:
+    ci_results = [r for r in tool_results if r.tool_name == "ci-workflow" and r.exit_code == 0]
+    ci_wired = bool(
+        ci_results and ci_results[0].raw_output.get("playwright_execution_found", False)
+    )
+    # Worst-status-wins across every javascript sub-project (spec section 7).
+    return min(
+        _status_for(bool(r.raw_output.get("present", False)), ci_wired) for r in playwright_results
+    )
+
+
+def _add_status_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    worst_status: int,
+) -> None:
+    if worst_status == _TODO:
+        _add_finding(
+            session,
+            scoring_run,
+            criterion,
+            tool_result,
+            FindingSeverity.MEDIUM,
+            "Repo is web-facing but has no Playwright E2E test setup",
+            _RECOMMENDATION_TEXT_MISSING,
+        )
+    elif worst_status == _IN_PROGRESS:
+        _add_finding(
+            session,
+            scoring_run,
+            criterion,
+            tool_result,
+            FindingSeverity.LOW,
+            "Playwright is present but not wired into any CI workflow",
+            _RECOMMENDATION_TEXT_NOT_WIRED,
+        )
 
 
 def _add_finding(

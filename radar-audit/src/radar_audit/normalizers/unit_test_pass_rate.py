@@ -39,87 +39,18 @@ def normalize_unit_test_pass_rate(
     tool_results: list[ToolResult],
 ) -> Score | None:
     """Score unit test pass rate from pytest-cov, vitest and pest, one finding per failure."""
-    relevant = []
-    for r in tool_results:
-        if r.tool_name not in _RELEVANT_TOOLS:
-            continue
-        if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL[r.tool_name]:
-            relevant.append(r)
-        elif r.raw_output.get("tests", {}).get("total", 0) > 0:
-            # Crashed or interrupted run (e.g. pytest exit code 2 from
-            # collection errors) whose junit.xml still carries real counts -
-            # rescue it into the ratio instead of silently dropping the
-            # whole suite. The abnormal exit code itself is flagged below.
-            relevant.append(r)
+    relevant = _filter_relevant_results(tool_results)
     if not relevant:
         return None
 
     passed = 0
     collected = 0
     for tool_result in relevant:
-        tests = tool_result.raw_output.get("tests", {})
-        passed += tests.get("passed", 0)
-        collected += tests.get("total", 0)
-
-        if tool_result.exit_code not in _USABLE_EXIT_CODES_BY_TOOL[tool_result.tool_name]:
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=FindingSeverity.HIGH,
-                    description=(
-                        f"{tool_result.tool_name} exited abnormally (exit code "
-                        f"{tool_result.exit_code}) while still reporting "
-                        f"{tests.get('total', 0)} tests "
-                        f"({tests.get('passed', 0)} passed) - treating as a crashed run"
-                    ),
-                    # Label deliberately drops the exact test counts (volatile on
-                    # nearly every run); subproject_path disambiguates multiple
-                    # subprojects crashing the same tool within one audit.
-                    fingerprint=compute_fingerprint(
-                        criterion.id,
-                        FindingSeverity.HIGH,
-                        None,
-                        f"{tool_result.tool_name}@{tool_result.subproject_path}: abnormal-exit",
-                    ),
-                    confidence=Confidence.HIGH,
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                _RECOMMENDATION_TEXT_ABNORMAL_EXIT,
-            )
-
-        for failure in tool_result.raw_output.get("failures", []):
-            _add_failure_finding(session, scoring_run, criterion, tool_result, failure)
-
-        coverage_percent = tool_result.raw_output.get("coverage_percent")
-        if coverage_percent is not None and coverage_percent < _COVERAGE_FLOOR:
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=FindingSeverity.LOW,
-                    description=(
-                        f"Coverage is {coverage_percent}%, below the {_COVERAGE_FLOOR}% floor"
-                    ),
-                    # Label drops the exact percentage (volatile); subproject_path
-                    # disambiguates multiple subprojects using the same tool.
-                    fingerprint=compute_fingerprint(
-                        criterion.id,
-                        FindingSeverity.LOW,
-                        None,
-                        f"{tool_result.tool_name}@{tool_result.subproject_path}: coverage-floor",
-                    ),
-                    confidence=Confidence.HIGH,
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                _RECOMMENDATION_TEXT_COVERAGE_FLOOR,
-            )
+        result_passed, result_collected = _process_tool_result(
+            session, scoring_run, criterion, tool_result
+        )
+        passed += result_passed
+        collected += result_collected
 
     if collected == 0:
         return None
@@ -135,6 +66,113 @@ def normalize_unit_test_pass_rate(
     session.commit()
     session.refresh(score)
     return score
+
+
+def _filter_relevant_results(tool_results: list[ToolResult]) -> list[ToolResult]:
+    relevant = []
+    for r in tool_results:
+        if r.tool_name not in _RELEVANT_TOOLS:
+            continue
+        if r.exit_code in _USABLE_EXIT_CODES_BY_TOOL[r.tool_name]:
+            relevant.append(r)
+        elif r.raw_output.get("tests", {}).get("total", 0) > 0:
+            # Crashed or interrupted run (e.g. pytest exit code 2 from
+            # collection errors) whose junit.xml still carries real counts -
+            # rescue it into the ratio instead of silently dropping the
+            # whole suite. The abnormal exit code itself is flagged below.
+            relevant.append(r)
+    return relevant
+
+
+def _process_tool_result(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+) -> tuple[int, int]:
+    tests = tool_result.raw_output.get("tests", {})
+    passed = tests.get("passed", 0)
+    collected = tests.get("total", 0)
+
+    if tool_result.exit_code not in _USABLE_EXIT_CODES_BY_TOOL[tool_result.tool_name]:
+        _add_abnormal_exit_finding(session, scoring_run, criterion, tool_result, tests)
+
+    for failure in tool_result.raw_output.get("failures", []):
+        _add_failure_finding(session, scoring_run, criterion, tool_result, failure)
+
+    coverage_percent = tool_result.raw_output.get("coverage_percent")
+    if coverage_percent is not None and coverage_percent < _COVERAGE_FLOOR:
+        _add_coverage_floor_finding(session, scoring_run, criterion, tool_result, coverage_percent)
+
+    return passed, collected
+
+
+def _add_abnormal_exit_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    tests: dict[str, object],
+) -> None:
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=FindingSeverity.HIGH,
+            description=(
+                f"{tool_result.tool_name} exited abnormally (exit code "
+                f"{tool_result.exit_code}) while still reporting "
+                f"{tests.get('total', 0)} tests "
+                f"({tests.get('passed', 0)} passed) - treating as a crashed run"
+            ),
+            # Label deliberately drops the exact test counts (volatile on
+            # nearly every run); subproject_path disambiguates multiple
+            # subprojects crashing the same tool within one audit.
+            fingerprint=compute_fingerprint(
+                criterion.id,
+                FindingSeverity.HIGH,
+                None,
+                f"{tool_result.tool_name}@{tool_result.subproject_path}: abnormal-exit",
+            ),
+            confidence=Confidence.HIGH,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        _RECOMMENDATION_TEXT_ABNORMAL_EXIT,
+    )
+
+
+def _add_coverage_floor_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    coverage_percent: float,
+) -> None:
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=FindingSeverity.LOW,
+            description=(f"Coverage is {coverage_percent}%, below the {_COVERAGE_FLOOR}% floor"),
+            # Label drops the exact percentage (volatile); subproject_path
+            # disambiguates multiple subprojects using the same tool.
+            fingerprint=compute_fingerprint(
+                criterion.id,
+                FindingSeverity.LOW,
+                None,
+                f"{tool_result.tool_name}@{tool_result.subproject_path}: coverage-floor",
+            ),
+            confidence=Confidence.HIGH,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        _RECOMMENDATION_TEXT_COVERAGE_FLOOR,
+    )
 
 
 def _add_failure_finding(

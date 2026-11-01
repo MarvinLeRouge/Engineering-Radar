@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 
 from radar_core.enums import Confidence, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.links import FindingImprovementTaskLink
-from radar_core.models.methodology import Category, Criterion
+from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
 from sqlalchemy import desc
@@ -59,16 +60,37 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     methodology_version = seed_taxonomy(session)
     scoring_run = get_or_create_scoring_run(session, audit, methodology_version)
 
+    existing_findings = session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
+    carried_verdicts = _collect_carried_verdicts(session, repository)
+    _wipe_scoring_run_data(session, scoring_run, existing_findings)
+
+    scoring_run.scored_at = datetime.now(UTC)
+    session.add(scoring_run)
+    session.commit()
+
+    tool_results = list(session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)))
+    scored_by_category = _run_normalizers(session, scoring_run, methodology_version, tool_results)
+
+    _carry_forward_human_verdicts(session, scoring_run, carried_verdicts)
+    promote_improvement_tasks(session, scoring_run)
+
+    category_scores = _write_category_scores(session, scoring_run, scored_by_category)
+    _write_global_score(session, scoring_run, category_scores)
+
+    return scoring_run
+
+
+def _wipe_scoring_run_data(
+    session: Session, scoring_run: ScoringRun, existing_findings: Sequence[Finding]
+) -> None:
     existing_scores = session.exec(
         select(Score).where(Score.scoring_run_id == scoring_run.id)
     ).all()
     for existing in existing_scores:
         session.delete(existing)
 
-    existing_findings = session.exec(
-        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
-    ).all()
-    carried_verdicts = _collect_carried_verdicts(session, repository)
     existing_finding_ids = [f.id for f in existing_findings if f.id is not None]
     existing_recommendations = session.exec(
         select(Recommendation).where(Recommendation.finding_id.in_(existing_finding_ids))  # type: ignore[attr-defined]
@@ -91,12 +113,13 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     for existing_finding in existing_findings:
         session.delete(existing_finding)
 
-    scoring_run.scored_at = datetime.now(UTC)
-    session.add(scoring_run)
-    session.commit()
 
-    tool_results = list(session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)))
-
+def _run_normalizers(
+    session: Session,
+    scoring_run: ScoringRun,
+    methodology_version: MethodologyVersion,
+    tool_results: list[ToolResult],
+) -> dict[int, list[tuple[Criterion, Score]]]:
     methodology_version_id = methodology_version.id
     assert methodology_version_id is not None
 
@@ -107,20 +130,21 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
         if score is None or score.na_reason is not None:
             continue
         scored_by_category.setdefault(criterion.category_id, []).append((criterion, score))
+    return scored_by_category
 
-    _carry_forward_human_verdicts(session, scoring_run, carried_verdicts)
-    promote_improvement_tasks(session, scoring_run)
 
+def _write_category_scores(
+    session: Session,
+    scoring_run: ScoringRun,
+    scored_by_category: dict[int, list[tuple[Criterion, Score]]],
+) -> list[tuple[Category, Score]]:
     category_scores: list[tuple[Category, Score]] = []
     for category_id, pairs in scored_by_category.items():
         category = session.get(Category, category_id)
         assert category is not None
         category_score = _write_category_score(session, scoring_run, category, pairs)
         category_scores.append((category, category_score))
-
-    _write_global_score(session, scoring_run, category_scores)
-
-    return scoring_run
+    return category_scores
 
 
 def _collect_carried_verdicts(

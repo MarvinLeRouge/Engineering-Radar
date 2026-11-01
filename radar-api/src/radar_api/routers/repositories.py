@@ -50,6 +50,95 @@ def _badge_color(score: float) -> str:
     return "red"
 
 
+def _resolve_scoring_run(
+    session: Session, repository_id: int, scoring_run_id: int | None
+) -> ScoringRun | None:
+    if scoring_run_id is None:
+        return _latest_scoring_run(session, repository_id)
+    return session.exec(
+        select(ScoringRun)
+        .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
+        .where(ScoringRun.id == scoring_run_id, Audit.repository_id == repository_id)
+    ).first()
+
+
+def _build_finding_report(
+    finding: Finding, recommendation_by_finding: dict[int, str]
+) -> FindingReport:
+    return FindingReport(
+        id=finding.id,  # type: ignore[arg-type]
+        severity=finding.severity.value,
+        description=finding.description,
+        file=finding.file,
+        line=finding.line,
+        status=finding.status.value,
+        human_verdict=finding.human_verdict.value,
+        recommendation=recommendation_by_finding.get(finding.id),  # type: ignore[arg-type]
+    )
+
+
+def _criterion_status(criterion_score: Score | None) -> str:
+    if criterion_score is None:
+        return "not_yet_audited"
+    if criterion_score.na_reason is not None:
+        return "not_applicable"
+    return "scored"
+
+
+def _build_criterion_report(
+    criterion: Criterion,
+    criterion_score: Score | None,
+    findings_by_criterion: dict[int | None, list[Finding]],
+    recommendation_by_finding: dict[int, str],
+) -> CriterionReport:
+    status = _criterion_status(criterion_score)
+    finding_reports = [
+        _build_finding_report(f, recommendation_by_finding)
+        for f in findings_by_criterion.get(criterion.id, [])
+    ]
+    return CriterionReport(
+        id=criterion.id,  # type: ignore[arg-type]
+        name=criterion.name,
+        status=status,  # type: ignore[arg-type]
+        value=criterion_score.value
+        if criterion_score is not None and status != "not_applicable"
+        else None,
+        na_reason=criterion_score.na_reason if criterion_score else None,
+        findings=finding_reports,
+    )
+
+
+def _build_category_report(
+    session: Session,
+    category: Category,
+    category_score: Score | None,
+    criterion_scores: dict[int | None, Score],
+    findings_by_criterion: dict[int | None, list[Finding]],
+    recommendation_by_finding: dict[int, str],
+) -> CategoryReport:
+    criteria = session.exec(
+        select(Criterion).where(Criterion.category_id == category.id).order_by(Criterion.id)  # type: ignore[arg-type]
+    ).all()
+    criterion_reports = [
+        _build_criterion_report(
+            criterion,
+            criterion_scores.get(criterion.id),
+            findings_by_criterion,
+            recommendation_by_finding,
+        )
+        for criterion in criteria
+    ]
+    return CategoryReport(
+        id=category.id,  # type: ignore[arg-type]
+        name=category.name,
+        order=category.order,
+        status="scored" if category_score is not None else "not_yet_audited",
+        value=category_score.value if category_score else None,
+        confidence=category_score.confidence.value if category_score else None,
+        criteria=criterion_reports,
+    )
+
+
 def _to_repository_read(session: Session, repository: Repository) -> RepositoryRead:
     assert repository.id is not None
     scoring_run = _latest_scoring_run(session, repository.id)
@@ -94,14 +183,7 @@ def get_repository_report(
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
 
-    if scoring_run_id is not None:
-        scoring_run = session.exec(
-            select(ScoringRun)
-            .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
-            .where(ScoringRun.id == scoring_run_id, Audit.repository_id == repository_id)
-        ).first()
-    else:
-        scoring_run = _latest_scoring_run(session, repository_id)
+    scoring_run = _resolve_scoring_run(session, repository_id, scoring_run_id)
     if scoring_run is None:
         raise HTTPException(status_code=404, detail="no score found for this repository")
 
@@ -131,60 +213,17 @@ def get_repository_report(
     ).all()
     recommendation_by_finding = {r.finding_id: r.text for r in recommendations}
 
-    category_reports = []
-    for category in categories:
-        category_score = category_scores.get(category.id)
-        criteria = session.exec(
-            select(Criterion).where(Criterion.category_id == category.id).order_by(Criterion.id)  # type: ignore[arg-type]
-        ).all()
-        criterion_reports = []
-        for criterion in criteria:
-            criterion_score = criterion_scores.get(criterion.id)
-            if criterion_score is None:
-                criterion_status = "not_yet_audited"
-            elif criterion_score.na_reason is not None:
-                criterion_status = "not_applicable"
-            else:
-                criterion_status = "scored"
-
-            finding_reports = [
-                FindingReport(
-                    id=f.id,  # type: ignore[arg-type]
-                    severity=f.severity.value,
-                    description=f.description,
-                    file=f.file,
-                    line=f.line,
-                    status=f.status.value,
-                    human_verdict=f.human_verdict.value,
-                    recommendation=recommendation_by_finding.get(f.id),  # type: ignore[arg-type]
-                )
-                for f in findings_by_criterion.get(criterion.id, [])
-            ]
-            criterion_reports.append(
-                CriterionReport(
-                    id=criterion.id,  # type: ignore[arg-type]
-                    name=criterion.name,
-                    status=criterion_status,  # type: ignore[arg-type]
-                    value=(
-                        criterion_score.value
-                        if criterion_score is not None and criterion_status != "not_applicable"
-                        else None
-                    ),
-                    na_reason=criterion_score.na_reason if criterion_score else None,
-                    findings=finding_reports,
-                )
-            )
-        category_reports.append(
-            CategoryReport(
-                id=category.id,  # type: ignore[arg-type]
-                name=category.name,
-                order=category.order,
-                status="scored" if category_score is not None else "not_yet_audited",
-                value=category_score.value if category_score else None,
-                confidence=category_score.confidence.value if category_score else None,
-                criteria=criterion_reports,
-            )
+    category_reports = [
+        _build_category_report(
+            session,
+            category,
+            category_scores.get(category.id),
+            criterion_scores,
+            findings_by_criterion,
+            recommendation_by_finding,
         )
+        for category in categories
+    ]
 
     return RepositoryReport(
         repository_id=repository.id,  # type: ignore[arg-type]

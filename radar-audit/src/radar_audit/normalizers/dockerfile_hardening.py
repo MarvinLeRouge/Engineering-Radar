@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
@@ -34,6 +37,88 @@ _BAND_VALUE = {"NONE": 10.0, "LOW": 6.0, "MEDIUM": 6.0, "HIGH": 4.0, "CRITICAL":
 _SEVERITY_RANK = {"NONE": 0, "LOW": 1, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
 
 
+def _process_dockerfiles(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    repo_path: Path,
+) -> tuple[int, str]:
+    total = 0
+    worst = "NONE"
+    for entry in tool_result.raw_output["dockerfiles"]:
+        findings = entry.get("findings")
+        # A Dockerfile hadolint failed to lint carries an "error" key instead of a
+        # findings list: it is excluded rather than counted either way.
+        if not isinstance(findings, list) or "error" in entry:
+            continue
+        total += 1
+        entry_worst = _process_dockerfile_findings(
+            session, scoring_run, criterion, tool_result, repo_path, entry, findings
+        )
+        if _SEVERITY_RANK.get(entry_worst, 1) > _SEVERITY_RANK[worst]:
+            worst = entry_worst
+    return total, worst
+
+
+def _process_dockerfile_findings(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    repo_path: Path,
+    entry: dict[str, Any],
+    findings: list[dict[str, Any]],
+) -> str:
+    worst = "NONE"
+    for finding in findings:
+        raw_severity = finding.get("level", "")
+        severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
+        _add_dockerfile_finding(
+            session, scoring_run, criterion, tool_result, repo_path, entry, finding, severity
+        )
+        if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
+            worst = severity
+    return worst
+
+
+def _add_dockerfile_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    repo_path: Path,
+    entry: dict[str, Any],
+    finding: dict[str, Any],
+    severity: str,
+) -> None:
+    resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM)
+    file = entry["path"]
+    line = finding.get("line")
+    # Hadolint gives no per-instance identifier beyond rule code +
+    # line/column -- fall back to the flagged source line's own
+    # text, which survives unrelated edits elsewhere in the file.
+    source_line = read_source_line(repo_path, file, line)
+    label = f"{finding['code']}: {source_line or ''}"
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=resolved_severity,
+            description=f"{finding['code']}: {finding['message']}",
+            file=file,
+            line=line,
+            fingerprint=compute_fingerprint(criterion.id, resolved_severity, file, label),
+            confidence=Confidence.HIGH,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        _RECOMMENDATION_TEXT,
+    )
+
+
 def normalize_dockerfile_hardening(
     session: Session,
     scoring_run: ScoringRun,
@@ -54,45 +139,12 @@ def normalize_dockerfile_hardening(
     total = 0
     worst = "NONE"
     for tool_result in relevant:
-        for entry in tool_result.raw_output["dockerfiles"]:
-            findings = entry.get("findings")
-            # A Dockerfile hadolint failed to lint carries an "error" key instead of a
-            # findings list: it is excluded rather than counted either way.
-            if not isinstance(findings, list) or "error" in entry:
-                continue
-            total += 1
-            for finding in findings:
-                raw_severity = finding.get("level", "")
-                severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
-                resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM)
-                file = entry["path"]
-                line = finding.get("line")
-                # Hadolint gives no per-instance identifier beyond rule code +
-                # line/column -- fall back to the flagged source line's own
-                # text, which survives unrelated edits elsewhere in the file.
-                source_line = read_source_line(repo_path, file, line)
-                label = f"{finding['code']}: {source_line or ''}"
-                add_finding_with_recommendation(
-                    session,
-                    Finding(
-                        scoring_run_id=scoring_run.id,
-                        criterion_id=criterion.id,
-                        tool_result_id=tool_result.id,
-                        severity=resolved_severity,
-                        description=f"{finding['code']}: {finding['message']}",
-                        file=file,
-                        line=line,
-                        fingerprint=compute_fingerprint(
-                            criterion.id, resolved_severity, file, label
-                        ),
-                        confidence=Confidence.HIGH,
-                        status=FindingStatus.OPEN,
-                        human_verdict=HumanVerdict.UNREVIEWED,
-                    ),
-                    _RECOMMENDATION_TEXT,
-                )
-                if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
-                    worst = severity
+        entries_total, entries_worst = _process_dockerfiles(
+            session, scoring_run, criterion, tool_result, repo_path
+        )
+        total += entries_total
+        if _SEVERITY_RANK.get(entries_worst, 1) > _SEVERITY_RANK[worst]:
+            worst = entries_worst
 
     if total == 0:
         return None

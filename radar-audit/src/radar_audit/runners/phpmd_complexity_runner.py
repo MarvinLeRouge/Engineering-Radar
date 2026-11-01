@@ -57,13 +57,7 @@ class PhpmdComplexityRunner:
             # PHPMD's --exclude takes one pattern per flag occurrence ("multiple
             # values allowed" per its own --help) -- a single comma-joined value is
             # silently ignored, confirmed empirically.
-            patterns = ["vendor/*"]
-            for excluded in exclude_paths:
-                try:
-                    relative = excluded.relative_to(target_path)
-                except ValueError:
-                    continue
-                patterns.append(f"{relative}/*")
+            patterns = _build_exclude_patterns(target_path, exclude_paths)
             for pattern in patterns:
                 command.append(f"--exclude={pattern}")
 
@@ -82,37 +76,7 @@ class PhpmdComplexityRunner:
                 duration_ms=duration_ms,
             )
 
-        violations = []
-        for file_element in root.findall("file"):
-            file_name = file_element.get("name")
-            for violation in file_element.findall("violation"):
-                ruleset = violation.get("ruleset")
-                if ruleset == "Code Size Rules":
-                    match = _COMPLEXITY_PATTERN.search(violation.text or "")
-                    if match:
-                        violations.append(
-                            {
-                                "ruleset": "codesize",
-                                "file": file_name,
-                                "line": int(violation.get("beginline", 0)),
-                                "complexity": int(match.group(1)),
-                                "class": violation.get("class"),
-                                "method": violation.get("method"),
-                            }
-                        )
-                elif ruleset == "Unused Code Rules":
-                    violations.append(
-                        {
-                            "ruleset": "unusedcode",
-                            "file": file_name,
-                            "line": int(violation.get("beginline", 0)),
-                            "rule": violation.get("rule"),
-                            "message": (violation.text or "").strip(),
-                            "class": violation.get("class"),
-                            "method": violation.get("method"),
-                        }
-                    )
-
+        violations = _parse_violations(root)
         relativize_file_field(violations, target_path)
         return RawToolOutput(
             command=" ".join(command),
@@ -120,3 +84,52 @@ class PhpmdComplexityRunner:
             exit_code=completed.returncode,
             duration_ms=duration_ms,
         )
+
+
+def _build_exclude_patterns(target_path: Path, exclude_paths: list[Path]) -> list[str]:
+    patterns = ["vendor/*"]
+    for excluded in exclude_paths:
+        try:
+            relative = excluded.relative_to(target_path)
+        except ValueError:
+            continue
+        patterns.append(f"{relative}/*")
+    return patterns
+
+
+def _parse_violations(root: ET.Element) -> list[dict[str, object]]:
+    violations = []
+    for file_element in root.findall("file"):
+        file_name = file_element.get("name")
+        for violation in file_element.findall("violation"):
+            parsed = _parse_violation(violation, file_name)
+            if parsed is not None:
+                violations.append(parsed)
+    return violations
+
+
+def _parse_violation(violation: ET.Element, file_name: str | None) -> dict[str, object] | None:
+    ruleset = violation.get("ruleset")
+    if ruleset == "Code Size Rules":
+        match = _COMPLEXITY_PATTERN.search(violation.text or "")
+        if not match:
+            return None
+        return {
+            "ruleset": "codesize",
+            "file": file_name,
+            "line": int(violation.get("beginline", 0)),
+            "complexity": int(match.group(1)),
+            "class": violation.get("class"),
+            "method": violation.get("method"),
+        }
+    if ruleset == "Unused Code Rules":
+        return {
+            "ruleset": "unusedcode",
+            "file": file_name,
+            "line": int(violation.get("beginline", 0)),
+            "rule": violation.get("rule"),
+            "message": (violation.text or "").strip(),
+            "class": violation.get("class"),
+            "method": violation.get("method"),
+        }
+    return None

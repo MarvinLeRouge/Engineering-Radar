@@ -61,36 +61,44 @@ class IntegrationTestRunner:
 
     def _classify(self, file_path: Path, target_path: Path) -> bool | None:
         parts = file_path.relative_to(target_path).parts
-        name = file_path.name
         suffix = file_path.suffix
 
         if suffix == ".py":
-            if not (name.startswith("test_") or name.endswith("_test.py")):
-                return None
-            if "integration" in parts:
-                return True
-            try:
-                content = file_path.read_text(errors="ignore")
-            except OSError:
-                content = ""
-            return "@pytest.mark.integration" in content
-
+            return self._classify_python(file_path, parts)
         if suffix in {".js", ".ts", ".jsx", ".tsx"}:
-            stem = file_path.stem
-            if ".test" not in stem and ".spec" not in stem:
-                return None
-            if "integration" in parts:
-                return True
-            return ".integration.test" in name or ".integration.spec" in name
-
+            return self._classify_js(file_path, parts)
         if suffix == ".php":
-            if not name.endswith("Test.php"):
-                return None
-            if "tests" not in {p.lower() for p in parts}:
-                return None
-            return "Feature" in parts
-
+            return self._classify_php(file_path, parts)
         return None
+
+    def _classify_python(self, file_path: Path, parts: tuple[str, ...]) -> bool | None:
+        name = file_path.name
+        if not (name.startswith("test_") or name.endswith("_test.py")):
+            return None
+        if "integration" in parts:
+            return True
+        try:
+            content = file_path.read_text(errors="ignore")
+        except OSError:
+            content = ""
+        return "@pytest.mark.integration" in content
+
+    def _classify_js(self, file_path: Path, parts: tuple[str, ...]) -> bool | None:
+        name = file_path.name
+        stem = file_path.stem
+        if ".test" not in stem and ".spec" not in stem:
+            return None
+        if "integration" in parts:
+            return True
+        return ".integration.test" in name or ".integration.spec" in name
+
+    def _classify_php(self, file_path: Path, parts: tuple[str, ...]) -> bool | None:
+        name = file_path.name
+        if not name.endswith("Test.php"):
+            return None
+        if "tests" not in {p.lower() for p in parts}:
+            return None
+        return "Feature" in parts
 
     def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
         relative_parts = file_path.relative_to(target_path).parts

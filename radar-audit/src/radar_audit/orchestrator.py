@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -183,42 +184,24 @@ def execute_audit(
     repository = resolve_repository(session, plan.repository_path, repo_name)
     audit = get_or_create_audit(session, repository)
 
+    _cleanup_stale_tool_results(session, audit)
+    _run_planned_tools(session, audit, plan, runners)
+
+    session.commit()
+    session.refresh(audit)
+    return audit
+
+
+def _cleanup_stale_tool_results(session: Session, audit: Audit) -> None:
     existing_results = session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
     existing_result_ids = [result.id for result in existing_results]
     if existing_result_ids:
         stale_findings = session.exec(
             select(Finding).where(Finding.tool_result_id.in_(existing_result_ids))  # type: ignore[union-attr]
         ).all()
-        # A human-set status/verdict must survive this rerun: run and score commit in
-        # separate sessions, so by the time score_repository's own carry-forward looks
-        # for it, it is too late if this cleanup already deleted the only copy. Detach
-        # these findings from the ToolResult about to be deleted instead of deleting
-        # them -- score_repository's own wipe-and-recreate (scoped by scoring_run_id)
-        # still finds and cleans them up, but only after reading their verdict for the
-        # fingerprint-based carry-forward (radar_audit.scoring._collect_carried_verdicts).
-        findings_to_delete = []
-        for finding in stale_findings:
-            if (
-                finding.status != FindingStatus.OPEN
-                or finding.human_verdict != HumanVerdict.UNREVIEWED
-            ):
-                finding.tool_result_id = None
-                session.add(finding)
-            else:
-                findings_to_delete.append(finding)
+        findings_to_delete = _detach_human_set_findings(session, stale_findings)
         stale_finding_ids = [f.id for f in findings_to_delete if f.id is not None]
-        stale_recommendations = session.exec(
-            select(Recommendation).where(Recommendation.finding_id.in_(stale_finding_ids))  # type: ignore[attr-defined]
-        ).all()
-        for recommendation in stale_recommendations:
-            session.delete(recommendation)
-        stale_task_links = session.exec(
-            select(FindingImprovementTaskLink).where(
-                FindingImprovementTaskLink.finding_id.in_(stale_finding_ids)  # type: ignore[attr-defined]
-            )
-        ).all()
-        for task_link in stale_task_links:
-            session.delete(task_link)
+        _delete_dependents(session, stale_finding_ids)
         session.flush()
         for finding in findings_to_delete:
             session.delete(finding)
@@ -226,6 +209,48 @@ def execute_audit(
     for result in existing_results:
         session.delete(result)
 
+
+def _detach_human_set_findings(
+    session: Session, stale_findings: Sequence[Finding]
+) -> list[Finding]:
+    """Split stale_findings into those safe to delete now and those to merely detach.
+
+    A human-set status/verdict must survive this rerun: run and score commit in
+    separate sessions, so by the time score_repository's own carry-forward looks
+    for it, it is too late if this cleanup already deleted the only copy. Detach
+    these findings from the ToolResult about to be deleted instead of deleting
+    them -- score_repository's own wipe-and-recreate (scoped by scoring_run_id)
+    still finds and cleans them up, but only after reading their verdict for the
+    fingerprint-based carry-forward (radar_audit.scoring._collect_carried_verdicts).
+    """
+    findings_to_delete = []
+    for finding in stale_findings:
+        if finding.status != FindingStatus.OPEN or finding.human_verdict != HumanVerdict.UNREVIEWED:
+            finding.tool_result_id = None
+            session.add(finding)
+        else:
+            findings_to_delete.append(finding)
+    return findings_to_delete
+
+
+def _delete_dependents(session: Session, stale_finding_ids: list[int]) -> None:
+    stale_recommendations = session.exec(
+        select(Recommendation).where(Recommendation.finding_id.in_(stale_finding_ids))  # type: ignore[attr-defined]
+    ).all()
+    for recommendation in stale_recommendations:
+        session.delete(recommendation)
+    stale_task_links = session.exec(
+        select(FindingImprovementTaskLink).where(
+            FindingImprovementTaskLink.finding_id.in_(stale_finding_ids)  # type: ignore[attr-defined]
+        )
+    ).all()
+    for task_link in stale_task_links:
+        session.delete(task_link)
+
+
+def _run_planned_tools(
+    session: Session, audit: Audit, plan: AuditPlan, runners: list[ToolRunner]
+) -> None:
     for run in planned_runs(plan, runners):
         if run.runner.scope == "subproject":
             run_exclude_paths = plan.exclude_paths + _subproject_exclusions(
@@ -246,10 +271,6 @@ def execute_audit(
                 duration_ms=raw.duration_ms,
             )
         )
-
-    session.commit()
-    session.refresh(audit)
-    return audit
 
 
 def _relative_subproject_path(target_path: Path, repository_path: Path) -> str:

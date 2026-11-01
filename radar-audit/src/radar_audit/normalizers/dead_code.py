@@ -53,31 +53,9 @@ def normalize_dead_code(
     worst_value: float | None = None
     worst_confidence: Confidence | None = None
     for tool_result in relevant:
-        items = _extract_items(tool_result)
-        for item in items:
-            label = _label_for_item(tool_result.tool_name, item, repo_path)
-            severity = FindingSeverity.LOW
-            add_finding_with_recommendation(
-                session,
-                Finding(
-                    scoring_run_id=scoring_run.id,
-                    criterion_id=criterion.id,
-                    tool_result_id=tool_result.id,
-                    severity=severity,
-                    description=item["description"],
-                    file=item.get("file"),
-                    line=item.get("line"),
-                    fingerprint=compute_fingerprint(
-                        criterion.id, severity, item.get("file"), label
-                    ),
-                    confidence=_confidence_for_tool(tool_result.tool_name),
-                    status=FindingStatus.OPEN,
-                    human_verdict=HumanVerdict.UNREVIEWED,
-                ),
-                _RECOMMENDATION_BY_TOOL[tool_result.tool_name],
-            )
-        value = _band_value(len(items))
-        tool_confidence = _confidence_for_tool(tool_result.tool_name)
+        value, tool_confidence = _score_tool_result(
+            session, scoring_run, criterion, tool_result, repo_path
+        )
         if worst_value is None or value < worst_value:
             worst_value = value
             worst_confidence = tool_confidence
@@ -96,6 +74,48 @@ def normalize_dead_code(
     session.commit()
     session.refresh(score)
     return score
+
+
+def _score_tool_result(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    repo_path: Path,
+) -> tuple[float, Confidence]:
+    items = _extract_items(tool_result)
+    for item in items:
+        _add_dead_code_finding(session, scoring_run, criterion, tool_result, item, repo_path)
+    return _band_value(len(items)), _confidence_for_tool(tool_result.tool_name)
+
+
+def _add_dead_code_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    item: dict[str, Any],
+    repo_path: Path,
+) -> None:
+    label = _label_for_item(tool_result.tool_name, item, repo_path)
+    severity = FindingSeverity.LOW
+    add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=severity,
+            description=item["description"],
+            file=item.get("file"),
+            line=item.get("line"),
+            fingerprint=compute_fingerprint(criterion.id, severity, item.get("file"), label),
+            confidence=_confidence_for_tool(tool_result.tool_name),
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        _RECOMMENDATION_BY_TOOL[tool_result.tool_name],
+    )
 
 
 def _extract_items(tool_result: ToolResult) -> list[dict[str, Any]]:

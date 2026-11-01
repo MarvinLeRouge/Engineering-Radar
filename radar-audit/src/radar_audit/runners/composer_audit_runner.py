@@ -6,7 +6,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from radar_audit.runner import RawToolOutput
 
@@ -73,20 +73,7 @@ class ComposerAuditRunner:
             return self._failed(
                 command, completed, duration_ms, "composer audit produced no advisories report"
             )
-        vulnerabilities = []
-        if isinstance(advisories, dict):
-            for package_advisories in advisories.values():
-                for advisory in package_advisories:
-                    vulnerabilities.append(
-                        {
-                            "id": advisory["advisoryId"],
-                            "package": advisory["packageName"],
-                            "severity": _SEVERITY_MAP.get(
-                                (advisory.get("severity") or "").lower(), "MEDIUM"
-                            ),
-                            "fix_available": True,
-                        }
-                    )
+        vulnerabilities = _parse_vulnerabilities(advisories) if isinstance(advisories, dict) else []
 
         return RawToolOutput(
             command=" ".join(command),
@@ -114,6 +101,23 @@ class ComposerAuditRunner:
             exit_code=completed.returncode,
             duration_ms=duration_ms,
         )
+
+
+def _parse_vulnerabilities(advisories: dict[str, Any]) -> list[dict[str, object]]:
+    vulnerabilities = []
+    for package_advisories in advisories.values():
+        for advisory in package_advisories:
+            vulnerabilities.append(
+                {
+                    "id": advisory["advisoryId"],
+                    "package": advisory["packageName"],
+                    "severity": _SEVERITY_MAP.get(
+                        (advisory.get("severity") or "").lower(), "MEDIUM"
+                    ),
+                    "fix_available": True,
+                }
+            )
+    return vulnerabilities
 
 
 def _declares_package_dependencies(manifest: Path) -> bool:

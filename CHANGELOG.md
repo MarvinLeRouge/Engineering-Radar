@@ -251,6 +251,29 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 ### 🚜 Refactor
 
 - *(radar-core)* Extract UTCDateTime into shared types module
+- *(radar-api)* Extract report-building helpers out of get_repository_report (FIX-020)
+- *(radar-audit)* Extract rendering helpers out of render_report (FIX-020)
+- *(radar-audit)* Extract scoring helpers out of normalize_precommit_gate (FIX-020)
+- *(radar-audit)* Split IntegrationTestRunner._classify by stack (FIX-020)
+- *(radar-audit)* Extract _step_pushes_to_registry out of _is_wired_to_registry_push (FIX-020)
+- *(radar-audit)* Extract stale-cleanup and tool-execution out of execute_audit (FIX-020)
+- *(radar-audit)* Extract _service_has_traefik_enabled out of _traefik_services (FIX-020)
+- *(radar-audit)* Extract per-tool-result scoring out of normalize_cyclomatic_complexity (FIX-020)
+- *(radar-audit)* Extract per-tool-result scoring out of normalize_complexity_hotspots (FIX-020)
+- *(radar-audit)* Split _pyproject_dependency_names by manifest format (FIX-020)
+- *(radar-audit)* Extract wipe/normalize/write phases out of score_repository (FIX-020)
+- *(radar-audit)* Extract exclude-pattern and violation-parsing helpers from PhpmdComplexityRunner (FIX-020)
+- *(radar-audit)* Extract per-dockerfile and per-finding helpers out of normalize_dockerfile_hardening (FIX-020)
+- *(radar-audit)* Extract grouping helpers out of promote_improvement_tasks (FIX-020)
+- *(radar-audit)* Extract _parse_vulnerabilities out of ComposerAuditRunner.run (FIX-020)
+- *(radar-audit)* Extract _scan_workflow_file out of CiWorkflowRunner.run (FIX-020)
+- *(radar-audit)* Extract per-result processing out of normalize_unit_test_pass_rate (FIX-020)
+- *(radar-audit)* Extract status/finding helpers out of normalize_e2e_tests (FIX-020)
+- *(radar-audit)* Extract _score_tool_result dispatch out of normalize_docstring_coverage (FIX-020)
+- *(radar-audit)* Extract per-finding and scoring helpers out of normalize_secrets_in_history (FIX-020)
+- *(radar-audit)* Extract per-tool-result scoring out of normalize_dependency_circularity (FIX-020)
+- *(radar-audit)* Extract per-tool-result scoring out of normalize_dead_code (FIX-020)
+- *(radar-audit)* Extract data-gathering helpers out of render_report (FIX-020)
 
 ### 📚 Documentation
 
