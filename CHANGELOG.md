@@ -265,6 +265,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract exclude-pattern and violation-parsing helpers from PhpmdComplexityRunner (FIX-020)
 - *(radar-audit)* Extract per-dockerfile and per-finding helpers out of normalize_dockerfile_hardening (FIX-020)
 - *(radar-audit)* Extract grouping helpers out of promote_improvement_tasks (FIX-020)
+- *(radar-audit)* Extract _parse_vulnerabilities out of ComposerAuditRunner.run (FIX-020)
 
 ### 📚 Documentation
 
