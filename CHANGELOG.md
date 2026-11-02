@@ -410,3 +410,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(ci)* Add GitHub Actions pipeline with per-package coverage gates
 - *(gitignore)* Ignore codegraph folder
 - *(changelog)* Auto-merge the catch-up CHANGELOG.md PR
+- *(radar-data)* Map radar-data volume to project folder
