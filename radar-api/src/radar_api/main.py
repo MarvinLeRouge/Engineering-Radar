@@ -2,7 +2,10 @@
 
 from fastapi import FastAPI
 
+from radar_api.observability import init_error_tracking
 from radar_api.routers import findings, history, repositories, roadmap
+
+init_error_tracking()
 
 app = FastAPI(title="radar-api")
 app.include_router(repositories.router)
