@@ -7,6 +7,7 @@ dependencies = [
     "radar-core",
     "fastapi>=0.115",
     "uvicorn>=0.30",
+    "sentry-sdk>=2.73.0",
 ]
 
 [dependency-groups]

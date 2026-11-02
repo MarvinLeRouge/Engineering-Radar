@@ -6,6 +6,8 @@ services:
     environment:
       - RADAR_DATABASE_URL=sqlite:////data/radar.db
       - RADAR_API_KEY=${RADAR_API_KEY}
+      - SENTRY_DSN=${SENTRY_BACKEND_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
     volumes:
       - radar-data:/data
     ports:
@@ -40,6 +42,9 @@ services:
     build:
       context: ./radar-dashboard
       dockerfile: Dockerfile
+      args:
+        VITE_SENTRY_DSN: ${SENTRY_FRONTEND_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
     networks:
       - traefik-public
     labels:

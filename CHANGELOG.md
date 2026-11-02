@@ -150,6 +150,8 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-core,radar-audit)* Add finding fingerprint and carry human verdicts across re-audits
 - *(radar-core,radar-audit,radar-api)* Promote findings into roadmap items (Section 7)
 - *(radar-api,radar-dashboard)* Export the roadmap tab as markdown
+- *(radar-api)* Add Sentry error tracking backend
+- *(radar-dashboard)* Add Sentry error tracking frontend
 
 ### 🐛 Bug Fixes
 
