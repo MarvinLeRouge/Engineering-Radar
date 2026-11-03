@@ -7,6 +7,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -354,3 +356,19 @@ def test_two_docvet_findings_in_the_same_file_get_different_fingerprints(db_sess
     ).all()
     assert len(findings) == 2
     assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_false_positives_no_longer_weigh_on_the_score_python(db_session):
+    test_python_creates_a_finding_per_docvet_finding(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_docstring_coverage, lambda f: True)
+
+    assert score.value == 10.0
+
+
+def test_false_positives_no_longer_weigh_on_the_score_php(db_session):
+    test_php_scores_two_above_thirty_errors(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_docstring_coverage, lambda f: True)
+
+    assert score.value == 10.0

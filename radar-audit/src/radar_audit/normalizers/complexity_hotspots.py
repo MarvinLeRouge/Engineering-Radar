@@ -13,7 +13,7 @@ from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
 from radar_audit.normalizers.cyclomatic_complexity import _extract_blocks, _has_usable_payload
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _USABLE_EXIT_CODES_BY_TOOL = {
     "radon-cc": {0},
@@ -80,9 +80,14 @@ def _score_tool_result(
         block for block in blocks if int(block["complexity"]) > _OUTLIER_COMPLEXITY_THRESHOLD
     ]
     tool_confidence = _confidence_for_tool(tool_result.tool_name)
+    counted = 0
     for block in outliers:
-        _add_hotspot_finding(session, scoring_run, criterion, tool_result, block, tool_confidence)
-    return _band_value(len(outliers)), tool_confidence
+        finding = _add_hotspot_finding(
+            session, scoring_run, criterion, tool_result, block, tool_confidence
+        )
+        if not is_dismissed(session, finding):
+            counted += 1
+    return _band_value(counted), tool_confidence
 
 
 def _add_hotspot_finding(
@@ -92,9 +97,9 @@ def _add_hotspot_finding(
     tool_result: ToolResult,
     block: dict[str, Any],
     tool_confidence: Confidence,
-) -> None:
+) -> Finding:
     description = f"{block.get('name', 'function')} has cyclomatic complexity {block['complexity']}"
-    add_finding_with_recommendation(
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

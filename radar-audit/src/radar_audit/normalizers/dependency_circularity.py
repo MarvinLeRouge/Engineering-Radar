@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _RELEVANT_TOOLS = {"dependency-cruiser", "pydeps"}
 # Band thresholds per quality-framework.md§4.1, keyed on the number of distinct
@@ -77,10 +77,12 @@ def _score_tool_result(
 ) -> float | None:
     if not _is_usable(tool_result):
         return None
-    cycles = _detect_cycles(tool_result)
-    for cycle_nodes in cycles:
-        _add_cycle_finding(session, scoring_run, criterion, tool_result, cycle_nodes)
-    return _band_value(len(cycles))
+    counted = 0
+    for cycle_nodes in _detect_cycles(tool_result):
+        finding = _add_cycle_finding(session, scoring_run, criterion, tool_result, cycle_nodes)
+        if not is_dismissed(session, finding):
+            counted += 1
+    return _band_value(counted)
 
 
 def _add_cycle_finding(
@@ -89,9 +91,9 @@ def _add_cycle_finding(
     criterion: Criterion,
     tool_result: ToolResult,
     cycle_nodes: frozenset[str],
-) -> None:
+) -> Finding:
     description = f"Circular dependency involving: {', '.join(sorted(cycle_nodes))}"
-    add_finding_with_recommendation(
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

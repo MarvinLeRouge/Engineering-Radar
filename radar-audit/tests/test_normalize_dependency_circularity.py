@@ -7,6 +7,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _make_scoring_run_and_criterion(db_session):
     repo = Repository(name="repo", path="/tmp/repo")
@@ -228,3 +230,11 @@ def test_six_disjoint_cycles_scores_two(db_session):
     score = normalize_dependency_circularity(db_session, scoring_run, criterion, [tool_result])
 
     assert score.value == 2.0
+
+
+def test_false_positives_no_longer_weigh_on_the_score(db_session):
+    test_three_disjoint_cycles_scores_four(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_dependency_circularity, lambda f: True)
+
+    assert score.value == 10.0

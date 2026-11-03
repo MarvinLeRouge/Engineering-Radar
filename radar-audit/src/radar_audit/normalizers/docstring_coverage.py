@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _DOCVET_USABLE_EXIT_CODES = {0}
 _PHPDOC_CHECKER_USABLE_EXIT_CODES = {0, 1}
@@ -116,6 +116,7 @@ def _score_docvet(
     if not presence_coverage:
         return None
 
+    dismissed = 0
     for finding in tool_result.raw_output.get("findings", []):
         rule = finding.get("rule", "missing-docstring")
         message = finding.get("message", "")
@@ -124,7 +125,7 @@ def _score_docvet(
         # docstring") -- its "symbol" field is what actually distinguishes two
         # findings in the same file.
         symbol = finding.get("symbol", "")
-        add_finding_with_recommendation(
+        added = add_finding_with_recommendation(
             session,
             Finding(
                 scoring_run_id=scoring_run.id,
@@ -143,8 +144,15 @@ def _score_docvet(
             ),
             "Add a docstring documenting this symbol's purpose, parameters, and return value.",
         )
+        if is_dismissed(session, added):
+            dismissed += 1
 
     percentage: float = presence_coverage["percentage"]
+    total = presence_coverage.get("total", 0)
+    if dismissed and total:
+        # A dismissed missing-docstring finding counts as documented.
+        documented = presence_coverage.get("documented", 0) + dismissed
+        percentage = min(documented / total, 1.0) * 100
     return percentage / 10
 
 
@@ -159,13 +167,12 @@ def _score_phpdoc_checker(
     for finding in findings:
         if finding.get("type") not in _PHP_UNDOCUMENTED_TYPES:
             continue
-        errors_count += 1
         method_suffix = f"::{finding['method']}" if finding.get("method") else ""
         description = (
             f"{finding['type']} '{finding.get('class', '')}{method_suffix}' has no docblock"
         )
         file = finding.get("file")
-        add_finding_with_recommendation(
+        added = add_finding_with_recommendation(
             session,
             Finding(
                 scoring_run_id=scoring_run.id,
@@ -184,6 +191,8 @@ def _score_phpdoc_checker(
             ),
             f"Add a PHPDoc block documenting this {finding['type']}'s purpose and parameters.",
         )
+        if not is_dismissed(session, added):
+            errors_count += 1
 
     return _band_value(errors_count)
 

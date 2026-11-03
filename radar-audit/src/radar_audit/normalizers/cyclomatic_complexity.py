@@ -12,7 +12,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 # Each tool's own convention for "ran successfully and produced usable
 # data" differs (confirmed against a real portfolio repo in Task 17):
@@ -90,14 +90,17 @@ def _score_tool_result(
     if not blocks:
         return None
     tool_confidence = _confidence_for_tool(tool_result.tool_name)
-    worst_block = max(blocks, key=lambda b: int(b["complexity"]))
+    counted = []
     for block in blocks:
         if int(block["complexity"]) > _WORST_COMPLEXITY_THRESHOLD_FOR_FINDING:
-            _add_complexity_finding(
+            finding = _add_complexity_finding(
                 session, scoring_run, criterion, tool_result, block, tool_confidence
             )
-    value = _band_value(int(worst_block["complexity"]))
-    return value, tool_confidence
+            if is_dismissed(session, finding):
+                continue
+        counted.append(block)
+    worst_complexity = max((int(b["complexity"]) for b in counted), default=0)
+    return _band_value(worst_complexity), tool_confidence
 
 
 def _add_complexity_finding(
@@ -107,10 +110,10 @@ def _add_complexity_finding(
     tool_result: ToolResult,
     block: dict[str, Any],
     tool_confidence: Confidence,
-) -> None:
+) -> Finding:
     severity = FindingSeverity.MEDIUM
     description = f"{block.get('name', 'function')} has cyclomatic complexity {block['complexity']}"
-    add_finding_with_recommendation(
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,
