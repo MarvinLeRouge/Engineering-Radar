@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
+
+from radar_audit.normalizers.shared import add_repo_level_finding
+
+_BAND_UPPER_BOUNDS = (0.0, 10.0, 25.0, 50.0)
 
 
 def normalize_integration_tests(
@@ -30,12 +34,25 @@ def normalize_integration_tests(
 
     integration = tool_result.raw_output.get("integration_test_files", 0)
     ratio_percent = (integration / total) * 100
+    value = _band_value(ratio_percent)
+    if value < 10.0:
+        target = next(bound for bound in _BAND_UPPER_BOUNDS if ratio_percent <= bound)
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.MEDIUM if integration == 0 else FindingSeverity.LOW,
+            f"{integration} of {total} test files are integration tests ({ratio_percent:.0f}%)",
+            "Add integration tests exercising real components together; the next band "
+            f"starts above {target:.0f}% of test files (above 50% scores 10).",
+            "integration-test-ratio-below-target",
+        )
 
     score = Score(
         scoring_run_id=scoring_run.id,
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
-        value=_band_value(ratio_percent),
+        value=value,
         confidence=Confidence.MEDIUM,
     )
     session.add(score)

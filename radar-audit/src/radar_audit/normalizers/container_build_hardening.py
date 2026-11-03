@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import has_success_payload
+from radar_audit.normalizers.shared import add_repo_level_finding, has_success_payload
 
 _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (3, 8.0), (8, 6.0), (15, 4.0))
 _ABOVE_HIGHEST_BAND_VALUE = 2.0
@@ -44,11 +44,26 @@ def normalize_container_build_hardening(
     if total == 0:
         return None
 
+    value = _band_value(finding_count)
+    if value < 10.0:
+        # One summary only: the per-instruction findings already belong to Dockerfile hardening.
+        plural = "" if finding_count == 1 else "s"
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.MEDIUM if finding_count > _BANDS[-1][0] else FindingSeverity.LOW,
+            f"{finding_count} hadolint finding{plural} across {total} Dockerfile(s)",
+            "Fix the hadolint findings (detailed per line under the Dockerfile hardening "
+            "criterion); zero findings scores 10.",
+            "hadolint-findings-present",
+        )
+
     score = Score(
         scoring_run_id=scoring_run.id,
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
-        value=_band_value(finding_count),
+        value=value,
         confidence=Confidence.HIGH,
     )
     session.add(score)

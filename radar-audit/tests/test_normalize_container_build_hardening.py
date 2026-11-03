@@ -4,9 +4,9 @@ from radar_audit.normalizers.container_build_hardening import (
 from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
-from radar_core.models.finding import Finding
 from radar_core.models.repository import Repository
-from sqlmodel import select
+
+from tests.finding_helpers import no_findings, single_repo_level_finding
 
 
 def _make_scoring_run_and_criterion(db_session):
@@ -96,7 +96,7 @@ def test_four_findings_across_dockerfiles_scores_six(db_session):
     assert score.value == 6.0
 
 
-def test_does_not_duplicate_findings_already_created_by_criterion_4_5(db_session):
+def test_summarizes_hadolint_count_instead_of_duplicating_criterion_4_5(db_session):
     audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
     tool_result = _make_tool_result(
         db_session,
@@ -106,8 +106,9 @@ def test_does_not_duplicate_findings_already_created_by_criterion_4_5(db_session
 
     normalize_container_build_hardening(db_session, scoring_run, criterion, [tool_result])
 
-    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
-    assert len(findings) == 0
+    finding = single_repo_level_finding(db_session, criterion)
+    assert "1 hadolint finding" in finding.description
+    assert finding.severity == "LOW"
 
 
 def test_failed_dockerfile_entry_excluded_from_the_count(db_session):
@@ -161,3 +162,14 @@ def test_all_dockerfile_entries_errored_returns_none(db_session):
     score = normalize_container_build_hardening(db_session, scoring_run, criterion, [tool_result])
 
     assert score is None
+
+
+def test_zero_findings_creates_no_summary_finding(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    tool_result = _make_tool_result(
+        db_session, audit, {"dockerfiles": [{"path": "Dockerfile", "findings": []}]}
+    )
+
+    normalize_container_build_hardening(db_session, scoring_run, criterion, [tool_result])
+
+    assert no_findings(db_session, criterion)

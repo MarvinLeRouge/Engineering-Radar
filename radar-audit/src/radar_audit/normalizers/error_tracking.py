@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
@@ -13,6 +13,7 @@ from sqlmodel import Session
 
 from radar_audit.discovery import discover_subprojects
 from radar_audit.normalizers.shared import (
+    add_repo_level_finding,
     composer_dependency_names,
     get_repository_path,
     iter_source_files,
@@ -58,10 +59,30 @@ def normalize_error_tracking(
 
     if not has_sentry:
         value = _TODO_VALUE
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.MEDIUM,
+            "No Sentry SDK dependency found in any subproject",
+            "Add the Sentry SDK (sentry-sdk, @sentry/<framework> or sentry/sentry-laravel) "
+            "and initialize it with a DSN read from an environment variable.",
+            "no-error-tracking-sdk",
+        )
     elif _has_env_sourced_dsn(target_path):
         value = _DONE_VALUE
     else:
         value = _IN_PROGRESS_VALUE
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.LOW,
+            "Sentry SDK is installed but no DSN read from an environment variable was found",
+            "Pass Sentry a DSN read from an environment variable (os.environ, getenv or "
+            "process.env) instead of a hardcoded or missing one.",
+            "error-tracking-dsn-not-env-sourced",
+        )
 
     score = Score(
         scoring_run_id=scoring_run.id,

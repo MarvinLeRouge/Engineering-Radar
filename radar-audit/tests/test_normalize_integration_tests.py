@@ -4,6 +4,8 @@ from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.repository import Repository
 
+from tests.finding_helpers import no_findings, single_repo_level_finding
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -80,3 +82,60 @@ def test_returns_none_when_no_relevant_tool_results(db_session):
     score = normalize_integration_tests(db_session, scoring_run, criterion, [])
 
     assert score is None
+
+
+def test_partial_ratio_explains_score_with_a_repo_level_finding(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit.id, total=20, integration=2)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_integration_tests(db_session, scoring_run, criterion, [tool_result])
+
+    assert score.value == 4.0
+    finding = single_repo_level_finding(db_session, criterion)
+    assert "2 of 20" in finding.description
+    assert finding.severity == "LOW"
+
+
+def test_no_integration_tests_finding_is_medium(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit.id, total=5, integration=0)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_integration_tests(db_session, scoring_run, criterion, [tool_result])
+
+    assert single_repo_level_finding(db_session, criterion).severity == "MEDIUM"
+
+
+def test_fingerprint_survives_a_changed_ratio(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    first = _tool_result(audit.id, total=20, integration=2)
+    db_session.add(first)
+    db_session.commit()
+    normalize_integration_tests(db_session, scoring_run, criterion, [first])
+    first_fingerprint = single_repo_level_finding(db_session, criterion).fingerprint
+
+    from radar_core.models.finding import Finding, Recommendation
+    from sqlmodel import delete
+
+    db_session.exec(delete(Recommendation))
+    db_session.exec(delete(Finding))
+    second = _tool_result(audit.id, total=20, integration=3)
+    db_session.add(second)
+    db_session.commit()
+    normalize_integration_tests(db_session, scoring_run, criterion, [second])
+
+    assert single_repo_level_finding(db_session, criterion).fingerprint == first_fingerprint
+
+
+def test_top_band_creates_no_finding(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _tool_result(audit.id, total=10, integration=6)
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_integration_tests(db_session, scoring_run, criterion, [tool_result])
+
+    assert no_findings(db_session, criterion)

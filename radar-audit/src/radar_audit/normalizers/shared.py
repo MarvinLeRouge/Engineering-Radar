@@ -96,6 +96,39 @@ def add_finding_with_recommendation(
     return finding
 
 
+def add_repo_level_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    severity: FindingSeverity,
+    description: str,
+    recommendation_text: str,
+    fingerprint_label: str,
+) -> Finding:
+    """Add a file-less Finding explaining a whole-repo score, with its Recommendation.
+
+    The fingerprint is keyed on `fingerprint_label` only, never on `description` or
+    `severity`: both move with the measured value between audits, which would
+    otherwise drop a human verdict carried forward on the finding.
+    """
+    return add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            severity=severity,
+            description=description,
+            fingerprint=compute_fingerprint(
+                criterion.id, FindingSeverity.INFO, None, fingerprint_label
+            ),
+            confidence=Confidence.MEDIUM,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        recommendation_text,
+    )
+
+
 def get_repository_path(session: Session, scoring_run: ScoringRun) -> Path:
     """Resolve the on-disk path of the repository being scored.
 

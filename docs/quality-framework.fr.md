@@ -171,7 +171,7 @@ Compte tenu de ces trois limitations structurelles, la performance backend/BDD e
 | 7.1 | Présence & santé de la CI | A | Workflow GH Actions présent + actionlint propre | HAUTE | |
 | 7.2 | Reverse proxy / parité local-prod | C | Voir D11, référencé de façon croisée, pas redéfini | — | |
 | 7.3 | Durcissement de la construction de conteneur | A | Partage la preuve avec 4.4/4.5, cadrage DevOps (« le pipeline est-il propre ») vs cadrage Sécurité (« l'image est-elle vulnérable ») | HAUTE | Référence croisée, pas pondéré deux fois |
-| 7.4 | Automatisation du déploiement | C | Présence de `build-push.yml`/`build-deploy.yml`, câblé à une étape de push vers un registre | MOYENNE | Présence seulement, aucune vérification runtime des déploiements réels (l'accès API GitHub de D6 pourrait plus tard vérifier l'historique d'exécution) |
+| 7.4 | Automatisation du déploiement | C | Présence de `build-push.yml`/`build-deploy.yml`, câblé à une étape de push vers un registre ; `N/A` pour les dépôts sans service de longue durée (même logique N/A que D11) | MOYENNE | Présence seulement, aucune vérification runtime des déploiements réels (l'accès API GitHub de D6 pourrait plus tard vérifier l'historique d'exécution) |
 
 ### 4.8 Documentation
 
