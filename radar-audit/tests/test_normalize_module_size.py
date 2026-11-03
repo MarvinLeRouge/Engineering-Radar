@@ -6,6 +6,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _make_scoring_run_and_criterion(db_session):
     repo = Repository(name="repo", path="/tmp/repo")
@@ -145,3 +147,11 @@ def test_radon_error_entries_are_excluded_not_crashed_on(db_session):
     score = normalize_module_size(db_session, scoring_run, criterion, [tool_result])
 
     assert score.value == 10.0  # only a.py counted, 1/1 covered
+
+
+def test_file_whose_findings_are_all_false_positives_counts_as_clean(db_session):
+    test_one_oversized_module_creates_a_finding_and_lowers_score(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_module_size, lambda f: True)
+
+    assert score.value == 10.0
