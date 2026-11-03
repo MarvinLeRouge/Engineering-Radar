@@ -54,3 +54,15 @@ def test_evidence_type_members():
 
 def test_roadmap_status_members():
     assert {s.value for s in RoadmapStatus} == {"TODO", "IN_PROGRESS", "DONE", "WONT_FIX"}
+
+
+def test_severity_risk_weights_are_geometric_with_ratio_four():
+    from radar_core.enums import SEVERITY_RISK_WEIGHT
+
+    assert SEVERITY_RISK_WEIGHT == {
+        FindingSeverity.CRITICAL: 64,
+        FindingSeverity.HIGH: 16,
+        FindingSeverity.MEDIUM: 4,
+        FindingSeverity.LOW: 1,
+        FindingSeverity.INFO: 0,
+    }

@@ -152,6 +152,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api,radar-dashboard)* Export the roadmap tab as markdown
 - *(radar-api)* Add Sentry error tracking backend
 - *(radar-dashboard)* Add Sentry error tracking frontend
+- *(radar-dashboard)* Add weighted risk history chart (FEAT-025)
 
 ### 🐛 Bug Fixes
 

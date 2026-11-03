@@ -63,6 +63,15 @@ export interface CategoryScorePoint {
   value: number | null
 }
 
+/** Findings of one severity at a scoring run; `count` = OPEN and not FALSE_POSITIVE, `excluded` = the rest. */
+export interface SeverityRiskPoint {
+  severity: string
+  weight: number
+  count: number
+  excluded: number
+  weighted: number
+}
+
 export interface ScoreHistoryPoint {
   scoring_run_id: number
   audit_id: number
@@ -70,6 +79,8 @@ export interface ScoreHistoryPoint {
   scored_at: string
   global_score: number | null
   categories: CategoryScorePoint[]
+  risk: SeverityRiskPoint[]
+  risk_index: number
 }
 
 export interface RoadmapItemRead {
