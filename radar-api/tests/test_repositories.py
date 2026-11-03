@@ -319,10 +319,12 @@ def test_get_repository_report_includes_weighted_risk_of_that_run(client, db_ses
         "weight": 64,
         "count": 1,
         "excluded": 0,
+        "wont_fix": 0,
         "weighted": 64,
     }
     assert risk["HIGH"]["count"] == 0
     assert risk["HIGH"]["excluded"] == 2
+    assert risk["HIGH"]["wont_fix"] == 1
     assert risk["LOW"]["weighted"] == 2
     assert body["risk_index"] == 66
 

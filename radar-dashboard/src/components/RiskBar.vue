@@ -13,7 +13,7 @@
       aria-hidden="true"
     >
       <span
-        v-for="layer in layers"
+        v-for="layer in segments"
         :key="layer.severity"
         data-testid="risk-segment"
         :class="`risk-bar__segment risk-bar__segment--${layer.severity.toLowerCase()}`"
@@ -22,7 +22,7 @@
     </div>
 
     <p v-if="riskIndex === 0" class="risk-bar__legend risk-bar__legend--clear">No open finding</p>
-    <ul v-else class="risk-bar__legend">
+    <ul v-if="layers.length" class="risk-bar__legend">
       <li
         v-for="layer in layers"
         :key="layer.severity"
@@ -34,7 +34,8 @@
           aria-hidden="true"
         />
         <span class="risk-bar__legend-name">{{ layer.label }}</span>
-        {{ layer.count }} x{{ layer.weight }} = {{ layer.weighted }}
+        <span>{{ layer.detail }}</span>
+        <span v-if="layer.wont_fix">{{ layer.wontFixNote }}</span>
       </li>
     </ul>
   </section>
@@ -57,9 +58,19 @@ const LABELS: Record<string, string> = {
 const layers = computed(() =>
   Object.keys(LABELS)
     .map((severity) => props.risk.find((entry) => entry.severity === severity))
-    .filter((entry): entry is SeverityRiskPoint => !!entry && entry.weighted > 0)
-    .map((entry) => ({ ...entry, label: LABELS[entry.severity]! })),
+    // Accepted WONT_FIX findings stay listed so the gap with the severity counts is explained.
+    .filter(
+      (entry): entry is SeverityRiskPoint => !!entry && (entry.weighted > 0 || entry.wont_fix > 0),
+    )
+    .map((entry) => ({
+      ...entry,
+      label: LABELS[entry.severity]!,
+      detail: ` ${entry.count} x${entry.weight} = ${entry.weighted}`,
+      wontFixNote: ` (+${entry.wont_fix} won't fix, not counted)`,
+    })),
 )
+
+const segments = computed(() => layers.value.filter((layer) => layer.weighted > 0))
 </script>
 
 <style scoped>

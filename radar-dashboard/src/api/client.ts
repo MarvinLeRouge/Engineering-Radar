@@ -72,6 +72,8 @@ export interface SeverityRiskPoint {
   weight: number
   count: number
   excluded: number
+  /** Part of `excluded` accepted as WONT_FIX true positives: out of the risk, still in the score. */
+  wont_fix: number
   weighted: number
 }
 

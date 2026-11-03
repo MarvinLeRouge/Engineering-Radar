@@ -150,7 +150,7 @@ describe('RepositoryDetailView', () => {
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-03-15',
-        risk: [{ severity: 'HIGH', weight: 16, count: 2, excluded: 0, weighted: 32 }],
+        risk: [{ severity: 'HIGH', weight: 16, count: 2, excluded: 0, wont_fix: 0, weighted: 32 }],
         risk_index: 32,
         categories: [],
       }
