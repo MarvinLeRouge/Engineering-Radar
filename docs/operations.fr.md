@@ -30,6 +30,24 @@ Il n'y a pas encore d'automatisation de sauvegarde : sauvegarder
 manuellement le fichier de base de données si son contenu compte pour
 vous (par exemple avant d'exécuter une migration destructrice).
 
+## Reconstruire les images
+
+Reconstruire les images Docker avec `scripts/rebuild.sh`, et non
+`docker compose up --build` :
+
+```
+scripts/rebuild.sh                  # tous les services
+scripts/rebuild.sh radar-dashboard  # un seul service
+```
+
+Le script lance `docker compose build --pull --no-cache` puis
+`docker compose up -d`. Chaque Dockerfile met à jour ses paquets système
+(`apt-get upgrade` / `apk upgrade`), mais Docker réutilise cette étape depuis
+son cache de build tant que le Dockerfile ne change pas : les correctifs de
+sécurité publiés depuis le premier build n'arrivent donc jamais dans l'image.
+`--pull` rafraîchit les images de base et `--no-cache` réexécute toutes les
+étapes, au prix d'un rebuild plus lent (les dépendances sont réinstallées).
+
 ## Suivi des erreurs
 
 Sentry est optionnel et désactivé tant qu'aucun DSN n'est défini (voir

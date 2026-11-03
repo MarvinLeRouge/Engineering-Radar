@@ -28,6 +28,24 @@ There is no backup automation yet: back up the database file manually if
 its contents matter to you (for example before running a destructive
 migration).
 
+## Rebuilding images
+
+Rebuild the Docker images with `scripts/rebuild.sh`, not
+`docker compose up --build`:
+
+```
+scripts/rebuild.sh                  # every service
+scripts/rebuild.sh radar-dashboard  # one service
+```
+
+It runs `docker compose build --pull --no-cache` then `docker compose up -d`.
+Each Dockerfile upgrades its system packages (`apt-get upgrade` /
+`apk upgrade`), but Docker reuses that step from its build cache as long as
+the Dockerfile does not change, so security fixes published since the first
+build never reach the image. `--pull` refreshes the base images and
+`--no-cache` reruns every step, at the cost of a slower rebuild (dependencies
+are reinstalled).
+
 ## Error tracking
 
 Sentry is optional and disabled unless a DSN is set (see `.env.example`).
