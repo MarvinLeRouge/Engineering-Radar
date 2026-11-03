@@ -460,3 +460,49 @@ def test_score_repository_promotes_findings_into_an_improvement_task(
 
     tasks = db_session.exec(select(ImprovementTask)).all()
     assert len(tasks) == 1
+
+
+def test_every_sub_ten_scored_criterion_is_explained_by_a_finding(db_session, tmp_path):
+    from radar_core.models.finding import Recommendation
+
+    _audited_repo(
+        db_session,
+        tmp_path,
+        files={
+            "pyproject.toml": "[project]\nname='x'\ndependencies = ['sentry-sdk']\n",
+            "x/__init__.py": "",
+            "x/core.py": "def f():\n    return 1\n",
+            "tests/test_core.py": "def test_f():\n    assert True\n",
+            "tests/integration/test_flow.py": "def test_flow():\n    assert True\n",
+            "docker-compose.yml": "services:\n  app:\n    image: app\n",
+            "docker-compose.prod.yml": "services:\n  app:\n    image: app\n",
+            ".github/workflows/deploy.yml": "name: d\non: [push]\njobs: {}\n",
+        },
+    )
+
+    scoring_run = score_repository(db_session, "repo")
+
+    scores = db_session.exec(
+        select(Score).where(
+            Score.scoring_run_id == scoring_run.id,
+            Score.level == ScoreLevel.CRITERION,
+            Score.value < 10.0,
+            Score.na_reason.is_(None),
+        )
+    ).all()
+    assert scores
+    unexplained = []
+    for score in scores:
+        findings = db_session.exec(
+            select(Finding).where(
+                Finding.scoring_run_id == scoring_run.id,
+                Finding.criterion_id == score.criterion_id,
+            )
+        ).all()
+        has_recommendation = any(
+            db_session.exec(select(Recommendation).where(Recommendation.finding_id == f.id)).first()
+            for f in findings
+        )
+        if not has_recommendation:
+            unexplained.append(db_session.get(Criterion, score.criterion_id).name)
+    assert unexplained == []

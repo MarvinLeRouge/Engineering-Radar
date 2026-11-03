@@ -4,6 +4,8 @@ from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit
 from radar_core.models.repository import Repository
 
+from tests.finding_helpers import single_repo_level_finding
+
 
 def _make_scoring_run_and_criterion(db_session, repo_path):
     repo = Repository(name="repo", path=str(repo_path))
@@ -79,3 +81,20 @@ def test_sentry_js_dependency_with_env_var_init_scores_ten(db_session, tmp_path)
     score = normalize_error_tracking(db_session, scoring_run, criterion, [])
 
     assert score.value == 10.0
+
+
+def test_no_sentry_explains_score_with_a_medium_finding(db_session, tmp_path):
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    normalize_error_tracking(db_session, scoring_run, criterion, [])
+
+    assert single_repo_level_finding(db_session, criterion).severity == "MEDIUM"
+
+
+def test_sentry_without_env_dsn_explains_score_with_a_low_finding(db_session, tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[project]\ndependencies = ["sentry-sdk>=2.0"]\n')
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    normalize_error_tracking(db_session, scoring_run, criterion, [])
+
+    assert single_repo_level_finding(db_session, criterion).severity == "LOW"

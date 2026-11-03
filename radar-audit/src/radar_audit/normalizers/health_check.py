@@ -4,13 +4,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import find_prod_compose, get_repository_path, iter_source_files
+from radar_audit.normalizers.shared import (
+    add_repo_level_finding,
+    find_prod_compose,
+    get_repository_path,
+    iter_source_files,
+)
 
 _HEALTH_PATH_MARKERS = ("/health", "/healthz")
 
@@ -44,7 +49,18 @@ def normalize_health_check(
             na_reason=_NO_LONG_LIVED_SERVICE_NA_REASON,
         )
     else:
-        value = _FOUND_VALUE if _has_health_route(target_path) else _NOT_FOUND_VALUE
+        has_route = _has_health_route(target_path)
+        value = _FOUND_VALUE if has_route else _NOT_FOUND_VALUE
+        if not has_route:
+            add_repo_level_finding(
+                session,
+                scoring_run,
+                criterion,
+                FindingSeverity.MEDIUM,
+                "No /health or /healthz route found in the source of a deployed service",
+                "Expose a lightweight /health endpoint and wire it to the container healthcheck.",
+                "no-health-check-route",
+            )
         score = Score(
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,

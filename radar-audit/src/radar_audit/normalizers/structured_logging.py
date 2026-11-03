@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
@@ -10,6 +10,7 @@ from sqlmodel import Session
 
 from radar_audit.discovery import discover_subprojects
 from radar_audit.normalizers.shared import (
+    add_repo_level_finding,
     get_repository_path,
     npm_dependency_names,
     python_dependency_names,
@@ -39,6 +40,17 @@ def normalize_structured_logging(
     detected = bool(python_dependency_names(candidate_dirs) & _PYTHON_PACKAGES) or bool(
         npm_dependency_names(candidate_dirs) & _JS_PACKAGES
     )
+    if not detected:
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.LOW,
+            "No structured logging library detected in any subproject",
+            "Log through a structured logging library (structlog or python-json-logger for "
+            "Python, pino or winston for JavaScript) instead of bare print/console.log.",
+            "no-structured-logging-library",
+        )
 
     score = Score(
         scoring_run_id=scoring_run.id,

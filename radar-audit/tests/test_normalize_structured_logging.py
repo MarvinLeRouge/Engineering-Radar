@@ -4,6 +4,8 @@ from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit
 from radar_core.models.repository import Repository
 
+from tests.finding_helpers import no_findings, single_repo_level_finding
+
 
 def _make_scoring_run_and_criterion(db_session, repo_path):
     repo = Repository(name="repo", path=str(repo_path))
@@ -90,3 +92,20 @@ def test_structured_logging_in_a_backend_subproject_directory_scores_ten(db_sess
     score = normalize_structured_logging(db_session, scoring_run, criterion, [])
 
     assert score.value == 10.0
+
+
+def test_not_detected_explains_score_with_a_repo_level_finding(db_session, tmp_path):
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert single_repo_level_finding(db_session, criterion).severity == "LOW"
+
+
+def test_detected_creates_no_finding(db_session, tmp_path):
+    (tmp_path / "pyproject.toml").write_text('[project]\ndependencies = ["structlog>=24.1"]\n')
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert no_findings(db_session, criterion)

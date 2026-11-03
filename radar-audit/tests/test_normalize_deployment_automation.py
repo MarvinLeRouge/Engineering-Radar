@@ -4,8 +4,12 @@ from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_core.models.audit import Audit
 from radar_core.models.repository import Repository
 
+from tests.finding_helpers import no_findings, single_repo_level_finding
 
-def _make_scoring_run_and_criterion(db_session, repo_path):
+
+def _make_scoring_run_and_criterion(db_session, repo_path, long_lived=True):
+    if long_lived:
+        (repo_path / "docker-compose.prod.yml").write_text("services:\n  app:\n    image: app\n")
     repo = Repository(name="repo", path=str(repo_path))
     db_session.add(repo)
     db_session.commit()
@@ -145,3 +149,40 @@ def test_malformed_workflow_file_treated_as_not_wired(db_session, tmp_path):
     score = normalize_deployment_automation(db_session, scoring_run, criterion, [])
 
     assert score.value == 5.0
+
+
+def test_no_candidate_file_explains_score_with_a_medium_finding(db_session, tmp_path):
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text("name: CI\non: [push]\njobs: {}\n")
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    normalize_deployment_automation(db_session, scoring_run, criterion, [])
+
+    assert single_repo_level_finding(db_session, criterion).severity == "MEDIUM"
+
+
+def test_unwired_candidate_explains_score_with_a_low_finding(db_session, tmp_path):
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "build-push.yml").write_text(_UNWIRED_WORKFLOW)
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    normalize_deployment_automation(db_session, scoring_run, criterion, [])
+
+    finding = single_repo_level_finding(db_session, criterion)
+    assert finding.severity == "LOW"
+    assert "build-push.yml" in finding.description
+
+
+def test_no_prod_compose_file_scores_na_without_a_finding(db_session, tmp_path):
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text("name: CI\non: [push]\njobs: {}\n")
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path, long_lived=False)
+
+    score = normalize_deployment_automation(db_session, scoring_run, criterion, [])
+
+    assert score.value == 0.0
+    assert score.na_reason is not None
+    assert no_findings(db_session, criterion)

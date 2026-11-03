@@ -173,7 +173,7 @@ Given these three structural limitations, backend/DB performance is **excluded f
 | 7.1 | CI presence & health | A | GH Actions workflow present + actionlint clean | HIGH | |
 | 7.2 | Reverse proxy / local-prod parity | C | See D11 — cross-referenced, not redefined | — | |
 | 7.3 | Container build hardening | A | Shares evidence with 4.4/4.5, DevOps framing ("is the pipeline clean") vs. Security framing ("is the image vulnerable") | HIGH | Cross-ref, not double-weighted |
-| 7.4 | Deployment automation | C | `build-push.yml`/`build-deploy.yml` presence, wired to a registry push step | MEDIUM | Presence only, no runtime verification of actual deploys (D6 GitHub API access could later verify run history) |
+| 7.4 | Deployment automation | C | `build-push.yml`/`build-deploy.yml` presence, wired to a registry push step; `N/A` for repos with no long-lived service (same N/A logic as D11) | MEDIUM | Presence only, no runtime verification of actual deploys (D6 GitHub API access could later verify run history) |
 
 ### 4.8 Documentation
 

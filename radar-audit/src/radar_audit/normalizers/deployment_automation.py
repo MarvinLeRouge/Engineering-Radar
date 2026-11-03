@@ -6,16 +6,23 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import get_repository_path
+from radar_audit.normalizers.shared import (
+    add_repo_level_finding,
+    find_prod_compose,
+    get_repository_path,
+)
 
 _CANDIDATE_FILENAMES = frozenset(
     {"build-push.yml", "build-deploy.yml", "deploy.yml", "release.yml"}
+)
+_NO_LONG_LIVED_SERVICE_NA_REASON = (
+    "No production compose file found (no long-lived service to deploy)"
 )
 
 
@@ -31,15 +38,50 @@ def normalize_deployment_automation(
     if not workflows_dir.is_dir():
         return None
 
+    # Same long-lived-service signal as criteria 7.2 (D11) and 9.3.
+    if find_prod_compose(target_path) is None:
+        score = Score(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            level=ScoreLevel.CRITERION,
+            value=0.0,
+            confidence=Confidence.HIGH,
+            na_reason=_NO_LONG_LIVED_SERVICE_NA_REASON,
+        )
+        session.add(score)
+        session.commit()
+        session.refresh(score)
+        return score
+
     candidates = [
         p for p in workflows_dir.iterdir() if p.is_file() and p.name in _CANDIDATE_FILENAMES
     ]
     if not candidates:
         value = 0.0
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.MEDIUM,
+            "No deployment workflow found in .github/workflows",
+            "Add a workflow (for example deploy.yml or build-push.yml) that builds and pushes "
+            "the container image to a registry.",
+            "no-deployment-workflow",
+        )
     elif any(_is_wired_to_registry_push(p) for p in candidates):
         value = 10.0
     else:
         value = 5.0
+        names = ", ".join(sorted(p.name for p in candidates))
+        add_repo_level_finding(
+            session,
+            scoring_run,
+            criterion,
+            FindingSeverity.LOW,
+            f"Deployment workflow ({names}) never pushes an image to a registry",
+            "Add a docker/build-push-action step with push enabled, or a docker push step.",
+            "deployment-workflow-not-pushing",
+        )
 
     score = Score(
         scoring_run_id=scoring_run.id,
