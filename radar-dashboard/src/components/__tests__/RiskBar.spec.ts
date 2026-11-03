@@ -5,18 +5,21 @@ import type { SeverityRiskPoint } from '@/api/client'
 
 const WEIGHTS = { CRITICAL: 64, HIGH: 16, MEDIUM: 4, LOW: 1 } as const
 
-function risk(counts: Partial<Record<keyof typeof WEIGHTS, number>>): SeverityRiskPoint[] {
+type Counts = Partial<Record<keyof typeof WEIGHTS, number>>
+
+function risk(counts: Counts, wontFix: Counts = {}): SeverityRiskPoint[] {
   return (Object.keys(WEIGHTS) as (keyof typeof WEIGHTS)[]).map((severity) => ({
     severity,
     weight: WEIGHTS[severity],
     count: counts[severity] ?? 0,
-    excluded: 0,
+    excluded: wontFix[severity] ?? 0,
+    wont_fix: wontFix[severity] ?? 0,
     weighted: (counts[severity] ?? 0) * WEIGHTS[severity],
   }))
 }
 
-function mountBar(counts: Partial<Record<keyof typeof WEIGHTS, number>>) {
-  const entries = risk(counts)
+function mountBar(counts: Counts, wontFix: Counts = {}) {
+  const entries = risk(counts, wontFix)
   const riskIndex = entries.reduce((sum, entry) => sum + entry.weighted, 0)
   return mount(RiskBar, { props: { risk: entries, riskIndex } })
 }
@@ -64,5 +67,26 @@ describe('RiskBar', () => {
     const wrapper = mountBar({ HIGH: 1 })
 
     expect(wrapper.find('.risk-bar__track').attributes('aria-hidden')).toBe('true')
+  })
+
+  it("notes won't-fix findings left out of the risk next to their severity", () => {
+    const wrapper = mountBar({ HIGH: 4 }, { HIGH: 44, LOW: 2 })
+
+    const labels = wrapper.findAll('[data-testid="risk-legend-item"]').map((item) => item.text())
+    expect(labels).toEqual([
+      "High 4 x16 = 64 (+44 won't fix, not counted)",
+      "Low 0 x1 = 0 (+2 won't fix, not counted)",
+    ])
+    expect(wrapper.findAll('[data-testid="risk-segment"]')).toHaveLength(1)
+  })
+
+  it("keeps the won't-fix note when every finding is accepted and the risk is 0", () => {
+    const wrapper = mountBar({}, { HIGH: 3 })
+
+    expect(wrapper.find('.risk-bar__track').classes()).toContain('risk-bar__track--clear')
+    expect(wrapper.text()).toContain('No open finding')
+    expect(wrapper.find('[data-testid="risk-legend-item"]').text()).toBe(
+      "High 0 x16 = 0 (+3 won't fix, not counted)",
+    )
   })
 })

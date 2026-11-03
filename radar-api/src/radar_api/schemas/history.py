@@ -19,6 +19,7 @@ class SeverityRiskPoint(BaseModel):
     """Findings of one severity at a scoring run and their weighted risk.
 
     `count` covers OPEN findings not marked FALSE_POSITIVE and `excluded` the rest;
+    `wont_fix` is the part of `excluded` accepted as WONT_FIX true positives (still in the score);
     `weighted` is `count` times the severity's risk `weight`.
     """
 
@@ -26,6 +27,7 @@ class SeverityRiskPoint(BaseModel):
     weight: int
     count: int
     excluded: int
+    wont_fix: int
     weighted: int
 
 

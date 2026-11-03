@@ -22,11 +22,14 @@ def compute_risk(session: Session, scoring_run: ScoringRun) -> list[SeverityRisk
     ).all()
     counted: dict[FindingSeverity, int] = {}
     excluded: dict[FindingSeverity, int] = {}
+    wont_fix: dict[FindingSeverity, int] = {}
     for severity, status, verdict, total in rows:
         is_counted = status == FindingStatus.OPEN and verdict != HumanVerdict.FALSE_POSITIVE
         target = counted if is_counted else excluded
         key = FindingSeverity(severity)
         target[key] = target.get(key, 0) + total
+        if status == FindingStatus.WONT_FIX and verdict != HumanVerdict.FALSE_POSITIVE:
+            wont_fix[key] = wont_fix.get(key, 0) + total
 
     return [
         SeverityRiskPoint(
@@ -34,6 +37,7 @@ def compute_risk(session: Session, scoring_run: ScoringRun) -> list[SeverityRisk
             weight=SEVERITY_RISK_WEIGHT[severity],
             count=counted.get(severity, 0),
             excluded=excluded.get(severity, 0),
+            wont_fix=wont_fix.get(severity, 0),
             weighted=counted.get(severity, 0) * SEVERITY_RISK_WEIGHT[severity],
         )
         for severity in _RISK_SEVERITIES

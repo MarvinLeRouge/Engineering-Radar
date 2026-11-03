@@ -215,6 +215,7 @@ def test_score_history_reports_weighted_risk_per_severity(client, db_session):
         "weight": 64,
         "count": 2,
         "excluded": 0,
+        "wont_fix": 0,
         "weighted": 128,
     }
     assert risk["HIGH"]["count"] == 0
@@ -240,6 +241,7 @@ def test_score_history_risk_excludes_closed_and_false_positive_findings(client, 
         "weight": 16,
         "count": 1,
         "excluded": 3,
+        "wont_fix": 1,
         "weighted": 16,
     }
     assert point["risk_index"] == 16

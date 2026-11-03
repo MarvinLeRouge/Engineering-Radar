@@ -20,6 +20,7 @@ function risk(counts: Partial<Record<keyof typeof WEIGHTS, number>>, excluded = 
     weight: WEIGHTS[severity],
     count: counts[severity] ?? 0,
     excluded: severity === 'LOW' ? excluded : 0,
+    wont_fix: 0,
     weighted: (counts[severity] ?? 0) * WEIGHTS[severity],
   }))
 }
