@@ -153,6 +153,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Add Sentry error tracking backend
 - *(radar-dashboard)* Add Sentry error tracking frontend
 - *(radar-dashboard)* Add weighted risk history chart (FEAT-025)
+- *(radar-dashboard)* Keep false-positive findings out of finding counts (FEAT-026)
 
 ### 🐛 Bug Fixes
 

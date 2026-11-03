@@ -168,6 +168,57 @@ describe('RepositoryDetailView', () => {
     expect(wrapper.text()).not.toContain('(latest)')
   })
 
+  it('refetches the scoring run being viewed after a finding is updated on a historical report', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/repositories/:idSlug', component: RepositoryDetailView }],
+    })
+    router.push('/repositories/repo-a-1?scoringRun=7')
+    await router.isReady()
+
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number, scoringRunId?: number) => Promise<void>>(
+      async () => {
+        store.report = {
+          repository_id: 1,
+          repository_name: 'repo-a',
+          commit_sha: 'a',
+          audited_at: '2026-01-01',
+          scored_at: '2026-02-01',
+          categories: [
+            {
+              id: 1,
+              name: 'Security',
+              order: 1,
+              status: 'scored',
+              value: 5,
+              confidence: 'HIGH',
+              criteria: [
+                {
+                  id: 10,
+                  name: 'Secrets',
+                  status: 'scored',
+                  value: 5,
+                  na_reason: null,
+                  findings: [],
+                },
+              ],
+            },
+          ],
+        }
+      },
+    )
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = mount(RepositoryDetailView, { global: { plugins: [router] } })
+    await wrapper.vm.$nextTick()
+    await wrapper.vm.$nextTick()
+
+    await wrapper.findComponent({ name: 'CriterionFindings' }).vm.$emit('updated')
+
+    expect(store.fetchReport).toHaveBeenLastCalledWith(1, 7)
+  })
+
   it('keeps existing report content visible during a refetch instead of flashing Loading', async () => {
     const store = useRepositoriesStore()
     const reportFixture = {

@@ -134,6 +134,8 @@ async function submitStatus(): Promise<void> {
 
 .finding-card__description {
   font-size: var(--text-body);
+  /* Descriptions embed long file paths that would overflow narrow screens. */
+  overflow-wrap: anywhere;
 }
 
 .finding-card__location {

@@ -3,7 +3,11 @@ import { mount } from '@vue/test-utils'
 import ReportSeveritySummary from '../ReportSeveritySummary.vue'
 import type { CategoryReport, CriterionReport, FindingReport } from '@/api/client'
 
-function makeFinding(id: number, severity: FindingReport['severity']): FindingReport {
+function makeFinding(
+  id: number,
+  severity: FindingReport['severity'],
+  humanVerdict = 'UNREVIEWED',
+): FindingReport {
   return {
     id,
     severity,
@@ -11,7 +15,7 @@ function makeFinding(id: number, severity: FindingReport['severity']): FindingRe
     file: null,
     line: null,
     status: 'OPEN',
-    human_verdict: 'UNREVIEWED',
+    human_verdict: humanVerdict,
     recommendation: null,
   }
 }
@@ -130,5 +134,50 @@ describe('ReportSeveritySummary', () => {
     const wrapper = mount(ReportSeveritySummary, { props: { categories } })
 
     expect(wrapper.findAll('[data-testid="severity-chip"]')).toHaveLength(0)
+  })
+
+  it('leaves false positives out of the counts and notes how many were dismissed', () => {
+    const categories = [
+      makeCategory(1, 'Code quality', 1, [
+        makeCriterion(10, 'Linting', [
+          makeFinding(1, 'HIGH'),
+          makeFinding(2, 'HIGH', 'FALSE_POSITIVE'),
+        ]),
+        makeCriterion(11, 'Complexity', [makeFinding(3, 'CRITICAL', 'FALSE_POSITIVE')]),
+      ]),
+    ]
+
+    const wrapper = mount(ReportSeveritySummary, { props: { categories } })
+
+    const chips = wrapper.findAll('[data-testid="severity-chip"]')
+    expect(chips.map((c) => c.text())).toEqual(['HIGH (1 / 1)'])
+    expect(wrapper.find('[data-testid="dismissed-count"]').text()).toBe(
+      '2 findings dismissed as false positive, not counted',
+    )
+  })
+
+  it('still shows the dismissed note when every finding is a false positive', () => {
+    const categories = [
+      makeCategory(1, 'Code quality', 1, [
+        makeCriterion(10, 'Linting', [makeFinding(1, 'HIGH', 'FALSE_POSITIVE')]),
+      ]),
+    ]
+
+    const wrapper = mount(ReportSeveritySummary, { props: { categories } })
+
+    expect(wrapper.findAll('[data-testid="severity-chip"]')).toHaveLength(0)
+    expect(wrapper.find('[data-testid="dismissed-count"]').text()).toBe(
+      '1 finding dismissed as false positive, not counted',
+    )
+  })
+
+  it('shows no dismissed note when nothing is a false positive', () => {
+    const categories = [
+      makeCategory(1, 'Code quality', 1, [makeCriterion(10, 'Linting', [makeFinding(1, 'HIGH')])]),
+    ]
+
+    const wrapper = mount(ReportSeveritySummary, { props: { categories } })
+
+    expect(wrapper.find('[data-testid="dismissed-count"]').exists()).toBe(false)
   })
 })

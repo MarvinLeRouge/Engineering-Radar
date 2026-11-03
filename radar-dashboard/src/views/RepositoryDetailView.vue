@@ -48,7 +48,10 @@
                 :na-reason="criterion.na_reason"
               />
             </h3>
-            <CriterionFindings :findings="criterion.findings" @updated="refetchReport" />
+            <CriterionFindings
+              :findings="criterion.findings"
+              @updated="refetchReport(activeScoringRunId ?? undefined)"
+            />
           </div>
         </div>
       </template>

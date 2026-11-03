@@ -7,6 +7,7 @@ function makeFinding(
   id: number,
   severity: FindingReport['severity'],
   file: string | null = null,
+  humanVerdict = 'UNREVIEWED',
 ): FindingReport {
   return {
     id,
@@ -15,7 +16,7 @@ function makeFinding(
     file,
     line: null,
     status: 'OPEN',
-    human_verdict: 'UNREVIEWED',
+    human_verdict: humanVerdict,
     recommendation: null,
   }
 }
@@ -155,5 +156,52 @@ describe('CriterionFindings', () => {
     const headings = wrapper.findAll('.criterion-findings__file-heading')
     expect(headings).toHaveLength(2)
     expect(headings.every((h) => h.text() === 'src/a.py')).toBe(true)
+  })
+
+  it('leaves false positives out of the severity chip counts', () => {
+    const findings = [
+      makeFinding(1, 'HIGH'),
+      makeFinding(2, 'HIGH', null, 'FALSE_POSITIVE'),
+      makeFinding(3, 'LOW', null, 'FALSE_POSITIVE'),
+    ]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+
+    const chips = wrapper.findAll('[data-testid="severity-chip"]')
+    expect(chips.map((c) => c.text())).toEqual(['HIGH (1)'])
+  })
+
+  it('lists false positives in a collapsed dismissed section where the verdict can be reverted', async () => {
+    const findings = [makeFinding(1, 'HIGH'), makeFinding(2, 'LOW', null, 'FALSE_POSITIVE')]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+
+    const dismissed = wrapper.find('[data-testid="dismissed-findings"]')
+    expect(dismissed.element.tagName).toBe('DETAILS')
+    expect(dismissed.attributes('open')).toBeUndefined()
+    expect(dismissed.find('summary').text()).toBe('Dismissed as false positive (1)')
+    const cards = dismissed.findAllComponents({ name: 'FindingCard' })
+    expect(cards.map((c) => c.props('finding').id)).toEqual([2])
+
+    await cards[0]!.vm.$emit('updated')
+    expect(wrapper.emitted('updated')).toHaveLength(1)
+  })
+
+  it('renders no dismissed section when nothing is a false positive', () => {
+    const wrapper = mount(CriterionFindings, { props: { findings: [makeFinding(1, 'HIGH')] } })
+
+    expect(wrapper.find('[data-testid="dismissed-findings"]').exists()).toBe(false)
+  })
+
+  it("keeps resolved and won't-fix findings in the counts unless they are false positives", () => {
+    const findings = [
+      { ...makeFinding(1, 'HIGH'), status: 'WONT_FIX' },
+      { ...makeFinding(2, 'HIGH'), status: 'RESOLVED', human_verdict: 'TRUE_POSITIVE' },
+      { ...makeFinding(3, 'HIGH', null, 'FALSE_POSITIVE'), status: 'WONT_FIX' },
+    ]
+
+    const wrapper = mount(CriterionFindings, { props: { findings } })
+
+    expect(wrapper.find('[data-testid="severity-chip"]').text()).toBe('HIGH (2)')
   })
 })
