@@ -7,6 +7,8 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from radar_api.schemas.history import SeverityRiskPoint
+
 
 class FindingReport(BaseModel):
     """One finding listed under a criterion of the repository report."""
@@ -53,3 +55,5 @@ class RepositoryReport(BaseModel):
     audited_at: datetime
     scored_at: datetime
     categories: list[CategoryReport]
+    risk: list[SeverityRiskPoint]
+    risk_index: int

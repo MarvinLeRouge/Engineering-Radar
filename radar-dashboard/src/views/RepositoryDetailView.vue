@@ -29,6 +29,7 @@
           Scored on {{ formatScoredAt(store.report.scored_at) }}
           <span v-if="activeScoringRunId === null">(latest)</span>
         </p>
+        <RiskBar :risk="store.report.risk" :risk-index="store.report.risk_index" />
         <ReportSeveritySummary :categories="store.report.categories" />
         <div
           v-for="category in store.report.categories"
@@ -108,6 +109,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ScoreGauge from '@/components/ScoreGauge.vue'
 import CriterionFindings from '@/components/CriterionFindings.vue'
 import ReportSeveritySummary from '@/components/ReportSeveritySummary.vue'
+import RiskBar from '@/components/RiskBar.vue'
 import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
 import ScoreHistoryChart from '@/components/ScoreHistoryChart.vue'
 import RiskHistoryChart from '@/components/RiskHistoryChart.vue'

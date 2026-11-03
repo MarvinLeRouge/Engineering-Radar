@@ -14,6 +14,7 @@ from sqlalchemy import desc
 from sqlmodel import Session, select
 
 from radar_api.dependencies import get_db_session
+from radar_api.risk import compute_risk
 from radar_api.schemas.badge import BadgeResponse
 from radar_api.schemas.report import (
     CategoryReport,
@@ -225,6 +226,7 @@ def get_repository_report(
         for category in categories
     ]
 
+    risk = compute_risk(session, scoring_run)
     return RepositoryReport(
         repository_id=repository.id,  # type: ignore[arg-type]
         repository_name=repository.name,
@@ -232,6 +234,8 @@ def get_repository_report(
         audited_at=audit.audited_at,
         scored_at=scoring_run.scored_at,
         categories=category_reports,
+        risk=risk,
+        risk_index=sum(entry.weighted for entry in risk),
     )
 
 

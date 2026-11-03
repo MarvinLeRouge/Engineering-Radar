@@ -63,6 +63,8 @@ describe('RepositoryDetailView', () => {
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-01-01',
+        risk: [],
+        risk_index: 0,
         categories: [
           {
             id: 1,
@@ -126,6 +128,8 @@ describe('RepositoryDetailView', () => {
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-03-15',
+        risk: [],
+        risk_index: 0,
         categories: [],
       }
     })
@@ -135,6 +139,29 @@ describe('RepositoryDetailView', () => {
 
     expect(wrapper.text()).toContain(new Date('2026-03-15').toLocaleDateString())
     expect(wrapper.text()).toContain('(latest)')
+  })
+
+  it('shows the weighted risk bar of the displayed run at the top of the report', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.report = {
+        repository_id: 1,
+        repository_name: 'repo-a',
+        commit_sha: 'a',
+        audited_at: '2026-01-01',
+        scored_at: '2026-03-15',
+        risk: [{ severity: 'HIGH', weight: 16, count: 2, excluded: 0, weighted: 32 }],
+        risk_index: 32,
+        categories: [],
+      }
+    })
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = await mountView()
+
+    const bar = wrapper.findComponent({ name: 'RiskBar' })
+    expect(bar.props('riskIndex')).toBe(32)
+    expect(bar.text()).toContain('High 2 x16 = 32')
   })
 
   it('does not mark the date as latest when viewing a historical scoring run', async () => {
@@ -154,6 +181,8 @@ describe('RepositoryDetailView', () => {
           commit_sha: 'a',
           audited_at: '2026-01-01',
           scored_at: '2026-02-01',
+          risk: [],
+          risk_index: 0,
           categories: [],
         }
       },
@@ -185,6 +214,8 @@ describe('RepositoryDetailView', () => {
           commit_sha: 'a',
           audited_at: '2026-01-01',
           scored_at: '2026-02-01',
+          risk: [],
+          risk_index: 0,
           categories: [
             {
               id: 1,
@@ -227,6 +258,8 @@ describe('RepositoryDetailView', () => {
       commit_sha: 'a',
       audited_at: '2026-01-01',
       scored_at: '2026-01-01',
+      risk: [],
+      risk_index: 0,
       categories: [
         {
           id: 1,
