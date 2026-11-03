@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _RECOMMENDATION_TEXT = (
     "Rebuild the container image on top of a patched base image or package version."
@@ -44,7 +44,7 @@ def normalize_container_image_vulnerabilities(
             severity = vuln.get("severity", "HIGH")
             resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.HIGH)
             description = f"{vuln['id']}: {vuln['pkg']}"
-            add_finding_with_recommendation(
+            finding = add_finding_with_recommendation(
                 session,
                 Finding(
                     scoring_run_id=scoring_run.id,
@@ -61,6 +61,8 @@ def normalize_container_image_vulnerabilities(
                 ),
                 _RECOMMENDATION_TEXT,
             )
+            if is_dismissed(session, finding):
+                continue
             if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
                 worst = severity
 

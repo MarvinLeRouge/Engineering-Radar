@@ -10,7 +10,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    has_success_payload,
+    is_dismissed,
+)
 
 _RECOMMENDATION_TEXT = (
     "Fix the flagged code pattern, or add a justified suppression if it is a false positive."
@@ -55,7 +59,7 @@ def normalize_sast_findings(
             # check_id+message, which repeat verbatim if the same rule fires
             # twice in one file.
             semgrep_fingerprint = result["extra"].get("fingerprint", "")
-            add_finding_with_recommendation(
+            finding = add_finding_with_recommendation(
                 session,
                 Finding(
                     scoring_run_id=scoring_run.id,
@@ -74,6 +78,8 @@ def normalize_sast_findings(
                 ),
                 _RECOMMENDATION_TEXT,
             )
+            if is_dismissed(session, finding):
+                continue
             if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
                 worst = severity
 

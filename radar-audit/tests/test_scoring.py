@@ -506,3 +506,27 @@ def test_every_sub_ten_scored_criterion_is_explained_by_a_finding(db_session, tm
         if not has_recommendation:
             unexplained.append(db_session.get(Criterion, score.criterion_id).name)
     assert unexplained == []
+
+
+def test_false_positive_verdict_is_known_to_normalizers_on_the_next_score(db_session, tmp_path):
+    from radar_audit.normalizers.shared import is_dismissed
+    from radar_core.enums import HumanVerdict
+
+    _audited_repo(db_session, tmp_path, files={"x.py": "x = 1\n"})
+    first_run = score_repository(db_session, "repo")
+    finding = db_session.exec(select(Finding).where(Finding.scoring_run_id == first_run.id)).first()
+    assert finding is not None
+    finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(finding)
+    db_session.commit()
+    fingerprint = finding.fingerprint
+
+    second_run = score_repository(db_session, "repo")
+
+    rescored = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == second_run.id, Finding.fingerprint == fingerprint
+        )
+    ).one()
+    assert rescored.human_verdict == HumanVerdict.FALSE_POSITIVE
+    assert is_dismissed(db_session, rescored)

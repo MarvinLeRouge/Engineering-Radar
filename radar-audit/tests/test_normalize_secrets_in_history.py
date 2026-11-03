@@ -7,6 +7,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _make_scoring_run_and_criterion(db_session):
     repo = Repository(name="repo", path="/tmp/repo")
@@ -275,3 +277,13 @@ def test_two_hits_same_rule_same_file_get_different_fingerprints(db_session):
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert len(findings) == 2
     assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_false_positive_no_longer_weighs_on_the_score(db_session):
+    test_one_unfiltered_hit_wins_over_several_pre_filtered_ones(db_session)
+
+    score = rescore_after_dismissing(
+        db_session, normalize_secrets_in_history, lambda f: "github-pat" in f.description
+    )
+
+    assert score.value == 8.0

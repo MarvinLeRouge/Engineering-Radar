@@ -8,6 +8,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _make_scoring_run_and_criterion(db_session):
     repo = Repository(name="repo", path="/tmp/repo")
@@ -114,3 +116,13 @@ def test_critical_severity_vulnerability_scores_two(db_session):
     )
 
     assert score.value == 2.0
+
+
+def test_false_positive_no_longer_weighs_on_the_score(db_session):
+    test_critical_severity_vulnerability_scores_two(db_session)
+
+    score = rescore_after_dismissing(
+        db_session, normalize_container_image_vulnerabilities, lambda f: f.severity == "CRITICAL"
+    )
+
+    assert score.value == 10.0

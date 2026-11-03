@@ -252,6 +252,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Add missing module and symbol docstrings (FIX-019)
 - *(radar-audit)* Report unexpected cli crashes to sentry (FIX-021)
 - *(radar-audit)* Explain every sub-10 criterion score with a finding (FIX-022)
+- *(radar-audit)* Keep false positives out of worst-severity scores (FIX-023)
 
 ### 🚜 Refactor
 

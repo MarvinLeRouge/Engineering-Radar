@@ -10,7 +10,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    has_success_payload,
+    is_dismissed,
+)
 
 _RELEVANT_TOOLS = {"pip-audit", "pnpm-audit", "composer-audit"}
 _RECOMMENDATION_TEXT = (
@@ -53,7 +57,7 @@ def normalize_dependency_vulnerabilities(
             severity = vuln.get("severity", "MEDIUM")
             resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM)
             description = f"{vuln['id']}: vulnerable dependency {vuln['package']}"
-            add_finding_with_recommendation(
+            finding = add_finding_with_recommendation(
                 session,
                 Finding(
                     scoring_run_id=scoring_run.id,
@@ -70,6 +74,8 @@ def normalize_dependency_vulnerabilities(
                 ),
                 _RECOMMENDATION_TEXT,
             )
+            if is_dismissed(session, finding):
+                continue
             if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
                 worst = severity
 
