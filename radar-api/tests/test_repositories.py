@@ -1,4 +1,11 @@
-from radar_core.enums import Confidence, FindingSeverity, ScoreLevel, ScoringModel
+from radar_core.enums import (
+    Confidence,
+    FindingSeverity,
+    FindingStatus,
+    HumanVerdict,
+    ScoreLevel,
+    ScoringModel,
+)
 from radar_core.models.audit import Audit
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
@@ -267,6 +274,60 @@ def test_get_repository_report_returns_404_when_scoring_run_belongs_to_another_r
     response = client.get(f"/repositories/{repo_a.id}/report?scoring_run_id={other_run.id}")
 
     assert response.status_code == 404
+
+
+def _add_report_finding(db_session, scoring_run, criterion, severity, **overrides):
+    db_session.add(
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            severity=severity,
+            description="a finding",
+            confidence=Confidence.HIGH,
+            **overrides,
+        )
+    )
+    db_session.commit()
+
+
+def test_get_repository_report_includes_weighted_risk_of_that_run(client, db_session):
+    repo = _make_repository(db_session, "repo-risk")
+    older = _make_scoring_run(db_session, repo, global_score=4.0, commit_sha="b" * 40)
+    latest = _make_scoring_run(db_session, repo, global_score=6.0)
+    _, criterion = _seed_category_and_criterion(db_session, latest.methodology_version_id)
+    _add_report_finding(db_session, latest, criterion, FindingSeverity.CRITICAL)
+    _add_report_finding(db_session, latest, criterion, FindingSeverity.LOW)
+    _add_report_finding(db_session, latest, criterion, FindingSeverity.LOW)
+    _add_report_finding(
+        db_session, latest, criterion, FindingSeverity.HIGH, status=FindingStatus.WONT_FIX
+    )
+    _add_report_finding(
+        db_session,
+        latest,
+        criterion,
+        FindingSeverity.HIGH,
+        human_verdict=HumanVerdict.FALSE_POSITIVE,
+    )
+    _add_report_finding(db_session, older, criterion, FindingSeverity.CRITICAL)
+
+    body = client.get(f"/repositories/{repo.id}/report").json()
+
+    risk = {entry["severity"]: entry for entry in body["risk"]}
+    assert list(risk) == ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    assert risk["CRITICAL"] == {
+        "severity": "CRITICAL",
+        "weight": 64,
+        "count": 1,
+        "excluded": 0,
+        "weighted": 64,
+    }
+    assert risk["HIGH"]["count"] == 0
+    assert risk["HIGH"]["excluded"] == 2
+    assert risk["LOW"]["weighted"] == 2
+    assert body["risk_index"] == 66
+
+    historical = client.get(f"/repositories/{repo.id}/report?scoring_run_id={older.id}").json()
+    assert historical["risk_index"] == 64
 
 
 def test_badge_returns_404_when_repository_missing(client):

@@ -55,6 +55,9 @@ export interface RepositoryReport {
   audited_at: string
   scored_at: string
   categories: CategoryReport[]
+  /** Weighted risk of this scoring run, same rule as `ScoreHistoryPoint.risk`. */
+  risk: SeverityRiskPoint[]
+  risk_index: number
 }
 
 export interface CategoryScorePoint {

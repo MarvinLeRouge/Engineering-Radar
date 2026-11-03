@@ -37,7 +37,7 @@ describe('repositories store', () => {
   })
 
   it('fetchReport populates report on success', async () => {
-    const report = { repository_id: 1, repository_name: 'repo', commit_sha: 'a', audited_at: '2026-01-01', scored_at: '2026-01-01', categories: [] }
+    const report = { repository_id: 1, repository_name: 'repo', commit_sha: 'a', audited_at: '2026-01-01', scored_at: '2026-01-01', categories: [], risk: [], risk_index: 0 }
     vi.mocked(client.getRepositoryReport).mockResolvedValueOnce(report)
     const store = useRepositoriesStore()
 
@@ -64,6 +64,8 @@ describe('repositories store', () => {
       commit_sha: 'a',
       audited_at: '2026-01-01',
       scored_at: '2026-01-01',
+      risk: [],
+      risk_index: 0,
       categories: [],
     }
     vi.mocked(client.getRepositoryReport).mockResolvedValueOnce(report)
