@@ -6,6 +6,8 @@ from radar_core.models.finding import Finding
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _make_scoring_run_and_criterion(db_session):
     repo = Repository(name="repo", path="/tmp/repo")
@@ -94,3 +96,11 @@ def test_two_findings_scores_eight_and_creates_findings(db_session):
     assert len(findings) == 2
     assert findings[0].file == ".github/workflows/ci.yml"
     assert findings[0].line == 8
+
+
+def test_false_positives_no_longer_weigh_on_the_score(db_session):
+    test_two_findings_scores_eight_and_creates_findings(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_ci_health, lambda f: True)
+
+    assert score.value == 10.0

@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 # Bands: <=3%->10, 3-5%->6, 5-10%->4, >10%->2 (spec §3.2). Resolved during
 # design but provisional -- not yet calibrated against real portfolio data
@@ -36,11 +36,12 @@ def normalize_code_duplication(
     if percentage is None:
         return None
 
+    dismissed_lines = 0
     for duplicate in tool_result.raw_output.get("duplicates", []):
         first = duplicate["firstFile"]
         second = duplicate["secondFile"]
         duplicated_lines = first["end"] - first["start"] + 1
-        add_finding_with_recommendation(
+        added = add_finding_with_recommendation(
             session,
             Finding(
                 scoring_run_id=scoring_run.id,
@@ -70,6 +71,14 @@ def normalize_code_duplication(
             ),
             _RECOMMENDATION_TEXT,
         )
+        if is_dismissed(session, added):
+            dismissed_lines += duplicated_lines
+
+    total = tool_result.raw_output.get("statistics", {}).get("total", {})
+    # shortcut: needs jscpd's line totals; older payloads without them keep the raw percentage.
+    if dismissed_lines and total.get("lines"):
+        duplicated = max(total.get("duplicatedLines", 0) - dismissed_lines, 0)
+        percentage = duplicated / total["lines"] * 100
 
     score = Score(
         scoring_run_id=scoring_run.id,

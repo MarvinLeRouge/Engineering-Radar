@@ -8,6 +8,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -265,3 +267,11 @@ def test_two_subprojects_crashing_the_same_tool_get_different_fingerprints(db_se
     crash_findings = [f for f in findings if "exited abnormally" in (f.description or "")]
     assert len(crash_findings) == 2
     assert crash_findings[0].fingerprint != crash_findings[1].fingerprint
+
+
+def test_failure_judged_a_false_positive_counts_as_a_pass(db_session):
+    test_sums_ratio_across_subprojects_and_adds_finding_for_failures(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_unit_test_pass_rate, lambda f: True)
+
+    assert score.value == 10.0
