@@ -33,6 +33,8 @@ services:
       dockerfile: radar-audit/Dockerfile
     environment:
       - RADAR_DATABASE_URL=sqlite:////data/radar.db
+      - SENTRY_DSN=${SENTRY_BACKEND_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
     volumes:
       - radar-data:/data
       - ${RADAR_PORTFOLIO_PATH:-./portfolio}:/portfolio:ro

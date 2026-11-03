@@ -1,8 +1,8 @@
 """FastAPI application entry point that registers the radar-api routers."""
 
 from fastapi import FastAPI
+from radar_core.observability import init_error_tracking
 
-from radar_api.observability import init_error_tracking
 from radar_api.routers import findings, history, repositories, roadmap
 
 init_error_tracking()

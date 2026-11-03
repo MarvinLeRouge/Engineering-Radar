@@ -28,6 +28,16 @@ There is no backup automation yet: back up the database file manually if
 its contents matter to you (for example before running a destructive
 migration).
 
+## Error tracking
+
+Sentry is optional and disabled unless a DSN is set (see `.env.example`).
+`SENTRY_BACKEND_DSN` is shared by `radar-api` and the `radar-audit` CLI;
+`SENTRY_FRONTEND_DSN` is baked into the `radar-dashboard` bundle at image
+build time, so changing it requires a rebuild. `radar-audit` only reports
+unexpected crashes: tool failures and handled CLI errors are never sent.
+No user data, headers, bodies, query strings or stack-frame variables are
+collected.
+
 ## CI / automation
 
 - `CHANGELOG.md` is regenerated primarily by a local `post-commit` hook wired into the `pre-commit` framework (`scripts/changelog-post-commit.sh`, runs git-cliff and folds the result into the same commit), so feature PRs already carry their own changelog entry

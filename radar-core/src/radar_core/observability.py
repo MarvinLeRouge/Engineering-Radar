@@ -1,12 +1,16 @@
-"""Application observability and error tracking configuration."""
+"""Sentry error tracking setup shared by radar-api and radar-audit."""
 
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 import sentry_sdk
 
-SENTRY_DATA_COLLECTION = {
+if TYPE_CHECKING:
+    from sentry_sdk._types import DataCollectionUserOptions
+
+SENTRY_DATA_COLLECTION: DataCollectionUserOptions = {
     "user_info": False,
     "cookies": {"mode": "off"},
     "http_headers": {"request": {"mode": "off"}},
@@ -20,6 +24,7 @@ SENTRY_DATA_COLLECTION = {
     "frame_context_lines": 0,
 }
 
+
 def init_error_tracking() -> bool:
     """Initialize Sentry when a DSN is configured.
 
@@ -31,13 +36,9 @@ def init_error_tracking() -> bool:
     if not dsn:
         return False
 
-    environment = os.environ.get("SENTRY_ENVIRONMENT", "development").strip()
-    if not environment:
-        environment = "development"
-
     sentry_sdk.init(
         dsn=dsn,
-        environment=environment,
+        environment=os.environ.get("SENTRY_ENVIRONMENT", "").strip() or "development",
         data_collection=SENTRY_DATA_COLLECTION,
         traces_sample_rate=0.0,
     )

@@ -30,6 +30,17 @@ Il n'y a pas encore d'automatisation de sauvegarde : sauvegarder
 manuellement le fichier de base de données si son contenu compte pour
 vous (par exemple avant d'exécuter une migration destructrice).
 
+## Suivi des erreurs
+
+Sentry est optionnel et désactivé tant qu'aucun DSN n'est défini (voir
+`.env.example`). `SENTRY_BACKEND_DSN` est partagé par `radar-api` et la CLI
+`radar-audit` ; `SENTRY_FRONTEND_DSN` est intégré au bundle de
+`radar-dashboard` au build de l'image, le changer impose donc un rebuild.
+`radar-audit` ne remonte que les crashs inattendus : les échecs d'outils et
+les erreurs gérées par la CLI ne sont jamais envoyés. Aucune donnée
+utilisateur, en-tête, corps de requête, query string ni variable de pile
+n'est collectée.
+
 ## CI / automatisation
 
 - `CHANGELOG.md` est régénéré principalement par un hook local `post-commit` intégré au framework `pre-commit` (`scripts/changelog-post-commit.sh`, exécute git-cliff et intègre le résultat dans le même commit), si bien que les PR de fonctionnalité contiennent déjà leur propre entrée de changelog
