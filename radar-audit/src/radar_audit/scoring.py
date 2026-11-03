@@ -64,9 +64,6 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     methodology_version = seed_taxonomy(session)
     scoring_run = get_or_create_scoring_run(session, audit, methodology_version)
 
-    existing_findings = session.exec(
-        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
-    ).all()
     carried_verdicts = _collect_carried_verdicts(session, repository)
     set_dismissed_fingerprints(
         session,
@@ -76,6 +73,22 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
             if verdict == HumanVerdict.FALSE_POSITIVE
         },
     )
+    try:
+        return _score_run(session, audit, methodology_version, scoring_run, carried_verdicts)
+    finally:
+        set_dismissed_fingerprints(session, set())
+
+
+def _score_run(
+    session: Session,
+    audit: Audit,
+    methodology_version: MethodologyVersion,
+    scoring_run: ScoringRun,
+    carried_verdicts: dict[str, tuple[FindingStatus, HumanVerdict]],
+) -> ScoringRun:
+    existing_findings = session.exec(
+        select(Finding).where(Finding.scoring_run_id == scoring_run.id)
+    ).all()
     _wipe_scoring_run_data(session, scoring_run, existing_findings)
 
     scoring_run.scored_at = datetime.now(UTC)
@@ -179,13 +192,17 @@ def _collect_carried_verdicts(
         .where(Audit.repository_id == repository.id)
         .order_by(ScoringRun.scored_at)  # type: ignore[arg-type]
     ).all()
-    return {
+    latest = {
         finding.fingerprint: (finding.status, finding.human_verdict)
         for finding in historical_findings
         if finding.fingerprint is not None
-        and (
-            finding.status != FindingStatus.OPEN or finding.human_verdict != HumanVerdict.UNREVIEWED
-        )
+    }
+    # Filter only after last-write-wins: a verdict reverted to OPEN/UNREVIEWED on a
+    # later run must override the older human verdict, not be skipped in favor of it.
+    return {
+        fingerprint: verdict
+        for fingerprint, verdict in latest.items()
+        if verdict != (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
     }
 
 

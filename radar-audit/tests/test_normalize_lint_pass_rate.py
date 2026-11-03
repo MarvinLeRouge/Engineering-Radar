@@ -253,3 +253,37 @@ def test_file_with_one_remaining_real_violation_stays_flagged(db_session):
     )
 
     assert score.value == 5.0
+
+
+def test_eslint_file_counts_clean_once_its_errors_are_dismissed_despite_warnings(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="eslint",
+        tool_version="9.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={
+            "results": [
+                {
+                    "filePath": "a.js",
+                    "errorCount": 1,
+                    "messages": [
+                        {"ruleId": "no-undef", "message": "x undefined", "line": 1, "severity": 2},
+                        {"ruleId": "no-console", "message": "console", "line": 2, "severity": 1},
+                    ],
+                },
+            ],
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+    normalize_lint_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    score = rescore_after_dismissing(
+        db_session, normalize_lint_pass_rate, lambda f: f.description.startswith("no-undef")
+    )
+
+    assert score.value == 10.0

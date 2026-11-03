@@ -101,9 +101,11 @@ def _score_eslint(
         if entry["errorCount"] == 0:
             covered += 1
             continue
-        # An errored file with no message to dismiss stays flagged.
-        flagged = not entry["messages"]
-        for message in entry["messages"]:
+        # Only error-level messages (eslint severity 2) make a file fail; an errored
+        # file with no error message to dismiss stays flagged.
+        is_error = [message.get("severity", 2) == 2 for message in entry["messages"]]
+        flagged = not any(is_error)
+        for message, message_is_error in zip(entry["messages"], is_error, strict=True):
             finding = _add_finding(
                 session,
                 scoring_run,
@@ -113,7 +115,7 @@ def _score_eslint(
                 file=entry["filePath"],
                 line=message.get("line"),
             )
-            flagged = flagged or not is_dismissed(session, finding)
+            flagged = flagged or (message_is_error and not is_dismissed(session, finding))
         if not flagged:
             covered += 1
     return covered, applicable

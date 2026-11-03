@@ -116,7 +116,7 @@ def _score_docvet(
     if not presence_coverage:
         return None
 
-    dismissed = 0
+    dismissed: set[str | None] = set()
     for finding in tool_result.raw_output.get("findings", []):
         rule = finding.get("rule", "missing-docstring")
         message = finding.get("message", "")
@@ -144,14 +144,15 @@ def _score_docvet(
             ),
             "Add a docstring documenting this symbol's purpose, parameters, and return value.",
         )
-        if is_dismissed(session, added):
-            dismissed += 1
+        # Only a missing-docstring finding is part of presence_coverage's undocumented count.
+        if rule == "missing-docstring" and is_dismissed(session, added):
+            dismissed.add(added.fingerprint)
 
     percentage: float = presence_coverage["percentage"]
     total = presence_coverage.get("total", 0)
     if dismissed and total:
         # A dismissed missing-docstring finding counts as documented.
-        documented = presence_coverage.get("documented", 0) + dismissed
+        documented = presence_coverage.get("documented", 0) + len(dismissed)
         percentage = min(documented / total, 1.0) * 100
     return percentage / 10
 
