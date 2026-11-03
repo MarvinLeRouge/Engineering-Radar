@@ -425,3 +425,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(gitignore)* Ignore codegraph folder
 - *(changelog)* Auto-merge the catch-up CHANGELOG.md PR
 - *(radar-data)* Map radar-data volume to project folder
+- *(docker)* Rebuild images without cache so security upgrades apply (CHORE-005)
