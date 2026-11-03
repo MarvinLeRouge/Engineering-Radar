@@ -1,6 +1,6 @@
 <!-- radar-dashboard/src/components/ReportSeveritySummary.vue -->
 <template>
-  <div v-if="severityGroups.length" class="report-severity-summary">
+  <div v-if="severityGroups.length || dismissedCount" class="report-severity-summary">
     <div class="report-severity-summary__chips">
       <SeverityToggleChip
         v-for="group in severityGroups"
@@ -27,6 +27,14 @@
         </li>
       </ul>
     </template>
+    <p
+      v-if="dismissedCount"
+      data-testid="dismissed-count"
+      class="report-severity-summary__dismissed"
+    >
+      {{ dismissedCount }} {{ dismissedCount === 1 ? 'finding' : 'findings' }} dismissed as false
+      positive, not counted
+    </p>
   </div>
 </template>
 
@@ -34,7 +42,7 @@
 import { computed, reactive, useId } from 'vue'
 import SeverityToggleChip from './SeverityToggleChip.vue'
 import type { CategoryReport } from '@/api/client'
-import { SEVERITY_ORDER } from '@/utils/severity'
+import { SEVERITY_ORDER, isFalsePositive } from '@/utils/severity'
 
 const props = defineProps<{ categories: CategoryReport[] }>()
 
@@ -50,6 +58,12 @@ function toggle(severity: string): void {
   }
 }
 
+const dismissedCount = computed(() =>
+  props.categories
+    .flatMap((category) => category.criteria)
+    .reduce((sum, criterion) => sum + criterion.findings.filter(isFalsePositive).length, 0),
+)
+
 const severityGroups = computed(() =>
   SEVERITY_ORDER.map((severity) => {
     const criteria: { criterionId: number; categoryName: string; criterionName: string }[] = []
@@ -57,7 +71,9 @@ const severityGroups = computed(() =>
 
     for (const category of props.categories) {
       for (const criterion of category.criteria) {
-        const matches = criterion.findings.filter((f) => f.severity === severity)
+        const matches = criterion.findings.filter(
+          (f) => f.severity === severity && !isFalsePositive(f),
+        )
         if (matches.length === 0) continue
         findingCount += matches.length
         criteria.push({
@@ -93,5 +109,10 @@ const severityGroups = computed(() =>
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+.report-severity-summary__dismissed {
+  margin-top: var(--space-3);
+  font-size: var(--text-meta);
+  color: var(--color-ink-soft);
 }
 </style>

@@ -33,6 +33,22 @@
         </template>
       </div>
     </template>
+
+    <details
+      v-if="dismissed.length"
+      data-testid="dismissed-findings"
+      class="criterion-findings__dismissed"
+    >
+      <summary>Dismissed as false positive ({{ dismissed.length }})</summary>
+      <div class="criterion-findings__group">
+        <FindingCard
+          v-for="finding in dismissed"
+          :key="finding.id"
+          :finding="finding"
+          @updated="$emit('updated')"
+        />
+      </div>
+    </details>
   </div>
 </template>
 
@@ -41,7 +57,7 @@ import { computed, reactive, useId } from 'vue'
 import FindingCard from './FindingCard.vue'
 import SeverityToggleChip from './SeverityToggleChip.vue'
 import type { FindingReport } from '@/api/client'
-import { SEVERITY_ORDER } from '@/utils/severity'
+import { SEVERITY_ORDER, isFalsePositive } from '@/utils/severity'
 
 const instanceId = useId()
 
@@ -83,9 +99,11 @@ function groupByFile(findings: FindingReport[]): FileGroup[] {
   return order.map((file) => ({ file, findings: byFile.get(file)! }))
 }
 
+const dismissed = computed(() => props.findings.filter(isFalsePositive))
+
 const severityGroups = computed(() =>
   SEVERITY_ORDER.map((severity) => {
-    const findings = props.findings.filter((f) => f.severity === severity)
+    const findings = props.findings.filter((f) => f.severity === severity && !isFalsePositive(f))
     return { severity, findings, fileGroups: groupByFile(findings) }
   }).filter((group) => group.findings.length > 0),
 )
@@ -116,5 +134,25 @@ const severityGroups = computed(() =>
 
 .criterion-findings__file-heading:not(:first-child) {
   margin-top: var(--space-2);
+}
+.criterion-findings__dismissed {
+  margin-top: var(--space-3);
+  font-size: var(--text-meta);
+}
+
+.criterion-findings__dismissed summary {
+  cursor: pointer;
+  width: fit-content;
+  color: var(--color-ink-soft);
+}
+
+.criterion-findings__dismissed summary:hover {
+  color: var(--color-accent);
+}
+
+.criterion-findings__dismissed .criterion-findings__group {
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
 }
 </style>
