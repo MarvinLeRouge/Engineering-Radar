@@ -3,11 +3,11 @@
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from radar_core.observability import SENTRY_DATA_COLLECTION
 from sentry_sdk.envelope import Envelope
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.transport import Transport
 
-from radar_api.observability import SENTRY_DATA_COLLECTION
 
 def test_fastapi_unhandled_exception_is_captured():
     """An unhandled FastAPI exception must produce a Sentry event."""
@@ -45,9 +45,7 @@ def test_fastapi_unhandled_exception_is_captured():
         sentry_sdk.flush(timeout=2)
 
         events = [
-            event
-            for envelope in captured_envelopes
-            if (event := envelope.get_event()) is not None
+            event for envelope in captured_envelopes if (event := envelope.get_event()) is not None
         ]
 
         assert len(events) >= 1
@@ -59,10 +57,7 @@ def test_fastapi_unhandled_exception_is_captured():
 
         exception_values = events[0]["exception"]["values"]
         assert exception_values[0]["type"] == "RuntimeError"
-        assert (
-            exception_values[0]["value"]
-            == "Expected Sentry integration test exception"
-        )
+        assert exception_values[0]["value"] == "Expected Sentry integration test exception"
     finally:
         sentry_sdk.flush(timeout=2)
         sentry_sdk.init(dsn="")

@@ -1,10 +1,9 @@
-"""Unit tests for application observability configuration."""
+"""Unit tests for the shared Sentry error tracking setup."""
 
 from unittest.mock import Mock
 
-from radar_api import observability
+from radar_core import observability
 
-from radar_api.observability import SENTRY_DATA_COLLECTION
 
 def test_init_error_tracking_without_dsn(monkeypatch):
     """Sentry must remain disabled when no DSN is configured."""
@@ -58,6 +57,7 @@ def test_init_error_tracking_uses_configured_environment(monkeypatch):
         data_collection=observability.SENTRY_DATA_COLLECTION,
         traces_sample_rate=0.0,
     )
+
 
 def test_init_error_tracking_with_blank_environment(monkeypatch):
     """Sentry must default to development when the environment is blank."""

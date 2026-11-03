@@ -903,6 +903,7 @@ dependencies = [
     { name = "pathspec" },
     { name = "pyyaml" },
     { name = "radar-core" },
+    { name = "sentry-sdk" },
     { name = "typer" },
 ]
 
@@ -922,6 +923,7 @@ requires-dist = [
     { name = "pathspec", specifier = ">=0.12" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "radar-core", editable = "radar-core" },
+    { name = "sentry-sdk", specifier = ">=2.73.0" },
     { name = "typer", specifier = ">=0.12" },
 ]
 
@@ -941,6 +943,7 @@ version = "0.1.0"
 source = { editable = "radar-core" }
 dependencies = [
     { name = "alembic" },
+    { name = "sentry-sdk" },
     { name = "sqlmodel" },
 ]
 
@@ -955,6 +958,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.13" },
+    { name = "sentry-sdk", specifier = ">=2.73.0" },
     { name = "sqlmodel", specifier = ">=0.0.22" },
 ]
 

@@ -6,8 +6,10 @@ import os
 from pathlib import Path
 from subprocess import CalledProcessError
 
+import sentry_sdk
 import typer
 from radar_core.db import get_engine, get_session
+from radar_core.observability import init_error_tracking
 
 from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, planned_runs
@@ -213,5 +215,16 @@ def report(
         raise typer.Exit(1) from exc
 
 
+def entrypoint() -> None:
+    """Console-script entry point: run the CLI, reporting unexpected crashes to Sentry."""
+    init_error_tracking()
+    try:
+        app()
+    # Typer swaps sys.excepthook on every call, so Sentry's own hook never fires.
+    except Exception:
+        sentry_sdk.capture_exception()
+        raise
+
+
 if __name__ == "__main__":
-    app()
+    entrypoint()

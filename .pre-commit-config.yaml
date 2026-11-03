@@ -5,9 +5,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        files: ^(radar-core|radar-audit)/
+        files: ^(radar-core|radar-audit|radar-api)/
       - id: ruff-format
-        files: ^(radar-core|radar-audit)/
+        files: ^(radar-core|radar-audit|radar-api)/
   - repo: local
     hooks:
       - id: mypy-radar-core
@@ -21,6 +21,12 @@ repos:
         entry: uv run --package radar-audit mypy radar-audit/src/radar_audit
         language: system
         files: ^radar-audit/src/
+        pass_filenames: false
+      - id: mypy-radar-api
+        name: mypy (radar-api)
+        entry: uv run --package radar-api mypy radar-api/src/radar_api
+        language: system
+        files: ^radar-api/src/
         pass_filenames: false
       - id: changelog
         name: Update CHANGELOG.md (git-cliff)
