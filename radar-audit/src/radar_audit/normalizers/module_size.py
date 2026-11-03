@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _RELEVANT_TOOLS = {"radon-raw", "static-loc-count"}
 # Provisional threshold, not yet calibrated against the real portfolio (see spec §7/§9).
@@ -37,7 +37,7 @@ def normalize_module_size(
                 covered += 1
             else:
                 severity = FindingSeverity.LOW
-                add_finding_with_recommendation(
+                finding = add_finding_with_recommendation(
                     session,
                     Finding(
                         scoring_run_id=scoring_run.id,
@@ -62,6 +62,8 @@ def normalize_module_size(
                     ),
                     f"Split {file_path} into smaller, more focused modules.",
                 )
+                if is_dismissed(session, finding):
+                    covered += 1
 
     if applicable == 0:
         return None

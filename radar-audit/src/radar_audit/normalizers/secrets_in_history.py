@@ -13,7 +13,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, has_success_payload
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    has_success_payload,
+    is_dismissed,
+)
 
 _RECOMMENDATION_TEXT = (
     "Rotate the exposed secret and purge it from git history, then move it to a secret manager."
@@ -42,14 +46,15 @@ def _add_secret_finding(
     criterion: Criterion,
     tool_result: ToolResult,
     finding: dict[str, Any],
-) -> bool:
+) -> bool | None:
+    """Add the finding; return whether it is pre-filtered, or None if a human dismissed it."""
     pre_filtered = _is_pre_filtered(finding)
     # "match" is the actual matched secret text -- the only field that
     # distinguishes two findings for the same rule in the same file
     # (gitleaks' "match"/"secret" fields, unlike line numbers, are
     # stable across unrelated edits elsewhere in the file).
     label = f"{finding['rule']}: {finding['match']}"
-    add_finding_with_recommendation(
+    added = add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,
@@ -68,7 +73,7 @@ def _add_secret_finding(
         ),
         _RECOMMENDATION_TEXT,
     )
-    return pre_filtered
+    return None if is_dismissed(session, added) else pre_filtered
 
 
 def _score_value(any_confirmed: bool, any_pre_filtered: bool) -> float:
@@ -101,6 +106,8 @@ def normalize_secrets_in_history(
             pre_filtered = _add_secret_finding(
                 session, scoring_run, criterion, tool_result, finding
             )
+            if pre_filtered is None:
+                continue
             if pre_filtered:
                 any_pre_filtered = True
             else:

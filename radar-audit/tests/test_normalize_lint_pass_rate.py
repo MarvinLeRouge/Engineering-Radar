@@ -6,6 +6,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _make_audit(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -188,3 +190,100 @@ def test_lowers_score_and_adds_findings_for_pint_failures(db_session):
         select(Recommendation).where(Recommendation.finding_id == findings[0].id)
     ).all()
     assert len(recommendations) == 1
+
+
+def test_file_whose_findings_are_all_false_positives_counts_as_clean_ruff(db_session):
+    test_lowers_score_and_adds_findings_for_ruff_violations(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_lint_pass_rate, lambda f: True)
+
+    assert score.value == 10.0
+
+
+def test_file_whose_findings_are_all_false_positives_counts_as_clean_eslint(db_session):
+    test_lowers_score_and_adds_a_finding_with_a_recommendation_for_eslint_violations(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_lint_pass_rate, lambda f: True)
+
+    assert score.value == 10.0
+
+
+def test_file_whose_findings_are_all_false_positives_counts_as_clean_pint(db_session):
+    test_lowers_score_and_adds_findings_for_pint_failures(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_lint_pass_rate, lambda f: True)
+
+    assert score.value == 10.0
+
+
+def test_file_with_one_remaining_real_violation_stays_flagged(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="ruff-check",
+        tool_version="1.0.0",
+        subproject_path="backend",
+        command="stub",
+        raw_output={
+            "violations": [
+                {
+                    "filename": "a.py",
+                    "code": "F401",
+                    "message": "unused import",
+                    "location": {"row": 1, "column": 1},
+                },
+                {
+                    "filename": "a.py",
+                    "code": "E711",
+                    "message": "comparison to None",
+                    "location": {"row": 2, "column": 1},
+                },
+            ],
+            "total_files": 2,
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+    normalize_lint_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    score = rescore_after_dismissing(
+        db_session, normalize_lint_pass_rate, lambda f: f.description.startswith("F401")
+    )
+
+    assert score.value == 5.0
+
+
+def test_eslint_file_counts_clean_once_its_errors_are_dismissed_despite_warnings(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = ToolResult(
+        audit_id=audit.id,
+        tool_name="eslint",
+        tool_version="9.0.0",
+        subproject_path="frontend",
+        command="stub",
+        raw_output={
+            "results": [
+                {
+                    "filePath": "a.js",
+                    "errorCount": 1,
+                    "messages": [
+                        {"ruleId": "no-undef", "message": "x undefined", "line": 1, "severity": 2},
+                        {"ruleId": "no-console", "message": "console", "line": 2, "severity": 1},
+                    ],
+                },
+            ],
+        },
+        exit_code=1,
+        duration_ms=10,
+    )
+    db_session.add(tool_result)
+    db_session.commit()
+    normalize_lint_pass_rate(db_session, scoring_run, criterion, [tool_result])
+
+    score = rescore_after_dismissing(
+        db_session, normalize_lint_pass_rate, lambda f: f.description.startswith("no-undef")
+    )
+
+    assert score.value == 10.0

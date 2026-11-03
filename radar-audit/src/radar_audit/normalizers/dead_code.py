@@ -16,6 +16,7 @@ from sqlmodel import Session
 from radar_audit.normalizers.shared import (
     add_finding_with_recommendation,
     get_repository_path,
+    is_dismissed,
     read_source_line,
 )
 
@@ -83,10 +84,14 @@ def _score_tool_result(
     tool_result: ToolResult,
     repo_path: Path,
 ) -> tuple[float, Confidence]:
-    items = _extract_items(tool_result)
-    for item in items:
-        _add_dead_code_finding(session, scoring_run, criterion, tool_result, item, repo_path)
-    return _band_value(len(items)), _confidence_for_tool(tool_result.tool_name)
+    counted = 0
+    for item in _extract_items(tool_result):
+        finding = _add_dead_code_finding(
+            session, scoring_run, criterion, tool_result, item, repo_path
+        )
+        if not is_dismissed(session, finding):
+            counted += 1
+    return _band_value(counted), _confidence_for_tool(tool_result.tool_name)
 
 
 def _add_dead_code_finding(
@@ -96,10 +101,10 @@ def _add_dead_code_finding(
     tool_result: ToolResult,
     item: dict[str, Any],
     repo_path: Path,
-) -> None:
+) -> Finding:
     label = _label_for_item(tool_result.tool_name, item, repo_path)
     severity = FindingSeverity.LOW
-    add_finding_with_recommendation(
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _RELEVANT_TOOLS = {"ruff-check", "eslint", "pint"}
 _USABLE_EXIT_CODES = {0, 1}
@@ -74,10 +74,10 @@ def _score_ruff(
 ) -> tuple[int, int]:
     applicable = tool_result.raw_output.get("total_files", 0)
     violations = tool_result.raw_output.get("violations", [])
-    flagged_files = {v["filename"] for v in violations}
+    flagged_files = set()
     for violation in violations:
         description = f"{violation['code']}: {violation['message']}"
-        _add_finding(
+        finding = _add_finding(
             session,
             scoring_run,
             criterion,
@@ -86,6 +86,8 @@ def _score_ruff(
             file=violation["filename"],
             line=violation["location"]["row"],
         )
+        if not is_dismissed(session, finding):
+            flagged_files.add(violation["filename"])
     return applicable - len(flagged_files), applicable
 
 
@@ -99,8 +101,12 @@ def _score_eslint(
         if entry["errorCount"] == 0:
             covered += 1
             continue
-        for message in entry["messages"]:
-            _add_finding(
+        # Only error-level messages (eslint severity 2) make a file fail; an errored
+        # file with no error message to dismiss stays flagged.
+        is_error = [message.get("severity", 2) == 2 for message in entry["messages"]]
+        flagged = not any(is_error)
+        for message, message_is_error in zip(entry["messages"], is_error, strict=True):
+            finding = _add_finding(
                 session,
                 scoring_run,
                 criterion,
@@ -109,6 +115,9 @@ def _score_eslint(
                 file=entry["filePath"],
                 line=message.get("line"),
             )
+            flagged = flagged or (message_is_error and not is_dismissed(session, finding))
+        if not flagged:
+            covered += 1
     return covered, applicable
 
 
@@ -118,8 +127,9 @@ def _score_pint(
     if tool_result.raw_output.get("result") == "passed":
         return 1, 1  # single subproject-level pass/fail signal, no per-file breakdown available
     files = tool_result.raw_output.get("files", [])
+    flagged = not files
     for entry in files:
-        _add_finding(
+        finding = _add_finding(
             session,
             scoring_run,
             criterion,
@@ -127,7 +137,8 @@ def _score_pint(
             "file does not conform to the project's Pint style",
             file=entry.get("path"),
         )
-    return 0, 1
+        flagged = flagged or not is_dismissed(session, finding)
+    return (0, 1) if flagged else (1, 1)
 
 
 def _add_finding(
@@ -138,8 +149,8 @@ def _add_finding(
     description: str,
     file: str | None = None,
     line: int | None = None,
-) -> None:
-    add_finding_with_recommendation(
+) -> Finding:
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

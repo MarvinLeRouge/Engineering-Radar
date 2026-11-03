@@ -8,6 +8,8 @@ from radar_core.models.finding import Finding
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -342,3 +344,11 @@ def test_unusable_result_does_not_mask_a_usable_one(db_session):
     assert score is not None
     assert score.value == 6.0
     assert score.confidence == Confidence.HIGH
+
+
+def test_false_positives_no_longer_weigh_on_the_score(db_session):
+    test_scores_two_above_ten_outliers(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_complexity_hotspots, lambda f: True)
+
+    assert score.value == 10.0

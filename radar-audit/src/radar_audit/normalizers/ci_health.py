@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _USABLE_EXIT_CODES = {0, 1}
 _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (3, 8.0), (8, 6.0), (15, 4.0))
@@ -41,10 +41,11 @@ def normalize_ci_health(
     tool_result = relevant[0]
     findings_payload = tool_result.raw_output["findings"]
 
+    counted = 0
     for finding in findings_payload:
         description = finding.get("message", "actionlint finding")
         file = finding.get("filepath")
-        add_finding_with_recommendation(
+        added = add_finding_with_recommendation(
             session,
             Finding(
                 scoring_run_id=scoring_run.id,
@@ -63,12 +64,14 @@ def normalize_ci_health(
             ),
             _RECOMMENDATION_TEXT,
         )
+        if not is_dismissed(session, added):
+            counted += 1
 
     score = Score(
         scoring_run_id=scoring_run.id,
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
-        value=_band_value(len(findings_payload)),
+        value=_band_value(counted),
         confidence=Confidence.HIGH,
     )
     session.add(score)

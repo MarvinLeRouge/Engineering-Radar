@@ -17,6 +17,7 @@ from radar_audit.normalizers.shared import (
     add_finding_with_recommendation,
     get_repository_path,
     has_success_payload,
+    is_dismissed,
     read_source_line,
 )
 
@@ -74,9 +75,11 @@ def _process_dockerfile_findings(
     for finding in findings:
         raw_severity = finding.get("level", "")
         severity = _RAW_SEVERITY_MAP.get(raw_severity, "MEDIUM")
-        _add_dockerfile_finding(
+        added = _add_dockerfile_finding(
             session, scoring_run, criterion, tool_result, repo_path, entry, finding, severity
         )
+        if is_dismissed(session, added):
+            continue
         if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
             worst = severity
     return worst
@@ -91,7 +94,7 @@ def _add_dockerfile_finding(
     entry: dict[str, Any],
     finding: dict[str, Any],
     severity: str,
-) -> None:
+) -> Finding:
     resolved_severity = _SEVERITY_ENUM.get(severity, FindingSeverity.MEDIUM)
     file = entry["path"]
     line = finding.get("line")
@@ -100,7 +103,7 @@ def _add_dockerfile_finding(
     # text, which survives unrelated edits elsewhere in the file.
     source_line = read_source_line(repo_path, file, line)
     label = f"{finding['code']}: {source_line or ''}"
-    add_finding_with_recommendation(
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

@@ -7,6 +7,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -437,3 +439,11 @@ def test_two_phpmd_unused_private_methods_in_different_classes_get_different_fin
     findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
     assert len(findings) == 2
     assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_false_positives_no_longer_weigh_on_the_score(db_session):
+    test_scores_two_above_fifteen_findings(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_dead_code, lambda f: True)
+
+    assert score.value == 10.0

@@ -81,6 +81,23 @@ CRASHED_EXIT_CODE = -1
 DESIGN_DOC_NON_TRIVIAL_LINE_THRESHOLD = 30
 
 
+_DISMISSED_FINGERPRINTS_KEY = "radar_dismissed_fingerprints"
+
+
+def set_dismissed_fingerprints(session: Session, fingerprints: set[str]) -> None:
+    """Record the fingerprints a human marked FALSE_POSITIVE, read by `is_dismissed`."""
+    session.info[_DISMISSED_FINGERPRINTS_KEY] = frozenset(fingerprints)
+
+
+def is_dismissed(session: Session, finding: Finding) -> bool:
+    """Tell whether a finding was marked FALSE_POSITIVE and must not weigh on its score.
+
+    The finding is still created so the verdict stays visible and reversible.
+    """
+    dismissed: frozenset[str] = session.info.get(_DISMISSED_FINGERPRINTS_KEY, frozenset())
+    return finding.fingerprint in dismissed
+
+
 def add_finding_with_recommendation(
     session: Session, finding: Finding, recommendation_text: str
 ) -> Finding:

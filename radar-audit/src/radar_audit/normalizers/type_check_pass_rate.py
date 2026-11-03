@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 _RELEVANT_TOOLS = {"mypy", "tsc", "phpstan"}
 _USABLE_EXIT_CODES = {0, 1}
@@ -74,9 +74,9 @@ def _score_diagnostics_tool(
     # (typescript_runner.py's regex parser) never populate that key at all
     # since every line it captures is already a real error. Whitelisting
     # "error" would silently zero out every tsc diagnostic instead.
-    flagged_files = {d["file"] for d in diagnostics if d.get("severity") != "note"}
+    flagged_files = set()
     for diagnostic in diagnostics:
-        _add_finding(
+        finding = _add_finding(
             session,
             scoring_run,
             criterion,
@@ -85,6 +85,8 @@ def _score_diagnostics_tool(
             file=diagnostic["file"],
             line=diagnostic.get("line"),
         )
+        if diagnostic.get("severity") != "note" and not is_dismissed(session, finding):
+            flagged_files.add(diagnostic["file"])
     return applicable - len(flagged_files), applicable
 
 
@@ -93,9 +95,13 @@ def _score_phpstan(
 ) -> tuple[int, int]:
     files_with_errors = tool_result.raw_output.get("files", {})
     total_errors = tool_result.raw_output.get("totals", {}).get("file_errors", 0)
+    live_files = set()
     for file_path, entry in files_with_errors.items():
-        for message in entry.get("messages", []):
-            _add_finding(
+        messages = entry.get("messages", [])
+        if not messages:
+            live_files.add(file_path)
+        for message in messages:
+            finding = _add_finding(
                 session,
                 scoring_run,
                 criterion,
@@ -104,12 +110,16 @@ def _score_phpstan(
                 file=file_path,
                 line=message.get("line"),
             )
+            if not is_dismissed(session, finding):
+                live_files.add(file_path)
     # PHPStan's JSON only lists files WITH errors; the clean-file count isn't
     # directly available, so treat "no errors" as the applicable=covered=1 signal
     # and each errored file as one uncovered unit against the same denominator.
     if total_errors == 0:
         return 1, 1
-    return 0, len(files_with_errors) or 1
+    if not files_with_errors:
+        return 0, 1
+    return len(files_with_errors) - len(live_files), len(files_with_errors)
 
 
 def _add_finding(
@@ -120,8 +130,8 @@ def _add_finding(
     description: str,
     file: str | None = None,
     line: int | None = None,
-) -> None:
-    add_finding_with_recommendation(
+) -> Finding:
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

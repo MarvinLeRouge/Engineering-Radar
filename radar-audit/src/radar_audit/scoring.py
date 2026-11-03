@@ -16,7 +16,11 @@ from sqlalchemy import desc
 from sqlmodel import Session, select
 
 from radar_audit.normalizers import CRITERION_NORMALIZERS
-from radar_audit.normalizers.shared import get_criterion, get_or_create_scoring_run
+from radar_audit.normalizers.shared import (
+    get_criterion,
+    get_or_create_scoring_run,
+    set_dismissed_fingerprints,
+)
 from radar_audit.roadmap_promotion import promote_improvement_tasks
 from radar_audit.taxonomy.seed import seed_taxonomy
 
@@ -60,10 +64,31 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     methodology_version = seed_taxonomy(session)
     scoring_run = get_or_create_scoring_run(session, audit, methodology_version)
 
+    carried_verdicts = _collect_carried_verdicts(session, repository)
+    set_dismissed_fingerprints(
+        session,
+        {
+            fingerprint
+            for fingerprint, (_, verdict) in carried_verdicts.items()
+            if verdict == HumanVerdict.FALSE_POSITIVE
+        },
+    )
+    try:
+        return _score_run(session, audit, methodology_version, scoring_run, carried_verdicts)
+    finally:
+        set_dismissed_fingerprints(session, set())
+
+
+def _score_run(
+    session: Session,
+    audit: Audit,
+    methodology_version: MethodologyVersion,
+    scoring_run: ScoringRun,
+    carried_verdicts: dict[str, tuple[FindingStatus, HumanVerdict]],
+) -> ScoringRun:
     existing_findings = session.exec(
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
     ).all()
-    carried_verdicts = _collect_carried_verdicts(session, repository)
     _wipe_scoring_run_data(session, scoring_run, existing_findings)
 
     scoring_run.scored_at = datetime.now(UTC)
@@ -167,13 +192,17 @@ def _collect_carried_verdicts(
         .where(Audit.repository_id == repository.id)
         .order_by(ScoringRun.scored_at)  # type: ignore[arg-type]
     ).all()
-    return {
+    latest = {
         finding.fingerprint: (finding.status, finding.human_verdict)
         for finding in historical_findings
         if finding.fingerprint is not None
-        and (
-            finding.status != FindingStatus.OPEN or finding.human_verdict != HumanVerdict.UNREVIEWED
-        )
+    }
+    # Filter only after last-write-wins: a verdict reverted to OPEN/UNREVIEWED on a
+    # later run must override the older human verdict, not be skipped in favor of it.
+    return {
+        fingerprint: verdict
+        for fingerprint, verdict in latest.items()
+        if verdict != (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
     }
 
 

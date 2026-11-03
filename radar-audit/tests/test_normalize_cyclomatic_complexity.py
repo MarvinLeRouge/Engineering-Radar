@@ -7,6 +7,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -448,3 +450,11 @@ def test_two_phpmd_codesize_violations_on_different_classes_get_different_finger
     ).all()
     assert len(findings) == 2
     assert findings[0].fingerprint != findings[1].fingerprint
+
+
+def test_false_positives_no_longer_weigh_on_the_score(db_session):
+    test_creates_a_finding_for_every_violating_function_not_just_the_worst(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_cyclomatic_complexity, lambda f: True)
+
+    assert score.value == 10.0

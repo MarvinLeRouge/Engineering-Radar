@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
 
 # pytest-cov's exit code 5 ("no tests collected") is still a usable, successful run --
 # its tests.total is naturally 0 and contributes nothing to the summed ratio. exit 127
@@ -98,7 +98,10 @@ def _process_tool_result(
         _add_abnormal_exit_finding(session, scoring_run, criterion, tool_result, tests)
 
     for failure in tool_result.raw_output.get("failures", []):
-        _add_failure_finding(session, scoring_run, criterion, tool_result, failure)
+        finding = _add_failure_finding(session, scoring_run, criterion, tool_result, failure)
+        # A failure judged a false positive counts as a pass.
+        if is_dismissed(session, finding):
+            passed = min(passed + 1, collected)
 
     coverage_percent = tool_result.raw_output.get("coverage_percent")
     if coverage_percent is not None and coverage_percent < _COVERAGE_FLOOR:
@@ -181,12 +184,12 @@ def _add_failure_finding(
     criterion: Criterion,
     tool_result: ToolResult,
     failure: dict[str, object],
-) -> None:
+) -> Finding:
     name = failure.get("name") or "unknown test"
     file = failure.get("file")
     file = file if isinstance(file, str) else None
     description = f"Failing test: {name}"
-    add_finding_with_recommendation(
+    return add_finding_with_recommendation(
         session,
         Finding(
             scoring_run_id=scoring_run.id,

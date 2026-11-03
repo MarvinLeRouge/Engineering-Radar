@@ -7,6 +7,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture")
@@ -173,3 +175,19 @@ def test_tsc_diagnostic_without_severity_key_still_lowers_score(db_session):
 
     assert score is not None
     assert score.value == 0.0
+
+
+def test_file_whose_findings_are_all_false_positives_counts_as_clean_phpstan(db_session):
+    test_lowers_score_and_adds_findings_for_phpstan_errors(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_type_check_pass_rate, lambda f: True)
+
+    assert score.value == 10.0
+
+
+def test_file_whose_findings_are_all_false_positives_counts_as_clean_mypy(db_session):
+    test_error_diagnostic_still_lowers_score(db_session)
+
+    score = rescore_after_dismissing(db_session, normalize_type_check_pass_rate, lambda f: True)
+
+    assert score.value == 10.0

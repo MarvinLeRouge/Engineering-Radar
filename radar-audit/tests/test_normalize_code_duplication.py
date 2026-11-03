@@ -6,6 +6,8 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.repository import Repository
 from sqlmodel import select
 
+from tests.finding_helpers import rescore_after_dismissing
+
 
 def _setup(db_session):
     repo = Repository(name="fixture", path="/tmp/fixture-code-duplication")
@@ -177,3 +179,27 @@ def test_finding_magnitude_is_the_duplicated_line_count(db_session):
     ).all()
     assert len(findings) == 1
     assert findings[0].magnitude == 20.0
+
+
+def test_dismissed_duplicate_lines_are_removed_from_the_percentage(db_session):
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _jscpd_result(
+        audit.id,
+        15.0,
+        [
+            {
+                "firstFile": {"name": "a.js", "start": 1, "end": 20},
+                "secondFile": {"name": "b.js", "start": 1, "end": 20},
+                "fragment": "x",
+            }
+        ],
+    )
+    tool_result.raw_output["statistics"]["total"].update({"lines": 200, "duplicatedLines": 30})
+    db_session.add(tool_result)
+    db_session.commit()
+    normalize_code_duplication(db_session, scoring_run, criterion, [tool_result])
+
+    score = rescore_after_dismissing(db_session, normalize_code_duplication, lambda f: True)
+
+    # 30 - 20 dismissed lines = 10 of 200 lines, i.e. 5%.
+    assert score.value == 6.0

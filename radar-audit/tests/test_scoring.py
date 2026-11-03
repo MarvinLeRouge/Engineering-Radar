@@ -506,3 +506,115 @@ def test_every_sub_ten_scored_criterion_is_explained_by_a_finding(db_session, tm
         if not has_recommendation:
             unexplained.append(db_session.get(Criterion, score.criterion_id).name)
     assert unexplained == []
+
+
+def test_false_positive_verdict_is_known_to_normalizers_on_the_next_score(
+    db_session, tmp_path, monkeypatch
+):
+    from radar_audit.normalizers.shared import is_dismissed
+    from radar_core.enums import HumanVerdict
+
+    _audited_repo(db_session, tmp_path, files={"x.py": "x = 1\n"})
+    first_run = score_repository(db_session, "repo")
+    finding = db_session.exec(select(Finding).where(Finding.scoring_run_id == first_run.id)).first()
+    assert finding is not None
+    finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(finding)
+    db_session.commit()
+    fingerprint = finding.fingerprint
+
+    second_run = score_repository(db_session, "repo")
+
+    rescored = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == second_run.id, Finding.fingerprint == fingerprint
+        )
+    ).one()
+    assert rescored.human_verdict == HumanVerdict.FALSE_POSITIVE
+    seen = []
+    monkeypatch.setattr(
+        "radar_audit.scoring._score_run",
+        lambda session, *args: seen.append(is_dismissed(session, rescored)) or second_run,
+    )
+    score_repository(db_session, "repo")
+    assert seen == [True]
+
+
+def _new_commit_and_score(db_session, tmp_path, marker):
+    import subprocess
+
+    repo_path = tmp_path / "repo"
+    (repo_path / f"{marker}.txt").write_text(marker)
+    subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+    subprocess.run(["git", "commit", "-qm", marker], cwd=repo_path, check=True)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+    return score_repository(db_session, "repo")
+
+
+def test_reverting_a_carried_false_positive_sticks_on_the_next_audit(db_session, tmp_path):
+    from radar_audit.normalizers.shared import is_dismissed, set_dismissed_fingerprints
+    from radar_core.enums import HumanVerdict
+
+    _audited_repo(db_session, tmp_path, files={"x.py": "x = 1\n"})
+    run_a = score_repository(db_session, "repo")
+    finding = db_session.exec(select(Finding).where(Finding.scoring_run_id == run_a.id)).first()
+    assert finding is not None
+    fingerprint = finding.fingerprint
+    finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(finding)
+    db_session.commit()
+
+    run_b = _new_commit_and_score(db_session, tmp_path, "b")
+    carried = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == run_b.id, Finding.fingerprint == fingerprint
+        )
+    ).one()
+    assert carried.human_verdict == HumanVerdict.FALSE_POSITIVE
+    carried.human_verdict = HumanVerdict.UNREVIEWED
+    db_session.add(carried)
+    db_session.commit()
+
+    run_c = _new_commit_and_score(db_session, tmp_path, "c")
+
+    latest = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == run_c.id, Finding.fingerprint == fingerprint
+        )
+    ).one()
+    assert latest.human_verdict == HumanVerdict.UNREVIEWED
+    from radar_audit.scoring import _collect_carried_verdicts
+    from radar_core.models.repository import Repository
+
+    repository = db_session.exec(select(Repository).where(Repository.name == "repo")).one()
+    set_dismissed_fingerprints(
+        db_session,
+        {
+            fp
+            for fp, (_, verdict) in _collect_carried_verdicts(db_session, repository).items()
+            if verdict == HumanVerdict.FALSE_POSITIVE
+        },
+    )
+    assert not is_dismissed(db_session, latest)
+
+
+def test_dismissed_fingerprints_are_cleared_after_scoring(db_session, tmp_path):
+    from radar_audit.normalizers.shared import is_dismissed
+    from radar_core.enums import HumanVerdict
+
+    _audited_repo(db_session, tmp_path, files={"x.py": "x = 1\n"})
+    run = score_repository(db_session, "repo")
+    finding = db_session.exec(select(Finding).where(Finding.scoring_run_id == run.id)).first()
+    assert finding is not None
+    finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    db_session.add(finding)
+    db_session.commit()
+    fingerprint = finding.fingerprint
+
+    run = score_repository(db_session, "repo")
+
+    rescored = db_session.exec(
+        select(Finding).where(Finding.scoring_run_id == run.id, Finding.fingerprint == fingerprint)
+    ).one()
+    assert not is_dismissed(db_session, rescored)
