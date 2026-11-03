@@ -1,8 +1,16 @@
 from datetime import datetime
 
-from radar_core.enums import Confidence, ScoreLevel
+from radar_core.enums import (
+    Confidence,
+    FindingSeverity,
+    FindingStatus,
+    HumanVerdict,
+    ScoreLevel,
+    ScoringModel,
+)
 from radar_core.models.audit import Audit
-from radar_core.models.methodology import Category, MethodologyVersion
+from radar_core.models.finding import Finding
+from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
 
@@ -164,3 +172,84 @@ def test_score_history_does_not_leak_categories_across_methodology_versions(clie
     body = response.json()
     assert body[0]["categories"] == [{"id": old_category.id, "name": "Old category", "value": 5.0}]
     assert body[1]["categories"] == [{"id": new_category.id, "name": "New category", "value": 6.0}]
+
+
+def _add_findings(db_session, scoring_run, severity, count, **overrides):
+    category = _make_category(db_session, scoring_run.methodology_version_id, f"c-{severity}", 99)
+    criterion = Criterion(
+        category_id=category.id,
+        name="crit",
+        description="...",
+        weight=1.0,
+        scoring_model=ScoringModel.FIXED_SCALE,
+    )
+    db_session.add(criterion)
+    db_session.commit()
+    db_session.refresh(criterion)
+    for _ in range(count):
+        db_session.add(
+            Finding(
+                scoring_run_id=scoring_run.id,
+                criterion_id=criterion.id,
+                severity=severity,
+                description="issue",
+                confidence=Confidence.HIGH,
+                **overrides,
+            )
+        )
+    db_session.commit()
+
+
+def test_score_history_reports_weighted_risk_per_severity(client, db_session):
+    repo = _make_repository(db_session)
+    _, run = _make_scoring_run(db_session, repo, "a" * 40, "2026-01-01T00:00:00", 5.0)
+    _add_findings(db_session, run, FindingSeverity.CRITICAL, 2)
+    _add_findings(db_session, run, FindingSeverity.LOW, 3)
+
+    point = client.get(f"/repositories/{repo.id}/score-history").json()[0]
+
+    risk = {entry["severity"]: entry for entry in point["risk"]}
+    assert list(risk) == ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    assert risk["CRITICAL"] == {
+        "severity": "CRITICAL",
+        "weight": 64,
+        "count": 2,
+        "excluded": 0,
+        "weighted": 128,
+    }
+    assert risk["HIGH"]["count"] == 0
+    assert risk["LOW"]["weighted"] == 3
+    assert point["risk_index"] == 131
+
+
+def test_score_history_risk_excludes_closed_and_false_positive_findings(client, db_session):
+    repo = _make_repository(db_session)
+    _, run = _make_scoring_run(db_session, repo, "a" * 40, "2026-01-01T00:00:00", 5.0)
+    _add_findings(db_session, run, FindingSeverity.HIGH, 1)
+    _add_findings(db_session, run, FindingSeverity.HIGH, 1, status=FindingStatus.RESOLVED)
+    _add_findings(db_session, run, FindingSeverity.HIGH, 1, status=FindingStatus.WONT_FIX)
+    _add_findings(
+        db_session, run, FindingSeverity.HIGH, 1, human_verdict=HumanVerdict.FALSE_POSITIVE
+    )
+
+    point = client.get(f"/repositories/{repo.id}/score-history").json()[0]
+
+    high = next(entry for entry in point["risk"] if entry["severity"] == "HIGH")
+    assert high == {
+        "severity": "HIGH",
+        "weight": 16,
+        "count": 1,
+        "excluded": 3,
+        "weighted": 16,
+    }
+    assert point["risk_index"] == 16
+
+
+def test_score_history_risk_is_zero_without_findings(client, db_session):
+    repo = _make_repository(db_session)
+    _make_scoring_run(db_session, repo, "a" * 40, "2026-01-01T00:00:00", 5.0)
+
+    point = client.get(f"/repositories/{repo.id}/score-history").json()[0]
+
+    assert point["risk_index"] == 0
+    assert all(entry["count"] == 0 for entry in point["risk"])

@@ -15,8 +15,22 @@ class CategoryScorePoint(BaseModel):
     value: float | None
 
 
+class SeverityRiskPoint(BaseModel):
+    """Findings of one severity at a scoring run and their weighted risk.
+
+    `count` covers OPEN findings not marked FALSE_POSITIVE and `excluded` the rest;
+    `weighted` is `count` times the severity's risk `weight`.
+    """
+
+    severity: str
+    weight: int
+    count: int
+    excluded: int
+    weighted: int
+
+
 class ScoreHistoryPoint(BaseModel):
-    """One scoring run of a repository with its global and per-category scores."""
+    """One scoring run of a repository: global and per-category scores, and weighted risk."""
 
     scoring_run_id: int
     audit_id: int
@@ -24,3 +38,5 @@ class ScoreHistoryPoint(BaseModel):
     scored_at: datetime
     global_score: float | None
     categories: list[CategoryScorePoint]
+    risk: list[SeverityRiskPoint]
+    risk_index: int

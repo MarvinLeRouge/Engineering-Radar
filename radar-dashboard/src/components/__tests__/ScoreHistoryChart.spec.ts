@@ -29,6 +29,8 @@ function makePoint(
     scored_at: scoredAt,
     global_score: globalScore,
     categories,
+    risk: [],
+    risk_index: 0,
   }
 }
 

@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from radar_core.enums import ScoreLevel
+from radar_core.enums import (
+    SEVERITY_RISK_WEIGHT,
+    FindingSeverity,
+    FindingStatus,
+    HumanVerdict,
+    ScoreLevel,
+)
 from radar_core.models.audit import Audit
+from radar_core.models.finding import Finding
 from radar_core.models.methodology import Category
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
-from sqlalchemy import asc
+from sqlalchemy import asc, func
 from sqlmodel import Session, select
 
 from radar_api.dependencies import get_db_session
-from radar_api.schemas.history import CategoryScorePoint, ScoreHistoryPoint
+from radar_api.schemas.history import CategoryScorePoint, ScoreHistoryPoint, SeverityRiskPoint
 
 router = APIRouter(tags=["history"])
 
@@ -40,12 +47,41 @@ def _category_scores(session: Session, scoring_run: ScoringRun) -> list[Category
     ]
 
 
+_RISK_SEVERITIES = [s for s in FindingSeverity if SEVERITY_RISK_WEIGHT[s] > 0]
+
+
+def _risk(session: Session, scoring_run: ScoringRun) -> list[SeverityRiskPoint]:
+    rows = session.exec(
+        select(Finding.severity, Finding.status, Finding.human_verdict, func.count())
+        .where(Finding.scoring_run_id == scoring_run.id)
+        .group_by(Finding.severity, Finding.status, Finding.human_verdict)
+    ).all()
+    counted: dict[FindingSeverity, int] = {}
+    excluded: dict[FindingSeverity, int] = {}
+    for severity, status, verdict, total in rows:
+        is_counted = status == FindingStatus.OPEN and verdict != HumanVerdict.FALSE_POSITIVE
+        target = counted if is_counted else excluded
+        key = FindingSeverity(severity)
+        target[key] = target.get(key, 0) + total
+
+    return [
+        SeverityRiskPoint(
+            severity=severity.value,
+            weight=SEVERITY_RISK_WEIGHT[severity],
+            count=counted.get(severity, 0),
+            excluded=excluded.get(severity, 0),
+            weighted=counted.get(severity, 0) * SEVERITY_RISK_WEIGHT[severity],
+        )
+        for severity in _RISK_SEVERITIES
+    ]
+
+
 @router.get("/repositories/{repository_id}/score-history", response_model=list[ScoreHistoryPoint])
 def get_score_history(
     repository_id: int,
     session: Session = Depends(get_db_session),  # noqa: B008
 ) -> list[ScoreHistoryPoint]:
-    """Return one score history point per scoring run of a repository, oldest first."""
+    """Return one score history point per scoring run, oldest first, with its weighted risk."""
     repository = session.get(Repository, repository_id)
     if repository is None:
         raise HTTPException(status_code=404, detail="repository not found")
@@ -57,14 +93,19 @@ def get_score_history(
         .order_by(asc(ScoringRun.scored_at))  # type: ignore[arg-type]
     ).all()
 
-    return [
-        ScoreHistoryPoint(
-            scoring_run_id=scoring_run.id,  # type: ignore[arg-type]
-            audit_id=audit.id,  # type: ignore[arg-type]
-            commit_sha=audit.commit_sha,
-            scored_at=scoring_run.scored_at,
-            global_score=scoring_run.global_score,
-            categories=_category_scores(session, scoring_run),
+    points = []
+    for scoring_run, audit in rows:
+        risk = _risk(session, scoring_run)
+        points.append(
+            ScoreHistoryPoint(
+                scoring_run_id=scoring_run.id,  # type: ignore[arg-type]
+                audit_id=audit.id,  # type: ignore[arg-type]
+                commit_sha=audit.commit_sha,
+                scored_at=scoring_run.scored_at,
+                global_score=scoring_run.global_score,
+                categories=_category_scores(session, scoring_run),
+                risk=risk,
+                risk_index=sum(entry.weighted for entry in risk),
+            )
         )
-        for scoring_run, audit in rows
-    ]
+    return points

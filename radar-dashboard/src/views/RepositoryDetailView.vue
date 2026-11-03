@@ -89,7 +89,12 @@
       <p v-else-if="store.scoreHistoryError" class="repository-detail-view__error">
         {{ store.scoreHistoryError }}
       </p>
-      <ScoreHistoryChart v-else :points="store.scoreHistory" @select-point="showHistoricalReport" />
+      <template v-else>
+        <ScoreHistoryChart :points="store.scoreHistory" @select-point="showHistoricalReport" />
+        <RiskHistoryChart
+          v-if="store.scoreHistory.length > 1"
+          :points="store.scoreHistory" @select-point="showHistoricalReport" />
+      </template>
     </section>
   </div>
 </template>
@@ -102,6 +107,7 @@ import CriterionFindings from '@/components/CriterionFindings.vue'
 import ReportSeveritySummary from '@/components/ReportSeveritySummary.vue'
 import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
 import ScoreHistoryChart from '@/components/ScoreHistoryChart.vue'
+import RiskHistoryChart from '@/components/RiskHistoryChart.vue'
 import { useRepositoriesStore } from '@/stores/repositories'
 import { extractRepositoryId } from '@/utils/slugify'
 import { downloadRoadmapMarkdown } from '@/utils/roadmapMarkdown'

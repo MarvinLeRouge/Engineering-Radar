@@ -36,6 +36,17 @@ class FindingSeverity(StrEnum):
     INFO = "INFO"
 
 
+# Geometric (ratio 4) so a few high-severity findings outweigh a mass of low ones in
+# the risk index; INFO carries no risk. Distinct from roadmap priority's linear scale.
+SEVERITY_RISK_WEIGHT: dict[FindingSeverity, int] = {
+    FindingSeverity.CRITICAL: 64,
+    FindingSeverity.HIGH: 16,
+    FindingSeverity.MEDIUM: 4,
+    FindingSeverity.LOW: 1,
+    FindingSeverity.INFO: 0,
+}
+
+
 class FindingStatus(StrEnum):
     """Lifecycle status of a finding: open, resolved, or accepted as won't fix."""
 
