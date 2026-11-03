@@ -29,10 +29,10 @@ def _make_scoring_run_and_criterion(db_session):
     return audit, scoring_run, criterion
 
 
-def _make_tool_result(db_session, audit, raw_output):
+def _make_tool_result(db_session, audit, raw_output, subproject_path="."):
     tool_result = ToolResult(
         audit_id=audit.id,
-        subproject_path=".",
+        subproject_path=subproject_path,
         tool_name="trivy-image",
         tool_version="1.0.0",
         command="stub",
@@ -126,3 +126,19 @@ def test_false_positive_no_longer_weighs_on_the_score(db_session):
     )
 
     assert score.value == 10.0
+
+
+def test_same_vulnerability_in_two_images_gives_one_finding_per_image(db_session):
+    audit, scoring_run, criterion = _make_scoring_run_and_criterion(db_session)
+    vulnerable = {
+        "image_found": True,
+        "vulnerabilities": [{"id": "CVE-2024-1", "severity": "HIGH", "pkg": "openssl"}],
+    }
+    api = _make_tool_result(db_session, audit, vulnerable, subproject_path="radar-api")
+    cli = _make_tool_result(db_session, audit, vulnerable, subproject_path="radar-audit")
+
+    normalize_container_image_vulnerabilities(db_session, scoring_run, criterion, [api, cli])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert sorted(f.file for f in findings) == ["radar-api", "radar-audit"]
+    assert len({f.fingerprint for f in findings}) == 2

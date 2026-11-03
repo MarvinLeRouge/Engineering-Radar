@@ -5,7 +5,8 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
-from radar_core.enums import Confidence, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.links import FindingImprovementTaskLink
@@ -192,11 +193,12 @@ def _collect_carried_verdicts(
         .where(Audit.repository_id == repository.id)
         .order_by(ScoringRun.scored_at)  # type: ignore[arg-type]
     ).all()
-    latest = {
-        finding.fingerprint: (finding.status, finding.human_verdict)
-        for finding in historical_findings
-        if finding.fingerprint is not None
-    }
+    image_subprojects = _legacy_image_subprojects(session, repository)
+    latest: dict[str, tuple[FindingStatus, HumanVerdict]] = {}
+    for finding in historical_findings:
+        fingerprint = _current_fingerprint(finding, image_subprojects)
+        if fingerprint is not None:
+            latest[fingerprint] = (finding.status, finding.human_verdict)
     # Filter only after last-write-wins: a verdict reverted to OPEN/UNREVIEWED on a
     # later run must override the older human verdict, not be skipped in favor of it.
     return {
@@ -204,6 +206,36 @@ def _collect_carried_verdicts(
         for fingerprint, verdict in latest.items()
         if verdict != (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
     }
+
+
+def _legacy_image_subprojects(session: Session, repository: Repository) -> dict[int, str]:
+    """Map each fileless trivy-image finding of the repository to its image's subproject.
+
+    shortcut: container image findings stored before FIX-025 have no file and a
+    fingerprint without their image; drop this once every repository has been
+    re-scored, since the newer per-image rows then carry the verdicts.
+    """
+    rows = session.exec(
+        select(Finding.id, ToolResult.subproject_path)
+        .join(ToolResult, ToolResult.id == Finding.tool_result_id)  # type: ignore[arg-type]
+        .join(Audit, Audit.id == ToolResult.audit_id)  # type: ignore[arg-type]
+        .where(
+            Audit.repository_id == repository.id,
+            ToolResult.tool_name == "trivy-image",
+            Finding.file.is_(None),  # type: ignore[union-attr]
+        )
+    ).all()
+    return {finding_id: subproject for finding_id, subproject in rows if finding_id is not None}
+
+
+def _current_fingerprint(finding: Finding, image_subprojects: dict[int, str]) -> str | None:
+    """The finding's fingerprint, recomputed with its image for a pre-FIX-025 image finding."""
+    subproject = image_subprojects.get(finding.id) if finding.id is not None else None
+    if subproject is None:
+        return finding.fingerprint
+    return compute_fingerprint(
+        finding.criterion_id, FindingSeverity(finding.severity), subproject, finding.description
+    )
 
 
 def _carry_forward_human_verdicts(

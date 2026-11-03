@@ -261,6 +261,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Keep false positives out of count-based scores (FIX-023)
 - *(radar-audit)* Let a reverted false positive count again (FIX-023)
 - *(radar-dashboard)* Restore the production build broken by a spec type error (FIX-024)
+- *(radar-audit)* Keep container image findings apart per image (FIX-025)
 
 ### 🚜 Refactor
 
