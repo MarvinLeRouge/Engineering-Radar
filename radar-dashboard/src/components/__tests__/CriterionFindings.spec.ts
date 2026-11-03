@@ -180,7 +180,9 @@ describe('CriterionFindings', () => {
     expect(dismissed.element.tagName).toBe('DETAILS')
     expect(dismissed.attributes('open')).toBeUndefined()
     expect(dismissed.find('summary').text()).toBe('Dismissed as false positive (1)')
-    const cards = dismissed.findAllComponents({ name: 'FindingCard' })
+    const cards = wrapper
+      .findAllComponents({ name: 'FindingCard' })
+      .filter((card) => dismissed.element.contains(card.element))
     expect(cards.map((c) => c.props('finding').id)).toEqual([2])
 
     await cards[0]!.vm.$emit('updated')
