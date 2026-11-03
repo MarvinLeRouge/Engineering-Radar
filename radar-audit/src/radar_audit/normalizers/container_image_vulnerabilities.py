@@ -52,8 +52,11 @@ def normalize_container_image_vulnerabilities(
                     tool_result_id=tool_result.id,
                     severity=resolved_severity,
                     description=description,
+                    # Images built from the same base share CVEs: the subproject keeps
+                    # each image's findings, and their verdicts, apart.
+                    file=tool_result.subproject_path,
                     fingerprint=compute_fingerprint(
-                        criterion.id, resolved_severity, None, description
+                        criterion.id, resolved_severity, tool_result.subproject_path, description
                     ),
                     confidence=Confidence.HIGH,
                     status=FindingStatus.OPEN,

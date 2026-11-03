@@ -618,3 +618,68 @@ def test_dismissed_fingerprints_are_cleared_after_scoring(db_session, tmp_path):
         select(Finding).where(Finding.scoring_run_id == run.id, Finding.fingerprint == fingerprint)
     ).one()
     assert not is_dismissed(db_session, rescored)
+
+
+def _add_trivy_image_result(db_session, audit_id, subproject_path):
+    from radar_core.models.audit import ToolResult
+
+    db_session.add(
+        ToolResult(
+            audit_id=audit_id,
+            subproject_path=subproject_path,
+            tool_name="trivy-image",
+            tool_version="1.0.0",
+            command="stub",
+            raw_output={
+                "image_found": True,
+                "vulnerabilities": [{"id": "CVE-2024-1", "severity": "HIGH", "pkg": "openssl"}],
+            },
+            exit_code=0,
+            duration_ms=1,
+        )
+    )
+    db_session.commit()
+
+
+def test_verdict_set_before_findings_carried_their_image_still_applies_per_image(
+    db_session, tmp_path
+):
+    import subprocess
+
+    from radar_core.finding_fingerprint import compute_fingerprint
+
+    audit = _audited_repo(db_session, tmp_path)
+    _add_trivy_image_result(db_session, audit.id, "radar-api")
+    run_a = score_repository(db_session, "repo")
+    old = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == run_a.id, Finding.description == "CVE-2024-1: openssl"
+        )
+    ).one()
+    # Recreate a row as scored before FIX-025: no file, fingerprint without the image.
+    old.file = None
+    old.fingerprint = compute_fingerprint(old.criterion_id, old.severity, None, old.description)
+    old.status = FindingStatus.WONT_FIX
+    old.human_verdict = HumanVerdict.TRUE_POSITIVE
+    db_session.add(old)
+    db_session.commit()
+
+    repo_path = tmp_path / "repo"
+    (repo_path / "b.txt").write_text("b")
+    subprocess.run(["git", "add", "."], cwd=repo_path, check=True)
+    subprocess.run(["git", "commit", "-qm", "b"], cwd=repo_path, check=True)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    new_audit = execute_audit(db_session, config, "repo", DEFAULT_RUNNERS)
+    _add_trivy_image_result(db_session, new_audit.id, "radar-api")
+    _add_trivy_image_result(db_session, new_audit.id, "radar-audit")
+    run_b = score_repository(db_session, "repo")
+
+    carried = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == run_b.id, Finding.description == "CVE-2024-1: openssl"
+        )
+    ).all()
+    by_image = {f.file: (f.status, f.human_verdict) for f in carried}
+    assert by_image["radar-api"] == (FindingStatus.WONT_FIX, HumanVerdict.TRUE_POSITIVE)
+    # The image first scanned after FIX-025 gets no verdict from another image.
+    assert by_image["radar-audit"] == (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
