@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -19,6 +19,7 @@ from radar_audit.normalizers.shared import (
     has_success_payload,
     is_dismissed,
     read_source_line,
+    save_criterion_score,
 )
 
 _RECOMMENDATION_TEXT = (
@@ -152,14 +153,6 @@ def normalize_dockerfile_hardening(
     if total == 0:
         return None
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=_BAND_VALUE[worst],
-        confidence=Confidence.HIGH,
+    return save_criterion_score(
+        session, scoring_run, criterion, _BAND_VALUE[worst], Confidence.HIGH
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score

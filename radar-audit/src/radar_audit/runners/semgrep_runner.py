@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import run_timed, tool_output
 
 
 class SemgrepRunner:
@@ -36,11 +35,7 @@ class SemgrepRunner:
                 pass  # not under target_path, skip
         command.append(".")
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, capture_output=True, text=True, timeout=self.timeout_s, cwd=target_path
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         try:
             data = json.loads(completed.stdout)
@@ -51,24 +46,19 @@ class SemgrepRunner:
             # Failure shape: an "error" key and no "results" list, so the normalizer
             # never mistakes a failed scan for a clean one.
             errors = data.get("errors") if isinstance(data, dict) else None
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={
+            return tool_output(
+                command,
+                {
                     "error": "semgrep scan failed",
                     "errors": errors or [],
                     "stdout": completed.stdout if data is None else "",
                     "stderr": completed.stderr,
                 },
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
+                completed,
+                duration_ms,
             )
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"results": data["results"]},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, {"results": data["results"]}, completed, duration_ms)
 
 
 def _scan_succeeded(data: object, returncode: int) -> bool:

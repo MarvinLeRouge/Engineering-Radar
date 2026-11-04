@@ -2,15 +2,14 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
-from radar_core.finding_fingerprint import compute_fingerprint
+from radar_core.enums import Confidence, FindingSeverity
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import add_tool_finding, is_dismissed, score_pass_rate
 
 _RELEVANT_TOOLS = {"ruff-check", "eslint", "pint"}
 _USABLE_EXIT_CODES = {0, 1}
@@ -33,30 +32,7 @@ def normalize_lint_pass_rate(
         for r in tool_results
         if r.tool_name in _RELEVANT_TOOLS and r.exit_code in _USABLE_EXIT_CODES
     ]
-    if not relevant:
-        return None
-
-    covered = 0
-    applicable = 0
-    for tool_result in relevant:
-        file_covered, file_applicable = _score_files(session, scoring_run, criterion, tool_result)
-        covered += file_covered
-        applicable += file_applicable
-
-    if applicable == 0:
-        return None
-
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=(covered / applicable) * 10,
-        confidence=Confidence.HIGH,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return score_pass_rate(session, scoring_run, criterion, relevant, _score_files)
 
 
 def _score_files(
@@ -150,20 +126,15 @@ def _add_finding(
     file: str | None = None,
     line: int | None = None,
 ) -> Finding:
-    return add_finding_with_recommendation(
+    return add_tool_finding(
         session,
-        Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
-            tool_result_id=tool_result.id,
-            severity=FindingSeverity.LOW,
-            description=description,
-            file=file,
-            line=line,
-            fingerprint=compute_fingerprint(criterion.id, FindingSeverity.LOW, file, description),
-            confidence=Confidence.HIGH,
-            status=FindingStatus.OPEN,
-            human_verdict=HumanVerdict.UNREVIEWED,
-        ),
-        _RECOMMENDATION_BY_TOOL[tool_result.tool_name],
+        scoring_run,
+        criterion,
+        tool_result,
+        severity=FindingSeverity.LOW,
+        description=description,
+        recommendation_text=_RECOMMENDATION_BY_TOOL[tool_result.tool_name],
+        confidence=Confidence.HIGH,
+        file=file,
+        line=line,
     )

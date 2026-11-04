@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -12,7 +12,13 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    band_value,
+    is_dismissed,
+    save_criterion_score,
+    worst_of,
+)
 
 # Each tool's own convention for "ran successfully and produced usable
 # data" differs (confirmed against a real portfolio repo in Task 17):
@@ -53,31 +59,10 @@ def normalize_cyclomatic_complexity(
     if not relevant:
         return None
 
-    worst_value: float | None = None
-    worst_confidence: Confidence | None = None
-    for tool_result in relevant:
-        result = _score_tool_result(session, scoring_run, criterion, tool_result)
-        if result is None:
-            continue
-        value, tool_confidence = result
-        if worst_value is None or value < worst_value:
-            worst_value = value
-            worst_confidence = tool_confidence
-
-    if worst_value is None or worst_confidence is None:
+    worst = worst_of(_score_tool_result(session, scoring_run, criterion, r) for r in relevant)
+    if worst is None:
         return None
-
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=worst_value,
-        confidence=worst_confidence,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, *worst)
 
 
 def _score_tool_result(
@@ -100,7 +85,7 @@ def _score_tool_result(
                 continue
         counted.append(block)
     worst_complexity = max((int(b["complexity"]) for b in counted), default=0)
-    return _band_value(worst_complexity), tool_confidence
+    return band_value(worst_complexity, _BANDS, _ABOVE_HIGHEST_BAND_VALUE), tool_confidence
 
 
 def _add_complexity_finding(
@@ -136,13 +121,6 @@ def _add_complexity_finding(
         ),
         _RECOMMENDATION_TEXT,
     )
-
-
-def _band_value(complexity: int) -> float:
-    for max_complexity, value in _BANDS:
-        if complexity <= max_complexity:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE
 
 
 def _confidence_for_tool(tool_name: str) -> Confidence:

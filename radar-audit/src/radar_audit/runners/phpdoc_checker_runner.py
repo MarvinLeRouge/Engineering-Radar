@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import raw_fallback, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 
@@ -78,16 +79,6 @@ class PhpdocCheckerRunner:
         try:
             findings = json.loads(completed.stdout)
         except json.JSONDecodeError:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_fallback(completed), completed, duration_ms)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"findings": findings},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, {"findings": findings}, completed, duration_ms)

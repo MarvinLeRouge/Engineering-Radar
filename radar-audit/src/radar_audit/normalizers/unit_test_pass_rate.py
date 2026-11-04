@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -10,7 +10,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    is_dismissed,
+    save_criterion_score,
+)
 
 # pytest-cov's exit code 5 ("no tests collected") is still a usable, successful run --
 # its tests.total is naturally 0 and contributes nothing to the summed ratio. exit 127
@@ -55,17 +59,9 @@ def normalize_unit_test_pass_rate(
     if collected == 0:
         return None
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=(passed / collected) * 10,
-        confidence=Confidence.HIGH,
+    return save_criterion_score(
+        session, scoring_run, criterion, (passed / collected) * 10, Confidence.HIGH
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
 
 
 def _filter_relevant_results(tool_results: list[ToolResult]) -> list[ToolResult]:

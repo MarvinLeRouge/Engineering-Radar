@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
@@ -19,6 +19,7 @@ from radar_audit.normalizers.shared import (
     iter_source_files,
     npm_dependency_names,
     python_dependency_names,
+    save_criterion_score,
 )
 
 _SENTRY_PYTHON_PACKAGE = "sentry-sdk"
@@ -84,17 +85,7 @@ def normalize_error_tracking(
             "error-tracking-dsn-not-env-sourced",
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=Confidence.MEDIUM,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, Confidence.MEDIUM)
 
 
 def _has_env_sourced_dsn(target_path: Path) -> bool:

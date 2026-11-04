@@ -4,17 +4,13 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
-import time
 import tomllib
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.shared import count_files, relativize_file_field, run_timed, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS
-
-_SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
 
 
 class MypyRunner:
@@ -49,11 +45,7 @@ class MypyRunner:
 
         command.append(str(target_path))
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         diagnostics = []
         for line in completed.stdout.splitlines():
@@ -63,12 +55,12 @@ class MypyRunner:
                 continue
 
         relativize_file_field(diagnostics, target_path)
-        total_files = self._count_python_files(target_path, exclude_paths)
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"diagnostics": diagnostics, "total_files": total_files},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
+        total_files = count_files(target_path, exclude_paths)
+        return tool_output(
+            command,
+            {"diagnostics": diagnostics, "total_files": total_files},
+            completed,
+            duration_ms,
         )
 
     def _has_plugin(self, target_path: Path) -> bool:
@@ -81,24 +73,6 @@ class MypyRunner:
         if mypy_ini.exists() and "plugins" in mypy_ini.read_text():
             return True
         return False
-
-    def _count_python_files(self, target_path: Path, exclude_paths: list[Path]) -> int:
-        count = 0
-        for file_path in target_path.rglob("*.py"):
-            if not file_path.is_file():
-                continue
-            if self._is_skipped(file_path, target_path, exclude_paths):
-                continue
-            count += 1
-        return count
-
-    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
-        relative_parts = file_path.relative_to(target_path).parts
-        if any(part in _SKIP_DIRNAMES for part in relative_parts):
-            return True
-        return any(
-            excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
-        )
 
 
 def _exclude_regex(relative: Path) -> str:

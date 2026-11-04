@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.shared import relativize_file_field, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _COMPLEXITY_PATTERN = re.compile(r"Cyclomatic Complexity of (\d+)")
@@ -71,21 +71,13 @@ class PhpmdComplexityRunner:
         try:
             root = ET.fromstring(completed.stdout)
         except ET.ParseError:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={"violations": [], "stdout": completed.stdout},
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
+            return tool_output(
+                command, {"violations": [], "stdout": completed.stdout}, completed, duration_ms
             )
 
         violations = _parse_violations(root)
         relativize_file_field(violations, target_path)
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"violations": violations},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, {"violations": violations}, completed, duration_ms)
 
 
 def _build_exclude_patterns(target_path: Path, exclude_paths: list[Path]) -> list[str]:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -17,6 +17,7 @@ from radar_audit.normalizers.shared import (
     add_finding_with_recommendation,
     has_success_payload,
     is_dismissed,
+    save_criterion_score,
 )
 
 _RECOMMENDATION_TEXT = (
@@ -118,14 +119,4 @@ def normalize_secrets_in_history(
     # finding scores 8.0, no findings score 10.0.
     value = _score_value(any_confirmed, any_pre_filtered)
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=Confidence.HIGH,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, Confidence.HIGH)

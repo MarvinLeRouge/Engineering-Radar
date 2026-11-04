@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-import subprocess
 import tempfile
-import time
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import defusedxml.ElementTree as ET
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.junit import no_report_output, parse_junit
+from radar_audit.runners.shared import run_timed, tool_output
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 
 class PestRunner:
@@ -49,11 +52,7 @@ class PestRunner:
                 "--min=0",
             ]
 
-            start = time.monotonic()
-            completed = subprocess.run(
-                command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-            )
-            duration_ms = int((time.monotonic() - start) * 1000)
+            completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
             # Pest writes an empty (0-byte) junit.xml -- not "file absent" -- when it
             # fails before running any test (e.g. a misconfigured/missing tests/
@@ -62,68 +61,18 @@ class PestRunner:
             no_usable_report = not junit_path.exists()
             if not no_usable_report:
                 try:
-                    raw_output = self._parse_junit(junit_path)
+                    # Pest's zero-tests case is a bare <testsuites/> with no child
+                    # <testsuite> at all: parse_junit returns zero counts for it.
+                    raw_output = parse_junit(junit_path, _pest_case_file, recursive=True)
                 except ET.ParseError:
                     no_usable_report = True
 
             if no_usable_report:
-                return RawToolOutput(
-                    command=" ".join(command),
-                    raw_output={
-                        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
-                        "failures": [],
-                        "coverage_percent": None,
-                    },
-                    exit_code=completed.returncode,
-                    duration_ms=duration_ms,
-                )
+                return no_report_output(command, completed.returncode, duration_ms)
 
             raw_output["coverage_percent"] = self._parse_clover(clover_path)
 
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output=raw_output,
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
-
-    def _parse_junit(self, junit_path: Path) -> dict[str, object]:
-        root = ET.parse(junit_path).getroot()
-        assert root is not None
-        # Pest's zero-tests case is a bare <testsuites/> with NO child <testsuite> at
-        # all (unlike pytest, which still emits a tests="0" element) -- guard for it.
-        suite = root.find("testsuite") if root.tag == "testsuites" else root
-        if suite is None:
-            return {"tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0}, "failures": []}
-
-        total = int(suite.get("tests", 0))
-        failures = int(suite.get("failures", 0))
-        errors = int(suite.get("errors", 0))
-        skipped = int(suite.get("skipped", 0))
-
-        failed_cases = []
-        for testcase in suite.iter("testcase"):
-            if testcase.find("failure") is not None or testcase.find("error") is not None:
-                # Pest's testcase file attribute is "path/to/Test.php::testname" --
-                # strip the "::name" suffix. No line attribute is provided.
-                raw_file = testcase.get("file")
-                failed_cases.append(
-                    {
-                        "file": raw_file.split("::")[0] if raw_file else None,
-                        "name": testcase.get("name"),
-                        "line": None,
-                    }
-                )
-
-        return {
-            "tests": {
-                "total": total,
-                "passed": total - failures - errors - skipped,
-                "failed": failures + errors,
-                "skipped": skipped,
-            },
-            "failures": failed_cases,
-        }
+            return tool_output(command, raw_output, completed, duration_ms)
 
     def _parse_clover(self, clover_path: Path) -> float | None:
         if not clover_path.exists():
@@ -138,3 +87,11 @@ class PestRunner:
         if statements == 0:
             return None
         return round((covered / statements) * 100, 2)
+
+
+def _pest_case_file(testcase: Element) -> str | None:
+    """Pest's testcase file attribute is "path/to/Test.php::testname": strip the "::name"
+    suffix. No line attribute is provided.
+    """
+    raw_file = testcase.get("file")
+    return raw_file.split("::")[0] if raw_file else None

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import run_timed, tool_output
 
 _SEVERITY_MAP = {
     "critical": "CRITICAL",
@@ -85,22 +85,18 @@ class PnpmAuditRunner:
             )
 
         command = _LOCKFILE_COMMANDS[lockfile_name]
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, capture_output=True, text=True, timeout=self.timeout_s, cwd=target_path
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         parser = getattr(self, _PARSER_NAMES[lockfile_name])
         vulnerabilities = parser(completed.stdout)
         if vulnerabilities is None:
             return self._failed(command, completed, duration_ms)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"manifest_found": True, "vulnerabilities": vulnerabilities},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
+        return tool_output(
+            command,
+            {"manifest_found": True, "vulnerabilities": vulnerabilities},
+            completed,
+            duration_ms,
         )
 
     @staticmethod
@@ -234,14 +230,14 @@ class PnpmAuditRunner:
                 error = data.get("error")
         except json.JSONDecodeError:
             pass
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={
+        return tool_output(
+            command,
+            {
                 "manifest_found": True,
                 "error": error or "audit produced no usable advisories report",
                 "stdout": completed.stdout,
                 "stderr": completed.stderr,
             },
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
+            completed,
+            duration_ms,
         )

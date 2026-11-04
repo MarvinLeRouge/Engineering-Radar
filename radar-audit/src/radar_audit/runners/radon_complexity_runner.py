@@ -3,23 +3,18 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_path_keys
-from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
-
-_SKIP_GLOB_SUFFIXES = (
-    "/.venv/*",
-    "/__pycache__/*",
-    "/node_modules/*",
-    "/vendor/*",
-    "/dist/*",
-    "/build/*",
+from radar_audit.runners.shared import (
+    SKIP_GLOB_SUFFIXES,
+    raw_fallback,
+    relativize_path_keys,
+    run_timed,
+    tool_output,
 )
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 
 class RadonComplexityRunner:
@@ -34,22 +29,15 @@ class RadonComplexityRunner:
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         """Runs radon cc in JSON mode over the Python subproject, skipping vendored directories."""
-        patterns = [f"{target_path}{suffix}" for suffix in _SKIP_GLOB_SUFFIXES]
+        patterns = [f"{target_path}{suffix}" for suffix in SKIP_GLOB_SUFFIXES]
         patterns.extend(exclusion_glob(excluded, excluded, "/*") for excluded in exclude_paths)
         command = ["uvx", "radon", "cc", "--json", "-e", ",".join(patterns), str(target_path)]
 
-        start = time.monotonic()
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout_s)
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s)
 
         try:
             raw_output = relativize_path_keys(json.loads(completed.stdout), target_path)
         except json.JSONDecodeError:
-            raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+            raw_output = raw_fallback(completed)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output=raw_output,
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, raw_output, completed, duration_ms)

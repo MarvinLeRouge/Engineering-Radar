@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -10,7 +10,12 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    band_value,
+    is_dismissed,
+    save_criterion_score,
+)
 
 # Bands: <=3%->10, 3-5%->6, 5-10%->4, >10%->2 (spec §3.2). Resolved during
 # design but provisional -- not yet calibrated against real portfolio data
@@ -80,21 +85,10 @@ def normalize_code_duplication(
         duplicated = max(total.get("duplicatedLines", 0) - dismissed_lines, 0)
         percentage = duplicated / total["lines"] * 100
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=_band_value(percentage),
-        confidence=Confidence.MEDIUM,
+    return save_criterion_score(
+        session,
+        scoring_run,
+        criterion,
+        band_value(percentage, _BANDS, _ABOVE_HIGHEST_BAND_VALUE),
+        Confidence.MEDIUM,
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
-
-
-def _band_value(percentage: float) -> float:
-    for max_percentage, value in _BANDS:
-        if percentage <= max_percentage:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE

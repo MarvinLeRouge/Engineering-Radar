@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -10,7 +10,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, save_criterion_score
 
 _RECOMMENDATION_TEXT = "Add a CI workflow step that runs the test suite on every push."
 
@@ -53,14 +53,6 @@ def normalize_ci_test_execution(
             _RECOMMENDATION_TEXT,
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=10.0 if test_execution_found else 0.0,
-        confidence=Confidence.HIGH,
+    return save_criterion_score(
+        session, scoring_run, criterion, 10.0 if test_execution_found else 0.0, Confidence.HIGH
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score

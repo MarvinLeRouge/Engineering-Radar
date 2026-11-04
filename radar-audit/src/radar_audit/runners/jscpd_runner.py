@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import tempfile
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import raw_fallback, run_timed, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _ALWAYS_EXCLUDED_DIRNAMES = (
@@ -63,25 +62,11 @@ class JscpdRunner:
                 str(target_path),
             ]
 
-            start = time.monotonic()
-            completed = subprocess.run(
-                command, capture_output=True, text=True, timeout=self.timeout_s
-            )
-            duration_ms = int((time.monotonic() - start) * 1000)
+            completed, duration_ms = run_timed(command, self.timeout_s)
 
             report_path = Path(report_dir) / "jscpd-report.json"
             if not report_path.exists():
-                return RawToolOutput(
-                    command=" ".join(command),
-                    raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
-                    exit_code=completed.returncode,
-                    duration_ms=duration_ms,
-                )
+                return tool_output(command, raw_fallback(completed), completed, duration_ms)
             raw_output = json.loads(report_path.read_text())
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output=raw_output,
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, raw_output, completed, duration_ms)

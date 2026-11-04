@@ -7,8 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-
-_SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
+from radar_audit.runners.shared import is_skipped
 
 
 class IntegrationTestRunner:
@@ -32,7 +31,7 @@ class IntegrationTestRunner:
         for file_path in sorted(target_path.rglob("*")):
             if not file_path.is_file():
                 continue
-            if self._is_skipped(file_path, target_path, exclude_paths):
+            if is_skipped(file_path, target_path, exclude_paths):
                 continue
             classification = self._classify(file_path, target_path)
             if classification is None:
@@ -99,11 +98,3 @@ class IntegrationTestRunner:
         if "tests" not in {p.lower() for p in parts}:
             return None
         return "Feature" in parts
-
-    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
-        relative_parts = file_path.relative_to(target_path).parts
-        if any(part in _SKIP_DIRNAMES for part in relative_parts):
-            return True
-        return any(
-            excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
-        )

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
@@ -14,6 +14,7 @@ from radar_audit.normalizers.shared import (
     get_repository_path,
     npm_dependency_names,
     python_dependency_names,
+    save_criterion_score,
 )
 
 # Heuristic per the Quality Framework: a known structured-logging library vs.
@@ -52,14 +53,10 @@ def normalize_structured_logging(
             "no-structured-logging-library",
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=_STRUCTURED_VALUE if detected else _NOT_DETECTED_VALUE,
-        confidence=Confidence.MEDIUM,
+    return save_criterion_score(
+        session,
+        scoring_run,
+        criterion,
+        _STRUCTURED_VALUE if detected else _NOT_DETECTED_VALUE,
+        Confidence.MEDIUM,
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score

@@ -10,7 +10,13 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    add_tool_finding,
+    band_value,
+    is_dismissed,
+    save_criterion_score,
+)
 
 _DOCVET_USABLE_EXIT_CODES = {0}
 _PHPDOC_CHECKER_USABLE_EXIT_CODES = {0, 1}
@@ -42,31 +48,11 @@ def normalize_docstring_coverage(
     tool_results: list[ToolResult],
 ) -> Score | None:
     """Score docstring coverage from docvet or phpdoc-checker, N/A for JS/TS-only repos."""
-    worst_value: float | None = None
-    worst_confidence: Confidence | None = None
-
-    for tool_result in tool_results:
-        value = _score_tool_result(session, scoring_run, criterion, tool_result)
-        if value is None:
-            continue
-        if worst_value is None or value < worst_value:
-            worst_value = value
-            worst_confidence = Confidence.MEDIUM
-
-    if worst_value is None or worst_confidence is None:
+    values = (_score_tool_result(session, scoring_run, criterion, r) for r in tool_results)
+    worst_value = min((v for v in values if v is not None), default=None)
+    if worst_value is None:
         return _score_js_ts_only(session, scoring_run, criterion, tool_results)
-
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=worst_value,
-        confidence=worst_confidence,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, worst_value, Confidence.MEDIUM)
 
 
 def _score_tool_result(
@@ -173,33 +159,21 @@ def _score_phpdoc_checker(
             f"{finding['type']} '{finding.get('class', '')}{method_suffix}' has no docblock"
         )
         file = finding.get("file")
-        added = add_finding_with_recommendation(
+        added = add_tool_finding(
             session,
-            Finding(
-                scoring_run_id=scoring_run.id,
-                criterion_id=criterion.id,
-                tool_result_id=tool_result.id,
-                severity=FindingSeverity.LOW,
-                description=description,
-                file=file,
-                line=finding.get("line"),
-                fingerprint=compute_fingerprint(
-                    criterion.id, FindingSeverity.LOW, file, description
-                ),
-                confidence=Confidence.MEDIUM,
-                status=FindingStatus.OPEN,
-                human_verdict=HumanVerdict.UNREVIEWED,
+            scoring_run,
+            criterion,
+            tool_result,
+            severity=FindingSeverity.LOW,
+            description=description,
+            recommendation_text=(
+                f"Add a PHPDoc block documenting this {finding['type']}'s purpose and parameters."
             ),
-            f"Add a PHPDoc block documenting this {finding['type']}'s purpose and parameters.",
+            confidence=Confidence.MEDIUM,
+            file=file,
+            line=finding.get("line"),
         )
         if not is_dismissed(session, added):
             errors_count += 1
 
-    return _band_value(errors_count)
-
-
-def _band_value(errors_count: int) -> float:
-    for max_count, value in _PHP_BANDS:
-        if errors_count <= max_count:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE
+    return band_value(errors_count, _PHP_BANDS, _ABOVE_HIGHEST_BAND_VALUE)

@@ -19,6 +19,7 @@ from radar_audit.normalizers.shared import (
     add_finding_with_recommendation,
     find_prod_compose,
     get_repository_path,
+    save_criterion_score,
 )
 
 _LOCAL_COMPOSE_FILENAME = "docker-compose.yml"
@@ -72,17 +73,9 @@ def normalize_traefik_parity(
             f"Add matching Traefik labels for '{service}' to the {missing_side} compose file.",
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=(len(both) / len(union)) * 10,
-        confidence=Confidence.HIGH,
+    return save_criterion_score(
+        session, scoring_run, criterion, (len(both) / len(union)) * 10, Confidence.HIGH
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
 
 
 def _na_score(

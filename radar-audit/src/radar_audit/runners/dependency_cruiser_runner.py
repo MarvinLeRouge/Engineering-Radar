@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import raw_fallback, run_timed, tool_output
 
 # Directory names always excluded regardless of exclude_paths: --no-config disables
 # dependency-cruiser's own default node_modules exclusion, and none of these hold
@@ -42,23 +41,14 @@ class DependencyCruiserRunner:
         command.extend(["-x", self._build_exclude_pattern(target_path, exclude_paths)])
         command.append(".")
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, capture_output=True, text=True, timeout=self.timeout_s, cwd=target_path
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         try:
             raw_output: dict[str, object] = json.loads(completed.stdout)
         except json.JSONDecodeError:
-            raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+            raw_output = raw_fallback(completed)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output=raw_output,
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, raw_output, completed, duration_ms)
 
     def _build_exclude_pattern(self, target_path: Path, exclude_paths: list[Path]) -> str:
         relative_patterns = [rf"(^|/){re.escape(name)}(/|$)" for name in _ALWAYS_EXCLUDED_DIRNAMES]

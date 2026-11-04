@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -15,9 +15,12 @@ from sqlmodel import Session
 
 from radar_audit.normalizers.shared import (
     add_finding_with_recommendation,
+    band_value,
     get_repository_path,
     is_dismissed,
     read_source_line,
+    save_criterion_score,
+    worst_of,
 )
 from radar_audit.scope import is_test_path
 
@@ -52,30 +55,12 @@ def normalize_dead_code(
         return None
 
     repo_path = get_repository_path(session, scoring_run)
-    worst_value: float | None = None
-    worst_confidence: Confidence | None = None
-    for tool_result in relevant:
-        value, tool_confidence = _score_tool_result(
-            session, scoring_run, criterion, tool_result, repo_path
-        )
-        if worst_value is None or value < worst_value:
-            worst_value = value
-            worst_confidence = tool_confidence
-
-    if worst_value is None or worst_confidence is None:
-        return None
-
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=worst_value,
-        confidence=worst_confidence,
+    worst = worst_of(
+        _score_tool_result(session, scoring_run, criterion, r, repo_path) for r in relevant
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    if worst is None:
+        return None
+    return save_criterion_score(session, scoring_run, criterion, *worst)
 
 
 def _score_tool_result(
@@ -95,7 +80,8 @@ def _score_tool_result(
         )
         if not is_dismissed(session, finding):
             counted += 1
-    return _band_value(counted), _confidence_for_tool(tool_result.tool_name)
+    value = band_value(counted, _BANDS, _ABOVE_HIGHEST_BAND_VALUE)
+    return value, _confidence_for_tool(tool_result.tool_name)
 
 
 def _add_dead_code_finding(
@@ -220,13 +206,6 @@ def _is_usable(tool_result: ToolResult) -> bool:
     if tool_result.tool_name == "knip":
         return "issues" in tool_result.raw_output
     return True
-
-
-def _band_value(item_count: int) -> float:
-    for max_count, value in _BANDS:
-        if item_count <= max_count:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE
 
 
 def _confidence_for_tool(tool_name: str) -> Confidence:
