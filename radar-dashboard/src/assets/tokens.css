@@ -130,3 +130,22 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* Shared by every view's main heading; each view sets its own bottom margin. */
+.page-title {
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+}
+
+/* Filled accent button for a form's main action; components set padding and states. */
+.button-primary {
+  appearance: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  color: var(--color-surface);
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}

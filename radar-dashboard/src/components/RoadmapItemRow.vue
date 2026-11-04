@@ -24,7 +24,7 @@
     />
     <button
       type="button"
-      class="roadmap-item-row__submit"
+      class="button-primary roadmap-item-row__submit"
       :disabled="!canSubmit"
       @click="submit"
     >
@@ -130,15 +130,8 @@ async function submit(): Promise<void> {
 }
 
 .roadmap-item-row__submit {
-  appearance: none;
-  border: none;
   margin-top: var(--space-4);
   padding: var(--space-2) var(--space-5);
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  color: var(--color-surface);
-  font-weight: var(--weight-semibold);
-  cursor: pointer;
 }
 
 .roadmap-item-row__submit:disabled {

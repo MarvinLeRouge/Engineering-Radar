@@ -68,16 +68,11 @@
       metric, so a drilled-down category is listed on its own, not global);
       the button's click action stays tied to the scoring run regardless,
       since viewing an audit's report is a global action either way. -->
-      <details class="score-history-chart__list-disclosure">
-        <summary>View as list</summary>
-        <ul class="score-history-chart__list">
-          <li v-for="point in points" :key="point.scoring_run_id">
-            <button type="button" @click="emit('select-point', point.scoring_run_id)">
-              {{ formatDate(point.scored_at) }} -- {{ listEntryLabel(point) }}
-            </button>
-          </li>
-        </ul>
-      </details>
+      <ChartPointList
+        :points="points"
+        :label="listEntryLabel"
+        @select-point="emit('select-point', $event)"
+      />
     </template>
   </div>
 </template>
@@ -85,6 +80,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { Line } from 'vue-chartjs'
+import ChartPointList from './ChartPointList.vue'
 import {
   Chart as ChartJS,
   LineController,
@@ -121,10 +117,6 @@ type MetricId = 'global' | number
 // needs revisiting; it is not a bug today.
 function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-}
-
-function formatDate(scoredAt: string): string {
-  return new Date(scoredAt).toLocaleDateString()
 }
 
 // Generated, not a fixed palette: the golden-angle hue step keeps any
@@ -340,29 +332,7 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   margin-bottom: var(--space-4);
 }
 
-.score-history-chart__metric-toggle {
-  appearance: none;
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--text-meta);
-  font-weight: var(--weight-medium);
-  color: var(--color-ink-soft);
-  cursor: pointer;
-}
-
-.score-history-chart__metric-toggle:hover {
-  color: var(--color-ink);
-  border-color: var(--color-ink-soft);
-}
-
-.score-history-chart__metric-toggle[aria-pressed='true'] {
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
-  border-color: var(--color-accent);
-}
-
+.score-history-chart__metric-toggle,
 .score-history-chart__zoom-toggle {
   appearance: none;
   border: 1px solid var(--color-border-strong);
@@ -373,55 +343,26 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
   font-weight: var(--weight-medium);
   color: var(--color-ink-soft);
   cursor: pointer;
-  flex-shrink: 0;
 }
 
+.score-history-chart__metric-toggle:hover,
 .score-history-chart__zoom-toggle:hover {
   color: var(--color-ink);
   border-color: var(--color-ink-soft);
 }
 
+.score-history-chart__metric-toggle[aria-pressed='true'],
 .score-history-chart__zoom-toggle[aria-pressed='true'] {
   background: var(--color-accent-soft);
   color: var(--color-accent);
   border-color: var(--color-accent);
 }
 
+.score-history-chart__zoom-toggle {
+  flex-shrink: 0;
+}
+
 .score-history-chart__status {
   color: var(--color-ink-soft);
-}
-
-.score-history-chart__list-disclosure {
-  margin-top: var(--space-3);
-  font-size: var(--text-meta);
-  color: var(--color-ink-soft);
-}
-
-.score-history-chart__list-disclosure summary {
-  cursor: pointer;
-  color: var(--color-accent);
-}
-
-.score-history-chart__list {
-  list-style: none;
-  padding: 0;
-  margin-top: var(--space-2);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.score-history-chart__list button {
-  appearance: none;
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--color-ink);
-  cursor: pointer;
-  text-align: left;
-}
-
-.score-history-chart__list button:hover {
-  color: var(--color-accent);
 }
 </style>

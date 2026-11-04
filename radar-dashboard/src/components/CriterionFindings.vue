@@ -53,9 +53,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, useId } from 'vue'
+import { computed, useId } from 'vue'
 import FindingCard from './FindingCard.vue'
 import SeverityToggleChip from './SeverityToggleChip.vue'
+import { useExpandedSet } from '@/composables/useExpandedSet'
 import type { FindingReport } from '@/api/client'
 import { SEVERITY_ORDER, isFalsePositive } from '@/utils/severity'
 
@@ -64,15 +65,7 @@ const instanceId = useId()
 const props = defineProps<{ findings: FindingReport[] }>()
 defineEmits<{ updated: [] }>()
 
-const expanded = reactive(new Set<string>())
-
-function toggle(severity: string): void {
-  if (expanded.has(severity)) {
-    expanded.delete(severity)
-  } else {
-    expanded.add(severity)
-  }
-}
+const { expanded, toggle } = useExpandedSet()
 
 interface FileGroup {
   file: string | null

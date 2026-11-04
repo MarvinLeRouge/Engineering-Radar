@@ -24,7 +24,7 @@
         {{ store.reportError }}
       </p>
       <template v-else-if="store.report">
-        <h1 class="repository-detail-view__title">{{ store.report.repository_name }}</h1>
+        <h1 class="page-title repository-detail-view__title">{{ store.report.repository_name }}</h1>
         <p class="repository-detail-view__scored-at">
           Scored on {{ formatScoredAt(store.report.scored_at) }}
           <span v-if="activeScoringRunId === null">(latest)</span>
@@ -212,10 +212,6 @@ onMounted(() => {
 }
 
 .repository-detail-view__title {
-  font-size: var(--text-display);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-tight);
-  letter-spacing: -0.01em;
   margin-bottom: var(--space-2);
 }
 

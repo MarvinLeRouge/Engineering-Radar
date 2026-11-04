@@ -39,8 +39,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, useId } from 'vue'
+import { computed, useId } from 'vue'
 import SeverityToggleChip from './SeverityToggleChip.vue'
+import { useExpandedSet } from '@/composables/useExpandedSet'
 import type { CategoryReport } from '@/api/client'
 import { SEVERITY_ORDER, isFalsePositive } from '@/utils/severity'
 
@@ -48,15 +49,7 @@ const props = defineProps<{ categories: CategoryReport[] }>()
 
 const instanceId = useId()
 
-const expanded = reactive(new Set<string>())
-
-function toggle(severity: string): void {
-  if (expanded.has(severity)) {
-    expanded.delete(severity)
-  } else {
-    expanded.add(severity)
-  }
-}
+const { expanded, toggle } = useExpandedSet()
 
 const dismissedCount = computed(() =>
   props.categories
