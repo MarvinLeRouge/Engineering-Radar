@@ -11,6 +11,7 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
+from radar_audit.scope import MIGRATIONS
 
 
 class EslintLintRunner:
@@ -20,6 +21,7 @@ class EslintLintRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"javascript"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = frozenset({MIGRATIONS})
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:

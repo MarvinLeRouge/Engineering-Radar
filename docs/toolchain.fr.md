@@ -166,6 +166,27 @@ Les deux outils sont des binaires Go/Haskell sans wrapper `uvx`/`npx` — exécu
 
 ---
 
+## Périmètre de l'audit : tests et migrations (FEAT-030, 2026-11-04)
+
+Règle et justification : `docs/quality-framework.fr.md` §3.6. Chaque runner déclare les zones que son critère ne juge pas (`excluded_zones`, zones définies dans `radar-audit/src/radar_audit/scope.py`), et l'orchestrateur transmet les dossiers et fichiers correspondants à l'outil via son propre mécanisme d'exclusion :
+
+| Outil | Zones exclues | Mécanisme |
+|---|---|---|
+| radon cc, radon raw, vulture | tests et migrations (vulture : migrations seulement) | globs `-e` / `--exclude` |
+| mypy | tests et migrations | regex `--exclude`, ancrée sur des composants de chemin entiers |
+| Ruff | migrations | `--exclude` |
+| ESLint (lint, complexité) | migrations (lint), tests et migrations (complexité) | `--ignore-pattern` |
+| tsc / vue-tsc | tests et migrations | lancé sur le tsconfig du projet, les diagnostics des fichiers exclus sont écartés et ces fichiers ne sont pas comptés |
+| PHPStan | tests et migrations | `parameters.excludePaths` dans le neon généré |
+| PHPMD, phpdoc-checker | tests et migrations | `--exclude` |
+| jscpd | tests et migrations | globs `--ignore` (remplace son ancienne liste de dossiers de tests codée en dur, FIX-012) |
+| knip | migrations | `ignore` dans la config générée |
+| docvet | tests et migrations | `exclude` dans la config temporaire (remplace le défaut `tests` de docvet) |
+| comptage statique des lignes | tests et migrations | ignorés pendant le parcours des fichiers |
+| Pint | aucune | pas d'exclusion en ligne de commande ; limite connue |
+
+Vulture et knip continuent d'analyser les tests pour que l'usage par les tests compte comme un usage ; le normalizer du code mort écarte les findings situés dans des fichiers de test. Les outils de sécurité (gitleaks, Semgrep, audits de dépendances, Trivy, Hadolint) voient tout le dépôt.
+
 ## Performance (frontend uniquement — catégorie 6, voir `docs/quality-framework.md`§4.6)
 
 La performance backend/BDD est délibérément exclue du Quality Framework v1.0 (aucune définition objective sans un SLA par projet), pas une lacune d'outillage, aucun candidat évalué ici. Le frontend a un candidat plausible, listé pour validation déclenchée en Phase 2, pas encore smoke-testé cette session.

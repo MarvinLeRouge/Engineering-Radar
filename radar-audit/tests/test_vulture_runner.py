@@ -90,3 +90,16 @@ def test_reports_tool_identity():
     assert runner.tool_name == "vulture"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"python"})
+
+
+def test_excludes_a_single_file_passed_via_exclude_paths(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"src/a.py": _CLEAN_MODULE, "src/test_a.py": _DEAD_CODE_MODULE},
+    )
+
+    runner = VultureRunner()
+    result = runner.run(repo_path / "src", exclude_paths=[repo_path / "src" / "test_a.py"])
+
+    assert result.raw_output["findings"] == []

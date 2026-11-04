@@ -17,6 +17,7 @@ from sqlmodel import Session, select
 from radar_audit.config import PortfolioConfig
 from radar_audit.discovery import SubProject, discover_subprojects
 from radar_audit.runner import RawToolOutput, ToolRunner
+from radar_audit.scope import out_of_scope_paths
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_audit.worktree import compute_exclude_paths
 
@@ -258,6 +259,9 @@ def _run_planned_tools(
             )
         else:
             run_exclude_paths = plan.exclude_paths
+        # Optional attribute: only runners whose criterion skips tests/migrations declare it.
+        zones: frozenset[str] = getattr(run.runner, "excluded_zones", frozenset())
+        run_exclude_paths = run_exclude_paths + out_of_scope_paths(run.target_path, zones)
         raw = _run_tool_safely(run.runner, run.target_path, run_exclude_paths)
         session.add(
             ToolResult(

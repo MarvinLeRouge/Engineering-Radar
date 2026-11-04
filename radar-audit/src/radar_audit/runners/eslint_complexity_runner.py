@@ -12,6 +12,7 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _AUDIT_CONFIG = 'module.exports = [{ rules: { complexity: ["error", 0] } }];\n'
 _COMPLEXITY_PATTERN = re.compile(r"^(.+) has a complexity of (\d+)")
@@ -25,6 +26,7 @@ class EslintComplexityRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"javascript"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -54,7 +56,7 @@ class EslintComplexityRunner:
                     relative = excluded.relative_to(target_path)
                 except ValueError:
                     continue  # not under target_path, skip
-                command.extend(["--ignore-pattern", f"{relative}/**"])
+                command.extend(["--ignore-pattern", exclusion_glob(excluded, relative, "/**")])
 
             start = time.monotonic()
             completed = subprocess.run(

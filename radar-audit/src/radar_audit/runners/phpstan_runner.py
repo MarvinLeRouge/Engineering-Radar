@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 
 class PhpstanRunner:
@@ -18,6 +19,7 @@ class PhpstanRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"php"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 120
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -111,7 +113,9 @@ class PhpstanRunner:
         there, producing noise unrelated to the target's own code.
         """
         exclude_entries = [str(target_path / "vendor" / "*")]
-        exclude_entries.extend(str(excluded / "*") for excluded in exclude_paths)
+        exclude_entries.extend(
+            exclusion_glob(excluded, excluded, "/*") for excluded in exclude_paths
+        )
 
         lines: list[str] = []
         if is_laravel:

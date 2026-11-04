@@ -464,3 +464,32 @@ def test_execute_audit_does_not_exclude_subprojects_for_repo_scope_runner(db_ses
     (call_target, call_excludes) = runner.calls[0]
     assert call_target == repo_path.resolve()
     assert backend_path not in call_excludes
+
+
+class _ScopedRecordingRunner(_RecordingRunner):
+    tool_name = "scoped-recording-stub"
+    excluded_zones = frozenset({"tests", "migrations"})
+
+
+def test_execute_audit_excludes_a_runners_out_of_scope_zones(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "pyproject.toml": "[project]\nname='x'\n",
+            "app/service.py": "x = 1\n",
+            "tests/test_service.py": "def test_x():\n    pass\n",
+            "alembic/versions/001_init.py": "revision = '1'\n",
+        },
+    )
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    scoped = _ScopedRecordingRunner()
+    unscoped = _RecordingRunner()
+
+    execute_audit(db_session, config, "repo", [scoped, unscoped])
+
+    resolved = repo_path.resolve()
+    assert {resolved / "tests", resolved / "alembic"} <= set(scoped.calls[0][1])
+    # A runner without excluded_zones (e.g. secrets, SAST) still sees everything.
+    assert resolved / "tests" not in unscoped.calls[0][1]
+    assert resolved / "alembic" not in unscoped.calls[0][1]

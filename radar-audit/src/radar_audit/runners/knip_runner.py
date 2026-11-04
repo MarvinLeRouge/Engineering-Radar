@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.scope import MIGRATIONS, exclusion_glob
 
 _DEFAULT_ENTRY_CANDIDATES = (
     "index.html",
@@ -29,7 +30,9 @@ def _ignore_patterns(target_path: Path, exclude_paths: list[Path]) -> list[str]:
             relative = excluded.relative_to(target_path)
         except ValueError:
             continue  # not under target_path, skip
-        patterns.append("**" if relative == Path(".") else f"{relative}/**")
+        patterns.append(
+            "**" if relative == Path(".") else exclusion_glob(excluded, relative, "/**")
+        )
     return patterns
 
 
@@ -40,6 +43,8 @@ class KnipRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"javascript"})
     scope: Literal["repo", "subproject"] = "subproject"
+    # Tests stay analyzed: code used only by tests is not dead (dead_code drops test findings).
+    excluded_zones = frozenset({MIGRATIONS})
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:

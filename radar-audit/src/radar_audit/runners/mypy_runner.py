@@ -12,6 +12,7 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
+from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 _SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
 
@@ -23,6 +24,7 @@ class MypyRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"python"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -41,7 +43,7 @@ class MypyRunner:
                 try:
                     relative = excluded.relative_to(target_path)
                     # Use regex-escaped path for mypy's --exclude (which expects regex)
-                    command.extend(["--exclude", re.escape(str(relative))])
+                    command.extend(["--exclude", _exclude_regex(relative)])
                 except ValueError:
                     pass  # not under target_path, skip
 
@@ -97,3 +99,8 @@ class MypyRunner:
         return any(
             excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
         )
+
+
+def _exclude_regex(relative: Path) -> str:
+    """Anchor an excluded path on whole path components: mypy applies --exclude with re.search."""
+    return rf"(^|/){re.escape(relative.as_posix())}(/|$)"

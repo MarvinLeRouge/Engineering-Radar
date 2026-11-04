@@ -93,6 +93,40 @@ Inchangé par rapport à `system-design.md`§7 : un critère qui n'a pas pu êtr
 
 Ajouté lors de la seconde calibration pilote Phase 3 (Summit-Stats, 2026-08-27). Un critère dont la preuve *pourrait* être lue depuis un artefact committé (un `coverage.xml`, `coverage-summary.json` committé, ou tout autre fichier de rapport généré que le dépôt cible suit) doit plutôt être évalué depuis une **exécution en direct effectuée par l'audit lui-même**, jamais en lisant directement cet artefact, même quand il est présent et que ses chiffres semblent plausibles. Cas confirmé : le `coverage.xml` committé de Summit-Stats montrait 73,97% de couverture d'instructions, apparemment en dessous du gate CI à 80% du dépôt lui-même ; un run `pest --coverage` frais a produit 91,4%, le fichier committé n'avait simplement pas été régénéré depuis un point antérieur de l'historique du dépôt. Un artefact périmé est indiscernable d'un artefact frais par simple inspection, ce n'est donc pas un jugement au cas par cas, c'est une règle permanente pour toute preuve générée par un outil pouvant devenir périmée entre deux commits (les rapports de couverture aujourd'hui, la même logique s'appliquerait par exemple à un SBOM committé ou un instantané d'audit de dépendances committé si l'un ou l'autre est un jour utilisé comme preuve). Voir la section Python de `toolchain.md` pour le détail au niveau de l'outil.
 
+### 3.6 Périmètre de l'audit : tests et migrations
+
+Ajouté le 2026-11-04 (FEAT-030). Certains critères jugent uniquement le **code applicatif** ; d'autres jugent **tout ce qui est commité**, parce que le risque qu'ils mesurent existe partout où se trouve le code. L'audit applique cette règle outil par outil : les tests et les migrations sont retirés de ce que l'outil analyse (et non filtrés de ses résultats après coup), afin que les ratios du type « fichiers propres / fichiers analysés » soient calculés sur le bon ensemble de fichiers.
+
+**Zones** (définies une seule fois, dans `radar-audit/src/radar_audit/scope.py`) :
+
+| Zone | Dossiers (toute l'arborescence en dessous) | Fichiers ailleurs |
+|---|---|---|
+| Tests | `tests/`, `test/`, `__tests__/`, `e2e/` | `test_*.py`, `*_test.py`, `conftest.py`, `*.spec.*`, `*.test.*` |
+| Migrations | `alembic/` (seulement s'il contient un dossier `versions/`, la structure d'Alembic), `migrations/` (Django, `database/migrations/` de Laravel, Flask-Migrate) | aucun |
+
+**Par critère** :
+
+| Critère | Outils | Tests | Migrations |
+|---|---|---|---|
+| 1.3 Distribution de la taille des modules | radon raw, comptage statique des lignes | exclus | exclues |
+| 2.2 Passe de type-checking | mypy, tsc / vue-tsc, PHPStan | exclus | exclues |
+| 2.3 Complexité cyclomatique, 5.1 Points chauds de complexité | radon cc, complexité ESLint, PHPMD | exclus | exclues |
+| 2.5 Duplication de code | jscpd | exclus | exclues |
+| 5.2 Code mort / exports inutilisés | vulture, knip | analysés, mais leurs propres findings sont écartés (voir plus bas) | exclues |
+| 5.3 Documentation dans le code (docstrings) | docvet, phpdoc-checker | exclus | exclues |
+| 2.1 Taux de passage du linter | Ruff, ESLint | **gardés** | exclues |
+| Sécurité (secrets, SAST, vulnérabilités des dépendances et des images, durcissement des Dockerfile) | gitleaks, Semgrep, pip-audit, pnpm audit, composer audit, Trivy, Hadolint | **gardés** | **gardées** |
+| Tests & fiabilité (unitaires, intégration, E2E) | pytest, Vitest, Pest, Playwright | mesurés sur les tests eux-mêmes | sans objet |
+
+**Pourquoi** :
+- **Les tests** ne sont pas du code livré. Une longue fonction de test paramétrée n'est pas de la complexité du produit, les fixtures sont censées se répéter, les helpers de test paraissent inutilisés à un outil de code mort, et la plupart des projets ne type-checkent que `src/` (c'est le cas du mypy en pre-commit de ce dépôt). Les tests restent dans le périmètre du lint (c'est du code maintenu) et de la sécurité : un vrai identifiant commité dans une fixture de test reste une fuite.
+- **Le code mort fait exception** au principe « retiré de ce que l'outil analyse » : un outil de code mort doit voir les tests comme appelants, sinon le code utilisé seulement par les tests serait signalé comme mort. Les tests sont donc analysés, et seuls les findings situés dans des fichiers de test sont écartés (sur Engineering-Radar, les exclure de l'analyse faisait signaler par vulture une soixantaine de champs de modèles de `radar-core` comme inutilisés). C'est sans risque parce que le code mort se note sur un nombre d'éléments, pas sur un ratio de fichiers.
+- **Les migrations** sont figées une fois appliquées : on ne les refactorise jamais, leurs variables `revision` / `down_revision` au niveau du module sont lues par Alembic et paraissent inutilisées à vulture, et un dossier nommé `alembic/` masque le paquet `alembic` installé aux yeux de mypy (`Module "alembic" has no attribute "op"`, un faux positif de l'audit lui-même, constaté sur ce dépôt). Elles restent dans le périmètre de la sécurité : une migration peut toujours contenir un secret ou une requête injectable.
+
+**Impact sur les notes** : exclure ces zones retire des findings, donc les notes des critères ci-dessus montent à partir du premier audit lancé le 2026-11-04 ou après. Sur Engineering-Radar, les findings de type-checking sont passés de 2156 au seul nombre du code applicatif (voir la pull request FEAT-030 pour le tableau avant/après). Cette marche sur les courbes de tendance est un changement de règles, pas une amélioration du code : comparer des notes de part et d'autre de cette date en gardant cela en tête.
+
+**Limites connues** : la détection se fait sur les noms, donc un module utilitaire nommé `test_*.py` ou un paquet applicatif nommé `test/` est traité comme des tests (`*.spec.*` / `*.test.*` ne visent que des fichiers de code, donc `openapi.spec.yaml` n'est pas concerné). Pint (lint PHP) n'a pas d'option d'exclusion en ligne de commande, les migrations Laravel sont donc toujours analysées par lui. La règle de type-checking ne lit pas la configuration propre à chaque projet (`files` de mypy, `include` du tsconfig) : un projet qui type-checke volontairement ses tests est jugé sans eux.
+
 ---
 
 ## 4. Catalogue des critères
@@ -264,3 +298,5 @@ Ces lacunes, plus la liste des pénalités critiques (§3.2) et le schéma de po
 ## 6. Versioning
 
 Identifiant : **Quality Framework v1.0**, gelé le 2026-08-26, selon le format et les règles de montée de version de `system-design.md`§9. C'est le premier enregistrement `MethodologyVersion`. Tout changement après ce point (rééquilibrage de poids, comblement de lacune une fois un outil candidat smoke-testé, fusion/scission de taxonomie) est une montée de version selon ces règles, pas une édition silencieuse de ce document.
+
+**Amendement du 2026-11-04 (FEAT-030)** : le §3.6 (périmètre de l'audit : tests et migrations) a été ajouté sans incrémenter l'enregistrement `MethodologyVersion`. Une nouvelle version crée de nouvelles lignes de critères, et l'empreinte d'un finding contient l'identifiant de son critère : un incrément ferait donc disparaître silencieusement tous les verdicts humains (won't fix, faux positif) au scoring suivant. La date d'amendement du §3.6 marque le changement à la place, jusqu'à ce que le versionnement de la méthodologie sache reporter les verdicts d'une version à l'autre.

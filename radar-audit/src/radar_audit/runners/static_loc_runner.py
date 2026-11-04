@@ -8,6 +8,7 @@ from typing import Literal
 
 from radar_audit.gitignore import GitignoreSpec, is_git_ignored, load_gitignore_spec
 from radar_audit.runner import RawToolOutput
+from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 _SOURCE_EXTENSIONS = {".js", ".ts", ".jsx", ".tsx", ".vue", ".php"}
 _SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__", "htmlcov"}
@@ -22,6 +23,7 @@ class StaticLocRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"javascript", "php"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 10
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:

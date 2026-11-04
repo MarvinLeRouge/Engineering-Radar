@@ -10,6 +10,7 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
+from radar_audit.scope import MIGRATIONS, exclusion_glob
 
 _SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
 
@@ -21,6 +22,7 @@ class RuffRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"python"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = frozenset({MIGRATIONS})
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -37,7 +39,7 @@ class RuffRunner:
             for excluded in exclude_paths:
                 try:
                     relative = excluded.relative_to(target_path)
-                    relative_excludes.append(f"{relative}/**")
+                    relative_excludes.append(exclusion_glob(excluded, relative, "/**"))
                 except ValueError:
                     pass  # not under target_path, skip
             if relative_excludes:

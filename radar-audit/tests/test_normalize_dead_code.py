@@ -447,3 +447,38 @@ def test_false_positives_no_longer_weigh_on_the_score(db_session):
     score = rescore_after_dismissing(db_session, normalize_dead_code, lambda f: True)
 
     assert score.value == 10.0
+
+
+def test_ignores_unused_items_inside_test_files(db_session):
+    # Tools analyze tests (so code used only by tests is not reported as dead), but an
+    # unused helper inside a test file is not application dead code.
+    audit, scoring_run, criterion = _setup(db_session)
+    tool_result = _vulture_result(audit, 0, exit_code=3)
+    tool_result.raw_output = {
+        "findings": [
+            {"file": "src/a.py", "line": 1, "kind": "function", "name": "f", "confidence": 60},
+            {
+                "file": "tests/test_a.py",
+                "line": 2,
+                "kind": "function",
+                "name": "g",
+                "confidence": 60,
+            },
+            {
+                "file": "src/conftest.py",
+                "line": 3,
+                "kind": "variable",
+                "name": "h",
+                "confidence": 60,
+            },
+        ]
+    }
+    db_session.add(tool_result)
+    db_session.commit()
+
+    score = normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert [f.file for f in findings] == ["src/a.py"]
+    assert score is not None
+    assert score.value == 8.0

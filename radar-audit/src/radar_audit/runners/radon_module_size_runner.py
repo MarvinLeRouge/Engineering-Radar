@@ -10,6 +10,7 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_path_keys
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _SKIP_GLOB_SUFFIXES = (
     "/.venv/*",
@@ -28,6 +29,7 @@ class RadonModuleSizeRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"python"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -36,7 +38,7 @@ class RadonModuleSizeRunner:
         # radon's exclude matching was empirically found not to match relative globs
         # when radon is invoked with an absolute target_path.
         patterns = [f"{target_path}{suffix}" for suffix in _SKIP_GLOB_SUFFIXES]
-        patterns.extend(f"{excluded}/*" for excluded in exclude_paths)
+        patterns.extend(exclusion_glob(excluded, excluded, "/*") for excluded in exclude_paths)
 
         command = ["uvx", "radon", "raw", "--json", "-e", ",".join(patterns), str(target_path)]
 

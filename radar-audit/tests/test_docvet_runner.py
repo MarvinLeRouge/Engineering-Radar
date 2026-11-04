@@ -1,4 +1,5 @@
 from radar_audit.runners.docvet_runner import DocvetRunner
+from radar_audit.scope import out_of_scope_paths
 
 from tests.git_helpers import init_git_repo
 
@@ -85,7 +86,7 @@ def test_excludes_nested_paths_more_than_one_level_deep(tmp_path):
     assert not any("apps/web" in f["file"] for f in findings)
 
 
-def test_keeps_docvet_default_exclusion_of_tests_and_scripts(tmp_path):
+def test_excludes_scripts_by_default_and_tests_through_the_audit_scope(tmp_path):
     repo_path = tmp_path / "repo"
     init_git_repo(
         repo_path,
@@ -98,7 +99,10 @@ def test_keeps_docvet_default_exclusion_of_tests_and_scripts(tmp_path):
     )
 
     runner = DocvetRunner()
-    result = runner.run(repo_path / "src", exclude_paths=[repo_path / "src" / "excluded"])
+    src = repo_path / "src"
+    # Tests reach docvet through the audit scope (radar_audit.scope), as in execute_audit.
+    exclude_paths = [src / "excluded", *out_of_scope_paths(src, runner.excluded_zones)]
+    result = runner.run(src, exclude_paths=exclude_paths)
 
     assert result.raw_output["presence_coverage"]["percentage"] == 100.0
     assert result.raw_output.get("findings", []) == []

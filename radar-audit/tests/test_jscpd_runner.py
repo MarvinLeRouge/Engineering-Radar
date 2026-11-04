@@ -1,4 +1,5 @@
 from radar_audit.runners.jscpd_runner import JscpdRunner
+from radar_audit.scope import out_of_scope_paths
 
 from tests.git_helpers import init_git_repo
 
@@ -195,7 +196,10 @@ def test_excludes_tests_directory_from_the_scan(tmp_path):
     )
 
     runner = JscpdRunner()
-    result = runner.run(repo_path, exclude_paths=[])
+    # Test directories reach jscpd through the audit scope (radar_audit.scope), as in execute_audit.
+    result = runner.run(
+        repo_path, exclude_paths=out_of_scope_paths(repo_path, runner.excluded_zones)
+    )
 
     assert result.raw_output["duplicates"]
     duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
@@ -220,7 +224,10 @@ def test_excludes_singular_test_directory_from_the_scan(tmp_path):
     )
 
     runner = JscpdRunner()
-    result = runner.run(repo_path, exclude_paths=[])
+    # Test directories reach jscpd through the audit scope (radar_audit.scope), as in execute_audit.
+    result = runner.run(
+        repo_path, exclude_paths=out_of_scope_paths(repo_path, runner.excluded_zones)
+    )
 
     assert result.raw_output["duplicates"]
     duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
@@ -243,7 +250,10 @@ def test_excludes_dunder_tests_directory_from_the_scan(tmp_path):
     )
 
     runner = JscpdRunner()
-    result = runner.run(repo_path, exclude_paths=[])
+    # Test directories reach jscpd through the audit scope (radar_audit.scope), as in execute_audit.
+    result = runner.run(
+        repo_path, exclude_paths=out_of_scope_paths(repo_path, runner.excluded_zones)
+    )
 
     assert result.raw_output["duplicates"]
     duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
@@ -268,7 +278,10 @@ def test_excludes_e2e_directory_from_the_scan(tmp_path):
     )
 
     runner = JscpdRunner()
-    result = runner.run(repo_path, exclude_paths=[])
+    # Test directories reach jscpd through the audit scope (radar_audit.scope), as in execute_audit.
+    result = runner.run(
+        repo_path, exclude_paths=out_of_scope_paths(repo_path, runner.excluded_zones)
+    )
 
     assert result.raw_output["duplicates"]
     duplicate_files = {d["firstFile"]["name"] for d in result.raw_output["duplicates"]} | {
