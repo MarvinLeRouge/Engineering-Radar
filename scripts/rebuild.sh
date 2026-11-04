@@ -7,5 +7,22 @@
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-docker compose build --pull --no-cache "$@"
-docker compose up -d "$@"
+
+# `--profile cli` so radar-audit (a CLI, not a long-running service) is rebuilt too.
+docker compose --profile cli build --pull --no-cache "$@"
+
+# Only long-running services are restarted: starting radar-audit would just run the CLI once.
+if [ "$#" -eq 0 ]; then
+  docker compose up -d
+  exit 0
+fi
+long_running=$(docker compose config --services)
+to_start=()
+for service in "$@"; do
+  if grep -qx "$service" <<<"$long_running"; then
+    to_start+=("$service")
+  fi
+done
+if [ "${#to_start[@]}" -gt 0 ]; then
+  docker compose up -d "${to_start[@]}"
+fi
