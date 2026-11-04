@@ -9,7 +9,7 @@ from subprocess import CalledProcessError
 import sentry_sdk
 import typer
 from radar_core.db import get_engine, get_session
-from radar_core.observability import init_error_tracking
+from radar_core.observability import configure_logging, init_error_tracking
 
 from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, planned_runs
@@ -217,6 +217,7 @@ def report(
 
 def entrypoint() -> None:
     """Console-script entry point: run the CLI, reporting unexpected crashes to Sentry."""
+    configure_logging()
     init_error_tracking()
     try:
         app()

@@ -54,3 +54,14 @@ def test_normal_exit_is_not_reported(monkeypatch, captured_events):
     sentry_sdk.flush(timeout=2)
 
     assert captured_events() == []
+
+
+def test_entrypoint_configures_logging_before_running(monkeypatch):
+    calls = []
+    monkeypatch.setattr(cli, "configure_logging", lambda: calls.append("logging"))
+    monkeypatch.setattr(cli, "init_error_tracking", lambda: calls.append("sentry"))
+    monkeypatch.setattr(cli, "app", lambda: calls.append("app"))
+
+    cli.entrypoint()
+
+    assert calls == ["logging", "sentry", "app"]

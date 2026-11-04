@@ -683,3 +683,19 @@ def test_verdict_set_before_findings_carried_their_image_still_applies_per_image
     assert by_image["radar-api"] == (FindingStatus.WONT_FIX, HumanVerdict.TRUE_POSITIVE)
     # The image first scanned after FIX-025 gets no verdict from another image.
     assert by_image["radar-audit"] == (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
+
+
+def test_score_repository_logs_the_result_with_the_audit_id(db_session, tmp_path):
+    import structlog
+    from structlog.testing import capture_logs
+
+    audit = _audited_repo(db_session, tmp_path)
+
+    with capture_logs(processors=[structlog.contextvars.merge_contextvars]) as logs:
+        scoring_run = score_repository(db_session, "repo")
+
+    [entry] = [log for log in logs if log["event"] == "scoring_finished"]
+    assert entry["repo"] == "repo"
+    assert entry["audit_id"] == audit.id
+    assert entry["global_score"] == scoring_run.global_score
+    assert isinstance(entry["findings"], int)

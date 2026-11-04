@@ -24,4 +24,5 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["uv", "run", "--package", "radar-api", "uvicorn", "radar_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --no-access-log: the request_logging middleware already writes one structured line per request.
+CMD ["uv", "run", "--package", "radar-api", "uvicorn", "radar_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
