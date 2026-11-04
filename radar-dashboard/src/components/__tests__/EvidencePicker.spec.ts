@@ -22,8 +22,20 @@ describe('EvidencePicker', () => {
 
   it('renders one radio per candidate and emits select on choice', async () => {
     vi.mocked(client.getRoadmapItemEvidenceCandidates).mockResolvedValueOnce([
-      { id: 5, finding_id: 1, evidence_type: 'HUMAN_CONFIRMATION', content: 'fixed in PR #123', created_at: '2026-01-01' },
-      { id: 6, finding_id: 1, evidence_type: 'TOOL_OUTPUT_EXCERPT', content: 'lint output', created_at: '2026-01-02' },
+      {
+        id: 5,
+        finding_id: 1,
+        evidence_type: 'HUMAN_CONFIRMATION',
+        content: 'fixed in PR #123',
+        created_at: '2026-01-01',
+      },
+      {
+        id: 6,
+        finding_id: 1,
+        evidence_type: 'TOOL_OUTPUT_EXCERPT',
+        content: 'lint output',
+        created_at: '2026-01-02',
+      },
     ])
 
     const wrapper = mount(EvidencePicker, { props: { roadmapItemId: 1 } })
@@ -40,7 +52,13 @@ describe('EvidencePicker', () => {
   it('truncates a long content preview', async () => {
     const longContent = 'x'.repeat(200)
     vi.mocked(client.getRoadmapItemEvidenceCandidates).mockResolvedValueOnce([
-      { id: 5, finding_id: 1, evidence_type: 'TOOL_OUTPUT_EXCERPT', content: longContent, created_at: '2026-01-01' },
+      {
+        id: 5,
+        finding_id: 1,
+        evidence_type: 'TOOL_OUTPUT_EXCERPT',
+        content: longContent,
+        created_at: '2026-01-01',
+      },
     ])
 
     const wrapper = mount(EvidencePicker, { props: { roadmapItemId: 1 } })

@@ -28,6 +28,25 @@ repos:
         language: system
         files: ^radar-api/src/
         pass_filenames: false
+      # Dashboard: whole-project checks, like mypy, through its own npm scripts.
+      - id: eslint
+        name: eslint + oxlint (radar-dashboard)
+        entry: npm --prefix radar-dashboard run lint
+        language: system
+        files: ^radar-dashboard/
+        pass_filenames: false
+      - id: prettier
+        name: prettier (radar-dashboard)
+        entry: npm --prefix radar-dashboard run format
+        language: system
+        files: ^radar-dashboard/src/
+        pass_filenames: false
+      - id: vue-tsc
+        name: vue-tsc (radar-dashboard)
+        entry: npm --prefix radar-dashboard run type-check
+        language: system
+        files: ^radar-dashboard/
+        pass_filenames: false
       - id: changelog
         name: Update CHANGELOG.md (git-cliff)
         entry: bash scripts/changelog-post-commit.sh

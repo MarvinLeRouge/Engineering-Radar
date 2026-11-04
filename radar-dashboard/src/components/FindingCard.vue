@@ -45,7 +45,9 @@ const verdict = ref(props.finding.human_verdict)
 const status = ref(props.finding.status)
 const errorMessage = ref<string | null>(null)
 
-const severityClass = computed(() => `finding-card__severity--${props.finding.severity.toLowerCase()}`)
+const severityClass = computed(
+  () => `finding-card__severity--${props.finding.severity.toLowerCase()}`,
+)
 
 // `showFile` is false when a parent already groups findings under their own
 // file heading (CriterionFindings.vue); repeating the path on every card

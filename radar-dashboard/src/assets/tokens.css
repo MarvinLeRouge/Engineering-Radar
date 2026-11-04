@@ -14,10 +14,8 @@
   --space-7: 3rem;
 
   /* Type: system stack, no webfont delivery cost for an internal tool */
-  --font-sans:
-    -apple-system, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
-  --font-mono:
-    ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
+  --font-sans: -apple-system, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Roboto Mono', Menlo, Consolas, monospace;
 
   /* Type roles: distinguished by size AND weight, not size alone */
   --text-display: 1.75rem; /* repository name */

@@ -267,6 +267,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Keep container image findings apart per image (FIX-025)
 - *(radar-audit)* Run uv projects' tests with their locked dependencies (FIX-026)
 - *(radar-audit)* Make dead-code paths independent of the audit's cwd (FIX-027)
+- *(radar-dashboard)* Keep prettier's cache inside the dashboard (CHORE-007)
 
 ### 🚜 Refactor
 
@@ -402,6 +403,10 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(toolchain)* Attach the Spectral row to its table (DOCS-008)
 - Note explanatory verdict note as a potential feature (DOCS-009)
 
+### 🎨 Styling
+
+- *(radar-dashboard)* Format the dashboard with prettier (CHORE-007)
+
 ### 🧪 Testing
 
 - *(radar-core)* Add migration-backed db_session fixture with isolation guard
@@ -437,3 +442,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-data)* Map radar-data volume to project folder
 - *(docker)* Rebuild images without cache so security upgrades apply (CHORE-005)
 - *(docker)* Rebuild the cli-profile radar-audit image too (CHORE-006)
+- Cover the dashboard in pre-commit hooks and CI (CHORE-007)

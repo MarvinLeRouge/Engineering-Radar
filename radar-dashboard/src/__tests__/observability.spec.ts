@@ -2,8 +2,8 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 
 vi.mock('@sentry/vue', () => ({
-  init: vi.fn(),
-  vueIntegration: vi.fn(() => ({ name: 'vue-integration' })),
+  init: vi.fn<(options: unknown) => void>(),
+  vueIntegration: vi.fn<() => { name: string }>(() => ({ name: 'vue-integration' })),
 }))
 
 import * as Sentry from '@sentry/vue'
@@ -35,8 +35,7 @@ describe('initErrorTracking', () => {
 
     initErrorTracking(app)
 
-    expect(Sentry.init).toHaveBeenCalledOnce()
-    expect(Sentry.init).toHaveBeenCalledWith(
+    expect(Sentry.init).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         app,
         dsn: 'https://example@sentry.io/123',

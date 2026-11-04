@@ -14,7 +14,7 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/",
+    "format": "prettier --write --experimental-cli --cache-location node_modules/.cache/prettier/.prettier-cache src/",
     "test:e2e": "playwright test"
   },
   "dependencies": {

@@ -20,11 +20,7 @@ function makeFinding(
   }
 }
 
-function makeCriterion(
-  id: number,
-  name: string,
-  findings: FindingReport[],
-): CriterionReport {
+function makeCriterion(id: number, name: string, findings: FindingReport[]): CriterionReport {
   return { id, name, status: 'scored', value: 5, na_reason: null, findings }
 }
 

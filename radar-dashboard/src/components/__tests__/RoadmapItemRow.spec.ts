@@ -10,9 +10,8 @@ vi.mock('@/api/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/api/client')>()
   return {
     ...actual,
-    updateRoadmapItemStatus: vi.fn<
-      (roadmapItemId: number, status: string, doneEvidenceId?: number) => Promise<void>
-    >(),
+    updateRoadmapItemStatus:
+      vi.fn<(roadmapItemId: number, status: string, doneEvidenceId?: number) => Promise<void>>(),
   }
 })
 
