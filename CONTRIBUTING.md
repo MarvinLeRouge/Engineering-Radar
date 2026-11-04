@@ -64,7 +64,14 @@ Types: `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci`
 
 ## Code style
 
-`ruff` (lint + format) and `mypy --strict` run on `radar-core` and `radar-audit` via pre-commit hooks (`.pre-commit-config.yaml`). There is no CI pipeline yet enforcing these remotely (see [`docs/roadmap.md`](docs/roadmap.md)) — run `uv run pre-commit run --all-files` locally before opening a pull request.
+Pre-commit hooks (`.pre-commit-config.yaml`) check every commit:
+
+- Python (`radar-core`, `radar-audit`, `radar-api`): `ruff` (lint, with fixes), `ruff-format`, and `mypy --strict` per package.
+- Dashboard (`radar-dashboard`): `oxlint` and `eslint` (with fixes), `prettier`, and `vue-tsc`, through its npm scripts. They need `npm ci` to have been run in `radar-dashboard/`.
+
+A hook that fixes or reformats files fails the commit: review the changes and commit again. Run `uv run pre-commit run --all-files` to check everything at once.
+
+CI (`.github/workflows/ci.yml`) runs the tests of every package with an 80% coverage gate, the dashboard's lint, format and type checks, and its Playwright end-to-end tests. The Python lint and type checks run only in the pre-commit hooks.
 
 ## Code of Conduct
 

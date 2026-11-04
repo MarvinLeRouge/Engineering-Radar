@@ -441,3 +441,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-data)* Map radar-data volume to project folder
 - *(docker)* Rebuild images without cache so security upgrades apply (CHORE-005)
 - *(docker)* Rebuild the cli-profile radar-audit image too (CHORE-006)
+- Cover the dashboard in pre-commit hooks and CI (CHORE-007)
