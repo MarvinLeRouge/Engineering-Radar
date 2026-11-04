@@ -106,7 +106,8 @@ def _add_dead_code_finding(
     item: dict[str, Any],
     repo_path: Path,
 ) -> Finding:
-    label = _label_for_item(tool_result.tool_name, item, repo_path)
+    # Tool paths are relative to the subproject the tool ran in, not to the repository root.
+    label = _label_for_item(tool_result.tool_name, item, repo_path / tool_result.subproject_path)
     severity = FindingSeverity.LOW
     return add_finding_with_recommendation(
         session,

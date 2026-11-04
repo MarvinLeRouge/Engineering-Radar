@@ -57,7 +57,10 @@ class VultureRunner:
         ]
 
         start = time.monotonic()
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=self.timeout_s)
+        # vulture prints paths relative to its cwd: pin it so they never depend on the caller.
+        completed = subprocess.run(
+            command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
+        )
         duration_ms = int((time.monotonic() - start) * 1000)
 
         findings = []

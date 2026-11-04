@@ -103,3 +103,14 @@ def test_excludes_a_single_file_passed_via_exclude_paths(tmp_path):
     result = runner.run(repo_path / "src", exclude_paths=[repo_path / "src" / "test_a.py"])
 
     assert result.raw_output["findings"] == []
+
+
+def test_reports_paths_relative_to_the_target_whatever_the_callers_cwd(tmp_path, monkeypatch):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"backend/src/a.py": _DEAD_CODE_MODULE})
+    # Same audit, launched from the repository root or from elsewhere: same finding paths.
+    monkeypatch.chdir(repo_path)
+
+    result = VultureRunner().run(repo_path / "backend", exclude_paths=[])
+
+    assert {f["file"] for f in result.raw_output["findings"]} == {"src/a.py"}

@@ -482,3 +482,31 @@ def test_ignores_unused_items_inside_test_files(db_session):
     assert [f.file for f in findings] == ["src/a.py"]
     assert score is not None
     assert score.value == 8.0
+
+
+def test_tells_same_named_items_apart_by_their_source_line_within_a_subproject(
+    db_session, tmp_path
+):
+    # Vulture reports paths relative to its subproject: the source line used to tell
+    # two same-named items apart must be read from that subproject, not the repo root.
+    audit, scoring_run, criterion = _setup(db_session)
+    repository = db_session.get(Repository, audit.repository_id)
+    repository.path = str(tmp_path)
+    db_session.add(repository)
+    source = tmp_path / "backend" / "src" / "a.py"
+    source.parent.mkdir(parents=True)
+    source.write_text("class A:\n    x = 1\n\n\nclass B:\n    x = 2\n")
+    tool_result = _vulture_result(audit, 0, exit_code=3)
+    tool_result.raw_output = {
+        "findings": [
+            {"file": "src/a.py", "line": 2, "kind": "variable", "name": "x", "confidence": 60},
+            {"file": "src/a.py", "line": 6, "kind": "variable", "name": "x", "confidence": 60},
+        ]
+    }
+    db_session.add(tool_result)
+    db_session.commit()
+
+    normalize_dead_code(db_session, scoring_run, criterion, [tool_result])
+
+    findings = db_session.exec(select(Finding).where(Finding.criterion_id == criterion.id)).all()
+    assert len({f.fingerprint for f in findings}) == 2
