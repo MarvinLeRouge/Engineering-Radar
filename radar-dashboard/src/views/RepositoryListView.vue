@@ -1,7 +1,7 @@
 <!-- radar-dashboard/src/views/RepositoryListView.vue -->
 <template>
   <div class="repository-list-view">
-    <h1 class="repository-list-view__title">Repositories</h1>
+    <h1 class="page-title repository-list-view__title">Repositories</h1>
     <p v-if="loading" class="repository-list-view__status">Loading...</p>
     <p v-else-if="store.listError" class="repository-list-view__error">{{ store.listError }}</p>
     <p v-else-if="store.list.length === 0" class="repository-list-view__status">
@@ -45,10 +45,6 @@ onMounted(async () => {
 
 <style scoped>
 .repository-list-view__title {
-  font-size: var(--text-display);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-tight);
-  letter-spacing: -0.01em;
   margin-bottom: var(--space-6);
 }
 

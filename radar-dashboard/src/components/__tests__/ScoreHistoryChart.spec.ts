@@ -123,7 +123,7 @@ describe('ScoreHistoryChart', () => {
     const points = [makePoint(11, '2026-01-01', 5), makePoint(22, '2026-02-01', null)]
     const wrapper = mount(ScoreHistoryChart, { props: { points } })
 
-    const buttons = wrapper.findAll('.score-history-chart__list button')
+    const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
     expect(buttons).toHaveLength(2)
     expect(buttons[1]!.text()).toContain('not yet audited')
   })
@@ -132,7 +132,7 @@ describe('ScoreHistoryChart', () => {
     const points = [makePoint(11, '2026-01-01', 5), makePoint(22, '2026-02-01', 7)]
     const wrapper = mount(ScoreHistoryChart, { props: { points } })
 
-    await wrapper.findAll('.score-history-chart__list button')[1]!.trigger('click')
+    await wrapper.findAll('[data-testid="chart-point-list"] button')[1]!.trigger('click')
 
     expect(wrapper.emitted('select-point')).toEqual([[22]])
   })
@@ -359,7 +359,7 @@ describe('ScoreHistoryChart', () => {
       await architectureChip!.trigger('click')
       await globalChip!.trigger('click')
 
-      const buttons = wrapper.findAll('.score-history-chart__list button')
+      const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
       expect(buttons[0]!.text()).toContain('Security: 4.0')
       expect(buttons[0]!.text()).toContain('Architecture: 6.0')
       expect(buttons[0]!.text()).not.toContain('Global score')
@@ -444,7 +444,7 @@ describe('ScoreHistoryChart', () => {
       const wrapper = mount(ScoreHistoryChart, { props: { points: pointsWithCategories() } })
       await wrapper.findAll('.score-history-chart__metric-toggle')[1]!.trigger('click')
 
-      const buttons = wrapper.findAll('.score-history-chart__list button')
+      const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
       expect(buttons[0]!.text()).toContain('Global score: 5.0')
       expect(buttons[0]!.text()).toContain('Security: 4.0')
       expect(buttons[1]!.text()).toContain('Global score: 7.0')
@@ -457,7 +457,7 @@ describe('ScoreHistoryChart', () => {
       await securityChip!.trigger('click')
       await globalChip!.trigger('click')
 
-      const buttons = wrapper.findAll('.score-history-chart__list button')
+      const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
       expect(buttons[0]!.text()).toContain('Security: 4.0')
       expect(buttons[0]!.text()).not.toContain('Global score')
     })
@@ -470,7 +470,7 @@ describe('ScoreHistoryChart', () => {
       const wrapper = mount(ScoreHistoryChart, { props: { points } })
       await wrapper.findAll('.score-history-chart__metric-toggle')[1]!.trigger('click')
 
-      const buttons = wrapper.findAll('.score-history-chart__list button')
+      const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
       expect(buttons[0]!.text()).toContain('Security: not yet audited')
     })
   })

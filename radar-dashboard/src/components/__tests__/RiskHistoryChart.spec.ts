@@ -108,7 +108,7 @@ describe('RiskHistoryChart', () => {
   it('lists every audit with its risk index for keyboard users and emits select-point', async () => {
     const wrapper = mount(RiskHistoryChart, { props: { points: twoPoints } })
 
-    const buttons = wrapper.findAll('.risk-history-chart__list button')
+    const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
     expect(buttons[0]!.text()).toContain('risk index 1836 (2 critical, 61 high, 55 medium, 512 low)')
     await buttons[1]!.trigger('click')
     expect(wrapper.emitted('select-point')).toEqual([[2]])

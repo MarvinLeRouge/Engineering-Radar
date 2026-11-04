@@ -295,6 +295,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract per-tool-result scoring out of normalize_dead_code (FIX-020)
 - *(radar-audit)* Extract data-gathering helpers out of render_report (FIX-020)
 - *(radar-audit)* Remove duplicated normalizer and runner code (REFACTOR-001)
+- *(radar-dashboard)* Remove duplicated toggle, chart list and styles (REFACTOR-002)
 
 ### 📚 Documentation
 

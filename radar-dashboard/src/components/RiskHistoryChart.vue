@@ -19,16 +19,12 @@
           :options="chartOptions"
         />
       </div>
-      <details class="risk-history-chart__list-disclosure">
-        <summary>View as list</summary>
-        <ul class="risk-history-chart__list">
-          <li v-for="point in points" :key="point.scoring_run_id">
-            <button type="button" @click="emit('select-point', point.scoring_run_id)">
-              {{ formatDate(point.scored_at) }} -- {{ listEntryLabel(point) }}
-            </button>
-          </li>
-        </ul>
-      </details>
+      <ChartPointList
+        :points="points"
+        :label="listEntryLabel"
+        tabular-nums
+        @select-point="emit('select-point', $event)"
+      />
     </template>
   </div>
 </template>
@@ -36,6 +32,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Line } from 'vue-chartjs'
+import ChartPointList from './ChartPointList.vue'
 import {
   Chart as ChartJS,
   Filler,
@@ -79,10 +76,6 @@ const FILL_ALPHA_HEX = '8c'
 
 function cssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
-}
-
-function formatDate(scoredAt: string): string {
-  return new Date(scoredAt).toLocaleDateString()
 }
 
 function entryFor(point: ScoreHistoryPoint, severity: string): SeverityRiskPoint | undefined {
@@ -199,40 +192,5 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
 
 .risk-history-chart__status {
   color: var(--color-ink-soft);
-}
-
-.risk-history-chart__list-disclosure {
-  margin-top: var(--space-3);
-  font-size: var(--text-meta);
-  color: var(--color-ink-soft);
-}
-
-.risk-history-chart__list-disclosure summary {
-  cursor: pointer;
-  color: var(--color-accent);
-}
-
-.risk-history-chart__list {
-  list-style: none;
-  padding: 0;
-  margin-top: var(--space-2);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.risk-history-chart__list button {
-  appearance: none;
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--color-ink);
-  cursor: pointer;
-  text-align: left;
-  font-variant-numeric: tabular-nums;
-}
-
-.risk-history-chart__list button:hover {
-  color: var(--color-accent);
 }
 </style>
