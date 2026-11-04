@@ -79,6 +79,8 @@ uv run radar-audit run --all
 
 Par défaut, la CLI lit `radar-audit/portfolio.yaml` ; passer `--config` pour pointer ailleurs.
 
+Un audit lance la suite de tests propre à chaque dépôt avec ses dépendances installées (depuis `uv.lock` pour un projet uv, dans un environnement temporaire qui laisse le dépôt intact ; sinon depuis les `requirements*.txt`). Prévoir la durée réelle de la suite : pytest peut tourner jusqu'à 15 minutes par sous-projet (la suite radar-audit d'Engineering-Radar prend environ 10 minutes).
+
 ## Tests
 
 ```bash

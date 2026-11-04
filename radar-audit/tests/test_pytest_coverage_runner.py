@@ -1,3 +1,6 @@
+import subprocess
+
+import pytest
 from radar_audit.runners.pytest_coverage_runner import PytestCoverageRunner
 
 from tests.git_helpers import init_git_repo
@@ -117,3 +120,74 @@ def test_fallback_when_junit_xml_not_created(tmp_path):
     assert result.raw_output["tests"]["skipped"] == 0
     assert result.raw_output["failures"] == []
     assert result.raw_output["coverage_percent"] is None
+
+
+_UV_PYPROJECT = (
+    '[project]\nname = "{name}"\nversion = "0.1.0"\nrequires-python = ">=3.12"\n'
+    'dependencies = ["pyyaml"]\n'
+)
+_USES_DEPENDENCY_TEST = (
+    "import yaml\n\n\ndef test_parse():\n    assert yaml.safe_load('a: 1') == {'a': 1}\n"
+)
+
+
+@pytest.mark.slow
+def test_runs_a_uv_project_with_its_locked_dependencies_without_touching_it(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "pyproject.toml": _UV_PYPROJECT.format(name="fixture"),
+            "tests/test_a.py": _USES_DEPENDENCY_TEST,
+        },
+    )
+    subprocess.run(["uv", "lock", "-q"], cwd=repo_path, check=True)
+
+    result = PytestCoverageRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["tests"] == {"total": 1, "passed": 1, "failed": 0, "skipped": 0}
+    assert result.command.startswith("uv run")
+    # The environment lives in a scratch directory, never in the audited repository.
+    assert not (repo_path / ".venv").exists()
+
+
+@pytest.mark.slow
+def test_runs_a_uv_workspace_member_with_the_lock_at_the_workspace_root(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            "pyproject.toml": '[tool.uv.workspace]\nmembers = ["app"]\n',
+            "app/pyproject.toml": _UV_PYPROJECT.format(name="app"),
+            "app/tests/test_a.py": _USES_DEPENDENCY_TEST,
+        },
+    )
+    subprocess.run(["uv", "lock", "-q"], cwd=repo_path, check=True)
+
+    result = PytestCoverageRunner().run(repo_path / "app", exclude_paths=[])
+
+    assert result.raw_output["tests"]["passed"] == 1
+
+
+def test_ignores_a_uv_lock_outside_the_audited_repository(tmp_path):
+    (tmp_path / "uv.lock").write_text("")
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"pyproject.toml": "[project]\nname = 'x'\n"})
+
+    command, _ = PytestCoverageRunner()._launcher(repo_path, tmp_path / "scratch")
+
+    assert command[0] == "uvx"
+
+
+def test_passes_excluded_paths_to_pytest_as_ignores(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={"backend/tests/test_a.py": "def test_a():\n    assert False\n"},
+    )
+
+    result = PytestCoverageRunner().run(repo_path, exclude_paths=[repo_path / "backend"])
+
+    assert f"--ignore={repo_path / 'backend'}" in result.command
+    assert result.exit_code == 5
+    assert result.raw_output["tests"]["total"] == 0

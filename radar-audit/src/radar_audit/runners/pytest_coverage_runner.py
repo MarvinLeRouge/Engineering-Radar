@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 import time
@@ -23,7 +24,8 @@ class PytestCoverageRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"python"})
     scope: Literal["repo", "subproject"] = "subproject"
-    timeout_s = 120
+    # A real suite takes minutes (Engineering-Radar: about 9); a ceiling, not a delay.
+    timeout_s = 900
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         """Runs pytest with JUnit and coverage XML reports, then parses both."""
@@ -31,19 +33,14 @@ class PytestCoverageRunner:
             junit_path = Path(report_dir) / "junit.xml"
             coverage_path = Path(report_dir) / "coverage.xml"
 
-            command = ["uvx", "--with", "pytest-cov"]
-            requirements = target_path / "requirements.txt"
-            if requirements.exists():
-                command.extend(["--with-requirements", str(requirements)])
-            requirements_dev = target_path / "requirements-dev.txt"
-            if requirements_dev.exists():
-                command.extend(["--with-requirements", str(requirements_dev)])
-            command.append("pytest")
+            command, env = self._launcher(target_path, Path(report_dir))
             command.extend(
                 [
                     f"--junitxml={junit_path}",
                     f"--cov={target_path}",
                     f"--cov-report=xml:{coverage_path}",
+                    # Nested subprojects (and worktrees) run as their own targets.
+                    *(f"--ignore={excluded}" for excluded in exclude_paths),
                     str(target_path),
                 ]
             )
@@ -51,7 +48,12 @@ class PytestCoverageRunner:
             start = time.monotonic()
             try:
                 completed = subprocess.run(
-                    command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
+                    command,
+                    cwd=target_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout_s,
+                    env=env,
                 )
             except (FileNotFoundError, OSError):
                 # target_path doesn't exist or is inaccessible; treat as "no tests"
@@ -89,6 +91,32 @@ class PytestCoverageRunner:
                 exit_code=completed.returncode,
                 duration_ms=duration_ms,
             )
+
+    def _launcher(
+        self, target_path: Path, scratch_dir: Path
+    ) -> tuple[list[str], dict[str, str] | None]:
+        """Command prefix running pytest with the target's own dependencies installed.
+
+        A uv project (a pyproject.toml and a uv.lock in the target or an enclosing
+        workspace of the same repository) runs through `uv run --frozen`, with its
+        environment in a scratch directory so the audited repository is never modified;
+        otherwise requirements files are passed to uvx.
+        """
+        if (target_path / "pyproject.toml").exists() and _has_uv_lock(target_path):
+            env = {
+                key: value
+                for key, value in os.environ.items()
+                # The audit's own virtualenv must not leak into the target's.
+                if key != "VIRTUAL_ENV"
+            }
+            env["UV_PROJECT_ENVIRONMENT"] = str(scratch_dir / "venv")
+            command = ["uv", "run", "--project", str(target_path), "--frozen"]
+            return [*command, "--with", "pytest-cov", "pytest"], env
+        command = ["uvx", "--with", "pytest-cov"]
+        for name in ("requirements.txt", "requirements-dev.txt"):
+            if (target_path / name).exists():
+                command.extend(["--with-requirements", str(target_path / name)])
+        return [*command, "pytest"], None
 
     def _parse_junit(self, junit_path: Path) -> dict[str, object]:
         root = ET.parse(junit_path).getroot()
@@ -134,3 +162,17 @@ class PytestCoverageRunner:
         assert root is not None
         line_rate = root.get("line-rate")
         return round(float(line_rate) * 100, 2) if line_rate is not None else None
+
+
+def _has_uv_lock(target_path: Path) -> bool:
+    """Whether a uv.lock sits in the target or an ancestor, without leaving its git repository.
+
+    Stopping at the repository root keeps an unrelated uv.lock higher up (a home-directory
+    project, a parent workspace) from turning a requirements-based repository into a uv one.
+    """
+    for directory in (target_path, *target_path.parents):
+        if (directory / "uv.lock").exists():
+            return True
+        if (directory / ".git").exists():
+            return False
+    return False
