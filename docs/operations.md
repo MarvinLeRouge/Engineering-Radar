@@ -39,6 +39,8 @@ scripts/rebuild.sh radar-dashboard  # one service
 ```
 
 It runs `docker compose build --pull --no-cache` then `docker compose up -d`.
+`radar-audit` (a `cli`-profile service) is rebuilt too but not started, since
+it is a CLI run on demand rather than a long-running service.
 Each Dockerfile upgrades its system packages (`apt-get upgrade` /
 `apk upgrade`), but Docker reuses that step from its build cache as long as
 the Dockerfile does not change, so security fixes published since the first
