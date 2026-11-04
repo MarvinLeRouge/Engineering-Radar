@@ -14,7 +14,10 @@ vi.mock('vue-chartjs', () => ({
 
 const WEIGHTS = { CRITICAL: 64, HIGH: 16, MEDIUM: 4, LOW: 1 } as const
 
-function risk(counts: Partial<Record<keyof typeof WEIGHTS, number>>, excluded = 0): SeverityRiskPoint[] {
+function risk(
+  counts: Partial<Record<keyof typeof WEIGHTS, number>>,
+  excluded = 0,
+): SeverityRiskPoint[] {
   return (Object.keys(WEIGHTS) as (keyof typeof WEIGHTS)[]).map((severity) => ({
     severity,
     weight: WEIGHTS[severity],
@@ -109,7 +112,9 @@ describe('RiskHistoryChart', () => {
     const wrapper = mount(RiskHistoryChart, { props: { points: twoPoints } })
 
     const buttons = wrapper.findAll('[data-testid="chart-point-list"] button')
-    expect(buttons[0]!.text()).toContain('risk index 1836 (2 critical, 61 high, 55 medium, 512 low)')
+    expect(buttons[0]!.text()).toContain(
+      'risk index 1836 (2 critical, 61 high, 55 medium, 512 low)',
+    )
     await buttons[1]!.trigger('click')
     expect(wrapper.emitted('select-point')).toEqual([[2]])
   })

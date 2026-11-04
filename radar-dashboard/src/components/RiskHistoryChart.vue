@@ -3,8 +3,8 @@
   <div class="risk-history-chart">
     <h2 id="risk-history-chart-title" class="risk-history-chart__title">Weighted risk history</h2>
     <p class="risk-history-chart__caption">
-      Open findings weighted by severity<template v-if="weightsLabel">: {{ weightsLabel }}</template>.
-      Resolved, won't-fix and false-positive findings are excluded.
+      Open findings weighted by severity<template v-if="weightsLabel">: {{ weightsLabel }}</template
+      >. Resolved, won't-fix and false-positive findings are excluded.
     </p>
     <p v-if="points.length < 2" class="risk-history-chart__status">
       Only one audit so far -- history will appear after the next one.

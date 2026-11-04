@@ -47,9 +47,7 @@
         {{ metric.name }}
       </button>
     </div>
-    <p v-if="points.length === 0" class="score-history-chart__status">
-      No audit history yet.
-    </p>
+    <p v-if="points.length === 0" class="score-history-chart__status">No audit history yet.</p>
     <p v-else-if="points.length === 1" class="score-history-chart__status">
       Only one audit so far -- history will appear after the next one.
     </p>
@@ -96,15 +94,7 @@ import type { ChartOptions, ChartData, ChartEvent, ActiveElement } from 'chart.j
 import type { ScoreHistoryPoint } from '@/api/client'
 import { lastPointValueLabelPlugin } from '@/utils/lastPointValueLabelPlugin'
 
-ChartJS.register(
-  LineController,
-  LineElement,
-  PointElement,
-  LinearScale,
-  TimeScale,
-  Tooltip,
-  Legend,
-)
+ChartJS.register(LineController, LineElement, PointElement, LinearScale, TimeScale, Tooltip, Legend)
 
 const props = defineProps<{ points: ScoreHistoryPoint[] }>()
 const emit = defineEmits<{ 'select-point': [scoringRunId: number] }>()
@@ -147,7 +137,10 @@ const metrics = computed<{ id: MetricId; name: string }[]>(() => {
       if (!seen.has(category.id)) seen.set(category.id, category.name)
     }
   }
-  return [{ id: 'global' as MetricId, name: 'Global score' }, ...Array.from(seen, ([id, name]) => ({ id, name }))]
+  return [
+    { id: 'global' as MetricId, name: 'Global score' },
+    ...Array.from(seen, ([id, name]) => ({ id, name })),
+  ]
 })
 
 // Stable per-metric color, independent of selection order or count, so a
@@ -243,7 +236,10 @@ const yRange = computed<{ min: number; max: number }>(() => {
 const chartData = computed<ChartData<'line', { x: number; y: number | null }[]>>(() => ({
   datasets: selectedMetrics.value.map((metric) => ({
     label: metric.name,
-    data: props.points.map((p) => ({ x: new Date(p.scored_at).getTime(), y: valueForMetric(p, metric.id) })),
+    data: props.points.map((p) => ({
+      x: new Date(p.scored_at).getTime(),
+      y: valueForMetric(p, metric.id),
+    })),
     borderColor: metricColors.value.get(metric.id)!,
     backgroundColor: metricColors.value.get(metric.id)!,
     pointRadius: 4,

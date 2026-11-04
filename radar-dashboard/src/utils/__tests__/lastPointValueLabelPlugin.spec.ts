@@ -36,7 +36,12 @@ function makeFakeChart(
 }
 
 function draw(chart: Chart<'line'>): void {
-  lastPointValueLabelPlugin.afterDatasetsDraw?.(chart, {} as never, { fontFamily: 'sans-serif' }, false)
+  lastPointValueLabelPlugin.afterDatasetsDraw?.(
+    chart,
+    {} as never,
+    { fontFamily: 'sans-serif' },
+    false,
+  )
 }
 
 describe('lastPointValueLabelPlugin', () => {

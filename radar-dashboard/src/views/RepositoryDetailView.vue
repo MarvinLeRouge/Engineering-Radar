@@ -13,9 +13,7 @@
       </button>
     </nav>
 
-    <p v-if="repositoryId === null" class="repository-detail-view__error">
-      repository not found
-    </p>
+    <p v-if="repositoryId === null" class="repository-detail-view__error">repository not found</p>
     <section v-else-if="tab === 'report'">
       <p v-if="store.reportLoading && !store.report" class="repository-detail-view__status">
         Loading...
@@ -31,11 +29,7 @@
         </p>
         <RiskBar :risk="store.report.risk" :risk-index="store.report.risk_index" />
         <ReportSeveritySummary :categories="store.report.categories" />
-        <div
-          v-for="category in store.report.categories"
-          :key="category.id"
-          class="category"
-        >
+        <div v-for="category in store.report.categories" :key="category.id" class="category">
           <h2 class="category__heading">
             <span class="category__name">{{ category.name }}</span>
             <ScoreGauge :value="category.value" :status="category.status" />
@@ -67,7 +61,10 @@
       >
         Export as md
       </a>
-      <p v-if="store.roadmapLoading && !store.roadmap.length" class="repository-detail-view__status">
+      <p
+        v-if="store.roadmapLoading && !store.roadmap.length"
+        class="repository-detail-view__status"
+      >
         Loading...
       </p>
       <p v-else-if="store.roadmapError" class="repository-detail-view__error">
@@ -87,7 +84,10 @@
     </section>
 
     <section v-else>
-      <p v-if="store.scoreHistoryLoading && !store.scoreHistory.length" class="repository-detail-view__status">
+      <p
+        v-if="store.scoreHistoryLoading && !store.scoreHistory.length"
+        class="repository-detail-view__status"
+      >
         Loading...
       </p>
       <p v-else-if="store.scoreHistoryError" class="repository-detail-view__error">
@@ -97,7 +97,9 @@
         <ScoreHistoryChart :points="store.scoreHistory" @select-point="showHistoricalReport" />
         <RiskHistoryChart
           v-if="store.scoreHistory.length > 1"
-          :points="store.scoreHistory" @select-point="showHistoricalReport" />
+          :points="store.scoreHistory"
+          @select-point="showHistoricalReport"
+        />
       </template>
     </section>
   </div>

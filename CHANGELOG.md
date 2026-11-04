@@ -402,6 +402,10 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(toolchain)* Attach the Spectral row to its table (DOCS-008)
 - Note explanatory verdict note as a potential feature (DOCS-009)
 
+### 🎨 Styling
+
+- *(radar-dashboard)* Format the dashboard with prettier (CHORE-007)
+
 ### 🧪 Testing
 
 - *(radar-core)* Add migration-backed db_session fixture with isolation guard

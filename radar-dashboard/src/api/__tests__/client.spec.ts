@@ -26,7 +26,13 @@ describe('api/client', () => {
 
   it('listRepositories calls GET /api/repositories and returns the parsed body', async () => {
     const repos = [
-      { id: 1, name: 'repo', path: '/tmp/repo', global_score: null, audit_status: 'not_yet_audited' },
+      {
+        id: 1,
+        name: 'repo',
+        path: '/tmp/repo',
+        global_score: null,
+        audit_status: 'not_yet_audited',
+      },
     ]
     vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(repos))
 

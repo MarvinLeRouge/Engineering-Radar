@@ -109,7 +109,7 @@ describe('ScoreHistoryChart', () => {
     expect(wrapper.emitted('select-point')).toBeUndefined()
   })
 
-  it('shows a visible title, also used as the chart\'s accessible name', () => {
+  it("shows a visible title, also used as the chart's accessible name", () => {
     const points = [makePoint(1, '2026-01-01', 5), makePoint(2, '2026-02-01', 7)]
     const wrapper = mount(ScoreHistoryChart, { props: { points } })
 
@@ -429,15 +429,15 @@ describe('ScoreHistoryChart', () => {
       const wrapper = mount(ScoreHistoryChart, { props: { points: pointsWithCategories() } })
       const [, securityChip] = wrapper.findAll('.score-history-chart__metric-toggle')
 
-      expect(wrapper.findComponent({ name: 'LineStub' }).props('options').plugins.legend.display).toBe(
-        false,
-      )
+      expect(
+        wrapper.findComponent({ name: 'LineStub' }).props('options').plugins.legend.display,
+      ).toBe(false)
 
       await securityChip!.trigger('click')
 
-      expect(wrapper.findComponent({ name: 'LineStub' }).props('options').plugins.legend.display).toBe(
-        true,
-      )
+      expect(
+        wrapper.findComponent({ name: 'LineStub' }).props('options').plugins.legend.display,
+      ).toBe(true)
     })
 
     it('lists every currently selected metric for each date, not just global', async () => {
