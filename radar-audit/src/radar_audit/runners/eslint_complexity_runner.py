@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 import tempfile
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.shared import raw_fallback, relativize_file_field, run_timed, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _AUDIT_CONFIG = 'module.exports = [{ rules: { complexity: ["error", 0] } }];\n'
@@ -58,23 +56,14 @@ class EslintComplexityRunner:
                     continue  # not under target_path, skip
                 command.extend(["--ignore-pattern", exclusion_glob(excluded, relative, "/**")])
 
-            start = time.monotonic()
-            completed = subprocess.run(
-                command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-            )
-            duration_ms = int((time.monotonic() - start) * 1000)
+            completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
         finally:
             config_path.unlink(missing_ok=True)
 
         try:
             results = json.loads(completed.stdout)
         except json.JSONDecodeError:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_fallback(completed), completed, duration_ms)
 
         complexities = []
         for entry in results:
@@ -93,9 +82,4 @@ class EslintComplexityRunner:
                     )
 
         relativize_file_field(complexities, target_path)
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"complexities": complexities},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, {"complexities": complexities}, completed, duration_ms)

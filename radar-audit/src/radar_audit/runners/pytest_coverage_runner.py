@@ -7,11 +7,16 @@ import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import defusedxml.ElementTree as ET
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.junit import no_report_output, parse_junit
+from radar_audit.runners.shared import tool_output
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
 
 
 class PytestCoverageRunner:
@@ -58,39 +63,16 @@ class PytestCoverageRunner:
             except (FileNotFoundError, OSError):
                 # target_path doesn't exist or is inaccessible; treat as "no tests"
                 duration_ms = int((time.monotonic() - start) * 1000)
-                return RawToolOutput(
-                    command=" ".join(command),
-                    raw_output={
-                        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
-                        "failures": [],
-                        "coverage_percent": None,
-                    },
-                    exit_code=1,
-                    duration_ms=duration_ms,
-                )
+                return no_report_output(command, 1, duration_ms)
             duration_ms = int((time.monotonic() - start) * 1000)
 
             if not junit_path.exists():
-                return RawToolOutput(
-                    command=" ".join(command),
-                    raw_output={
-                        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
-                        "failures": [],
-                        "coverage_percent": None,
-                    },
-                    exit_code=completed.returncode,
-                    duration_ms=duration_ms,
-                )
+                return no_report_output(command, completed.returncode, duration_ms)
 
-            raw_output = self._parse_junit(junit_path)
+            raw_output = parse_junit(junit_path, _pytest_case_file, recursive=False)
             raw_output["coverage_percent"] = self._parse_coverage(coverage_path)
 
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output=raw_output,
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_output, completed, duration_ms)
 
     def _launcher(
         self, target_path: Path, scratch_dir: Path
@@ -118,43 +100,6 @@ class PytestCoverageRunner:
                 command.extend(["--with-requirements", str(target_path / name)])
         return [*command, "pytest"], None
 
-    def _parse_junit(self, junit_path: Path) -> dict[str, object]:
-        root = ET.parse(junit_path).getroot()
-        assert root is not None
-        suite = root.find("testsuite") if root.tag == "testsuites" else root
-        if suite is None:
-            return {"tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0}, "failures": []}
-
-        total = int(suite.get("tests", 0))
-        failures = int(suite.get("failures", 0))
-        errors = int(suite.get("errors", 0))
-        skipped = int(suite.get("skipped", 0))
-
-        failed_cases = []
-        for testcase in suite.findall("testcase"):
-            if testcase.find("failure") is not None or testcase.find("error") is not None:
-                classname = testcase.get("classname")
-                failed_cases.append(
-                    {
-                        # pytest's default --junitxml has no file/line attribute on
-                        # <testcase> (only classname/name/time) -- best-effort derive
-                        # a file path from classname, leave line unavailable.
-                        "file": classname.replace(".", "/") + ".py" if classname else None,
-                        "name": testcase.get("name"),
-                        "line": None,
-                    }
-                )
-
-        return {
-            "tests": {
-                "total": total,
-                "passed": total - failures - errors - skipped,
-                "failed": failures + errors,
-                "skipped": skipped,
-            },
-            "failures": failed_cases,
-        }
-
     def _parse_coverage(self, coverage_path: Path) -> float | None:
         if not coverage_path.exists():
             return None
@@ -176,3 +121,11 @@ def _has_uv_lock(target_path: Path) -> bool:
         if (directory / ".git").exists():
             return False
     return False
+
+
+def _pytest_case_file(testcase: Element) -> str | None:
+    """Best-effort file path from a testcase's classname: pytest's default --junitxml has
+    no file/line attribute on <testcase> (only classname/name/time).
+    """
+    classname = testcase.get("classname")
+    return classname.replace(".", "/") + ".py" if classname else None

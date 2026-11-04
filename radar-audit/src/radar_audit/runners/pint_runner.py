@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import raw_fallback, run_timed, tool_output
 
 
 class PintRunner:
@@ -33,11 +32,7 @@ class PintRunner:
 
         command = [str(local_bin), "--test", "--format=json"]
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         try:
             parsed = json.loads(completed.stdout)
@@ -46,7 +41,7 @@ class PintRunner:
 
         raw_output: dict[str, object]
         if not isinstance(parsed, dict):
-            raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+            raw_output = raw_fallback(completed)
         else:
             raw_output = parsed
             # Pint silently swaps its --format=json output for a different,
@@ -58,9 +53,4 @@ class PintRunner:
             # process exit code, overriding whatever either shape self-reports.
             raw_output["result"] = "passed" if completed.returncode == 0 else "fail"
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output=raw_output,
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, raw_output, completed, duration_ms)

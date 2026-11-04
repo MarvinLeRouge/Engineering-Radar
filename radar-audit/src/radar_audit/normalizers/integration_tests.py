@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_repo_level_finding
+from radar_audit.normalizers.shared import add_repo_level_finding, save_criterion_score
 
 _BAND_UPPER_BOUNDS = (0.0, 10.0, 25.0, 50.0)
 
@@ -48,17 +48,7 @@ def normalize_integration_tests(
             "integration-test-ratio-below-target",
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=Confidence.MEDIUM,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, Confidence.MEDIUM)
 
 
 def _band_value(ratio_percent: float) -> float:

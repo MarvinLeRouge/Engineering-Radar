@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, save_criterion_score
 
 _TODO, _IN_PROGRESS, _DONE = 0, 1, 2
 _VALUE_BY_STATUS = {_TODO: 0.0, _IN_PROGRESS: 5.0, _DONE: 10.0}
@@ -34,17 +34,9 @@ def normalize_e2e_tests(
     worst_status = _worst_playwright_status(tool_results, playwright_results)
     _add_status_finding(session, scoring_run, criterion, playwright_results[0], worst_status)
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=_VALUE_BY_STATUS[worst_status],
-        confidence=Confidence.MEDIUM,
+    return save_criterion_score(
+        session, scoring_run, criterion, _VALUE_BY_STATUS[worst_status], Confidence.MEDIUM
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
 
 
 def _status_for(present: bool, ci_wired: bool) -> int:

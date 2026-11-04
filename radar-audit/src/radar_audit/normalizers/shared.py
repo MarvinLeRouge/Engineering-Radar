@@ -5,7 +5,8 @@ from __future__ import annotations
 import json
 import re
 import tomllib
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterable, Iterator
+from operator import itemgetter
 from pathlib import Path
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
@@ -146,6 +147,108 @@ def add_repo_level_finding(
     )
 
 
+def add_tool_finding(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    tool_result: ToolResult,
+    *,
+    severity: FindingSeverity,
+    description: str,
+    recommendation_text: str,
+    confidence: Confidence,
+    file: str | None = None,
+    line: int | None = None,
+) -> Finding:
+    """Add an OPEN, unreviewed Finding tied to a ToolResult, fingerprinted on its description."""
+    return add_finding_with_recommendation(
+        session,
+        Finding(
+            scoring_run_id=scoring_run.id,
+            criterion_id=criterion.id,
+            tool_result_id=tool_result.id,
+            severity=severity,
+            description=description,
+            file=file,
+            line=line,
+            fingerprint=compute_fingerprint(criterion.id, severity, file, description),
+            confidence=confidence,
+            status=FindingStatus.OPEN,
+            human_verdict=HumanVerdict.UNREVIEWED,
+        ),
+        recommendation_text,
+    )
+
+
+def save_criterion_score(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    value: float,
+    confidence: Confidence,
+) -> Score:
+    """Persist and return a criterion-level Score, committing the session."""
+    score = Score(
+        scoring_run_id=scoring_run.id,
+        criterion_id=criterion.id,
+        level=ScoreLevel.CRITERION,
+        value=value,
+        confidence=confidence,
+    )
+    session.add(score)
+    session.commit()
+    session.refresh(score)
+    return score
+
+
+def band_value(measure: float, bands: tuple[tuple[float, float], ...], above_value: float) -> float:
+    """Map a measure to the value of the first band whose upper bound it doesn't exceed.
+
+    `bands` holds (upper_bound, value) pairs in ascending bound order; `above_value`
+    applies when the measure exceeds every bound.
+    """
+    for upper_bound, value in bands:
+        if measure <= upper_bound:
+            return value
+    return above_value
+
+
+def worst_of(
+    results: Iterable[tuple[float, Confidence] | None],
+) -> tuple[float, Confidence] | None:
+    """Return the lowest-valued (value, confidence) pair, skipping None entries.
+
+    Consumes the whole iterable, so every per-tool scoring call still runs. On a tie
+    the first pair wins. Returns None when no pair was produced.
+    """
+    return min((r for r in results if r is not None), key=itemgetter(0), default=None)
+
+
+def score_pass_rate(
+    session: Session,
+    scoring_run: ScoringRun,
+    criterion: Criterion,
+    relevant: list[ToolResult],
+    score_files: Callable[[Session, ScoringRun, Criterion, ToolResult], tuple[int, int]],
+) -> Score | None:
+    """Score covered/applicable files summed over `relevant`, with HIGH confidence.
+
+    Returns None when there is no relevant result or no applicable file.
+    """
+    covered = 0
+    applicable = 0
+    for tool_result in relevant:
+        file_covered, file_applicable = score_files(session, scoring_run, criterion, tool_result)
+        covered += file_covered
+        applicable += file_applicable
+
+    if applicable == 0:
+        return None
+    return save_criterion_score(
+        session, scoring_run, criterion, (covered / applicable) * 10, Confidence.HIGH
+    )
+
+
 def get_repository_path(session: Session, scoring_run: ScoringRun) -> Path:
     """Resolve the on-disk path of the repository being scored.
 
@@ -245,17 +348,7 @@ def score_design_doc_evidence(
             f"design-doc-trivial:{found_path}",
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=Confidence.MEDIUM,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, Confidence.MEDIUM)
 
 
 def _add_design_doc_finding(
@@ -396,18 +489,23 @@ def python_dependency_names(candidate_dirs: list[Path]) -> set[str]:
     return names
 
 
+def _read_json_object(path: Path) -> dict[str, object] | None:
+    """Read a JSON file holding an object, or None when missing, unreadable or not an object."""
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
 def npm_dependency_names(candidate_dirs: list[Path]) -> set[str]:
     """Collect dependency names declared in package.json's dependencies/devDependencies."""
     names: set[str] = set()
     for directory in candidate_dirs:
-        manifest_path = directory / "package.json"
-        if not manifest_path.is_file():
-            continue
-        try:
-            data = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            continue
-        if not isinstance(data, dict):
+        data = _read_json_object(directory / "package.json")
+        if data is None:
             continue
         for key in ("dependencies", "devDependencies"):
             section = data.get(key)
@@ -420,14 +518,8 @@ def composer_dependency_names(candidate_dirs: list[Path]) -> set[str]:
     """Collect dependency names declared in composer.json's require/require-dev."""
     names: set[str] = set()
     for directory in candidate_dirs:
-        manifest_path = directory / "composer.json"
-        if not manifest_path.is_file():
-            continue
-        try:
-            data = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            continue
-        if not isinstance(data, dict):
+        data = _read_json_object(directory / "composer.json")
+        if data is None:
             continue
         for key in ("require", "require-dev"):
             section = data.get(key)

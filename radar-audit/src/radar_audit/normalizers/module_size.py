@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -10,7 +10,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    is_dismissed,
+    save_criterion_score,
+)
 
 _RELEVANT_TOOLS = {"radon-raw", "static-loc-count"}
 # Provisional threshold, not yet calibrated against the real portfolio (see spec §7/§9).
@@ -68,17 +72,9 @@ def normalize_module_size(
     if applicable == 0:
         return None
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=(covered / applicable) * 10,
-        confidence=Confidence.MEDIUM,
+    return save_criterion_score(
+        session, scoring_run, criterion, (covered / applicable) * 10, Confidence.MEDIUM
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
 
 
 def _per_file_loc(tool_result: ToolResult) -> dict[str, int]:

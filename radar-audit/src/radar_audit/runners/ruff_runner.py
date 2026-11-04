@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.shared import (
+    count_files,
+    raw_fallback,
+    relativize_file_field,
+    run_timed,
+    tool_output,
+)
 from radar_audit.scope import MIGRATIONS, exclusion_glob
-
-_SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache__"}
 
 
 class RuffRunner:
@@ -45,49 +47,15 @@ class RuffRunner:
             if relative_excludes:
                 command.extend(["--exclude", ",".join(relative_excludes)])
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=self.timeout_s,
-            cwd=target_path,
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         try:
             violations = json.loads(completed.stdout)
         except json.JSONDecodeError:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_fallback(completed), completed, duration_ms)
 
         relativize_file_field(violations, target_path, key="filename")
-        total_files = self._count_python_files(target_path, exclude_paths)
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"violations": violations, "total_files": total_files},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
-
-    def _count_python_files(self, target_path: Path, exclude_paths: list[Path]) -> int:
-        count = 0
-        for file_path in target_path.rglob("*.py"):
-            if not file_path.is_file():
-                continue
-            if self._is_skipped(file_path, target_path, exclude_paths):
-                continue
-            count += 1
-        return count
-
-    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
-        relative_parts = file_path.relative_to(target_path).parts
-        if any(part in _SKIP_DIRNAMES for part in relative_parts):
-            return True
-        return any(
-            excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
+        total_files = count_files(target_path, exclude_paths)
+        return tool_output(
+            command, {"violations": violations, "total_files": total_files}, completed, duration_ms
         )

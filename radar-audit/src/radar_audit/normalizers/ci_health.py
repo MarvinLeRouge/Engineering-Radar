@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
-from radar_core.finding_fingerprint import compute_fingerprint
+from radar_core.enums import Confidence, FindingSeverity
 from radar_core.models.audit import ToolResult
-from radar_core.models.finding import Finding
 from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_tool_finding,
+    band_value,
+    is_dismissed,
+    save_criterion_score,
+)
 
 _USABLE_EXIT_CODES = {0, 1}
 _BANDS: tuple[tuple[int, float], ...] = ((0, 10.0), (3, 8.0), (8, 6.0), (15, 4.0))
@@ -45,43 +48,25 @@ def normalize_ci_health(
     for finding in findings_payload:
         description = finding.get("message", "actionlint finding")
         file = finding.get("filepath")
-        added = add_finding_with_recommendation(
+        added = add_tool_finding(
             session,
-            Finding(
-                scoring_run_id=scoring_run.id,
-                criterion_id=criterion.id,
-                tool_result_id=tool_result.id,
-                severity=FindingSeverity.LOW,
-                description=description,
-                file=file,
-                line=finding.get("line"),
-                fingerprint=compute_fingerprint(
-                    criterion.id, FindingSeverity.LOW, file, description
-                ),
-                confidence=Confidence.HIGH,
-                status=FindingStatus.OPEN,
-                human_verdict=HumanVerdict.UNREVIEWED,
-            ),
-            _RECOMMENDATION_TEXT,
+            scoring_run,
+            criterion,
+            tool_result,
+            severity=FindingSeverity.LOW,
+            description=description,
+            recommendation_text=_RECOMMENDATION_TEXT,
+            confidence=Confidence.HIGH,
+            file=file,
+            line=finding.get("line"),
         )
         if not is_dismissed(session, added):
             counted += 1
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=_band_value(counted),
-        confidence=Confidence.HIGH,
+    return save_criterion_score(
+        session,
+        scoring_run,
+        criterion,
+        band_value(counted, _BANDS, _ABOVE_HIGHEST_BAND_VALUE),
+        Confidence.HIGH,
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
-
-
-def _band_value(finding_count: int) -> float:
-    for max_count, value in _BANDS:
-        if finding_count <= max_count:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE

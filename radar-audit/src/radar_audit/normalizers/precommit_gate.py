@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -13,7 +13,7 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation
+from radar_audit.normalizers.shared import add_finding_with_recommendation, save_criterion_score
 
 _VALIDATOR_TYPES = ("lint", "format", "type-check")
 
@@ -94,17 +94,7 @@ def normalize_precommit_gate(
         session, scoring_run, criterion, tool_result, cells, gate_confidence
     )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=gate_confidence,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, gate_confidence)
 
 
 def _domains_present(tool_results: list[ToolResult]) -> set[str]:

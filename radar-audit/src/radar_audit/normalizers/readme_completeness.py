@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -12,7 +12,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, get_repository_path
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    get_repository_path,
+    save_criterion_score,
+)
 
 _README_FILENAME = "readme.md"
 # Provisional banding, not yet calibrated against the real portfolio.
@@ -67,17 +71,7 @@ def normalize_readme_completeness(
                 f"Add a section covering {', '.join(missing)} to the README.",
             )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=Confidence.MEDIUM,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, Confidence.MEDIUM)
 
 
 def _find_readme(target_path: Path) -> Path | None:

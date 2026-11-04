@@ -4,13 +4,11 @@
 from __future__ import annotations
 
 import json
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.shared import raw_fallback, relativize_file_field, run_timed, tool_output
 from radar_audit.scope import MIGRATIONS
 
 
@@ -49,29 +47,15 @@ class EslintLintRunner:
                 continue
             command.extend(["--ignore-pattern", f"{relative}/**"])
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         try:
             results = json.loads(completed.stdout)
         except json.JSONDecodeError:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_fallback(completed), completed, duration_ms)
 
         relativize_file_field(results, target_path, key="filePath")
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"results": results},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, {"results": results}, completed, duration_ms)
 
     def _resolve_lint_scope(self, target_path: Path) -> list[str]:
         package_json = target_path / "package.json"

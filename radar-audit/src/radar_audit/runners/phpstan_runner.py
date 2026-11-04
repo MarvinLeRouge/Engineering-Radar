@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import raw_fallback, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 
@@ -86,14 +87,9 @@ class PhpstanRunner:
         try:
             raw_output = json.loads(completed.stdout)
         except json.JSONDecodeError:
-            raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+            raw_output = raw_fallback(completed)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output=raw_output,
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, raw_output, completed, duration_ms)
 
     def _is_laravel(self, composer_json: Path) -> bool:
         if not composer_json.exists():

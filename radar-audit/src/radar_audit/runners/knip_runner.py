@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import tempfile
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import raw_fallback, run_timed, tool_output
 from radar_audit.scope import MIGRATIONS, exclusion_glob
 
 _DEFAULT_ENTRY_CANDIDATES = (
@@ -80,31 +79,17 @@ class KnipRunner:
                 "--reporter",
                 "json",
             ]
-            start = time.monotonic()
-            completed = subprocess.run(
-                command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-            )
-            duration_ms = int((time.monotonic() - start) * 1000)
+            completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
         finally:
             config_path.unlink(missing_ok=True)
 
         prefix_index = completed.stdout.find(_JSON_PREFIX)
         if prefix_index == -1:
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output={"stdout": completed.stdout, "stderr": completed.stderr},
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_fallback(completed), completed, duration_ms)
 
         try:
             raw_output = json.loads(completed.stdout[prefix_index:])
         except json.JSONDecodeError:
-            raw_output = {"stdout": completed.stdout, "stderr": completed.stderr}
+            raw_output = raw_fallback(completed)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output=raw_output,
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, raw_output, completed, duration_ms)

@@ -4,19 +4,18 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
-import time
 from pathlib import Path
 from typing import Any, Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import count_files, is_skipped, run_timed, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 _DIAGNOSTIC_PATTERN = re.compile(
     r"^(?P<file>.+?)\((?P<line>\d+),(?P<column>\d+)\): error (?P<code>TS\d+): (?P<message>.+)$"
 )
-_SOURCE_EXTENSIONS = {".ts", ".tsx", ".vue"}
-_SKIP_DIRNAMES = {"node_modules", "dist", "build"}
+_SOURCE_EXTENSIONS = frozenset({".ts", ".tsx", ".vue"})
+_SKIP_DIRNAMES = frozenset({"node_modules", "dist", "build"})
 
 
 class TypeScriptRunner:
@@ -51,18 +50,14 @@ class TypeScriptRunner:
 
         command = ["npx", f"--package={package_name}", "--", binary_name, "--noEmit"]
 
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         diagnostics = []
         for line in completed.stdout.splitlines():
             match = _DIAGNOSTIC_PATTERN.match(line.strip())
             # tsc checks what the project's tsconfig includes: out-of-scope files are dropped here.
-            if match and not self._is_skipped(
-                target_path / match.group("file"), target_path, exclude_paths
+            if match and not is_skipped(
+                target_path / match.group("file"), target_path, exclude_paths, _SKIP_DIRNAMES
             ):
                 diagnostics.append(
                     {
@@ -74,12 +69,14 @@ class TypeScriptRunner:
                     }
                 )
 
-        total_files = self._count_source_files(target_path, exclude_paths)
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"diagnostics": diagnostics, "total_files": total_files},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
+        total_files = count_files(
+            target_path, exclude_paths, "*", _SOURCE_EXTENSIONS, _SKIP_DIRNAMES
+        )
+        return tool_output(
+            command,
+            {"diagnostics": diagnostics, "total_files": total_files},
+            completed,
+            duration_ms,
         )
 
     def _resolve_package_and_binary(self, package_json_data: dict[str, Any]) -> tuple[str, str]:
@@ -87,21 +84,3 @@ class TypeScriptRunner:
         if "vue-tsc" in dev_dependencies:
             return "vue-tsc", "vue-tsc"
         return "typescript", "tsc"
-
-    def _count_source_files(self, target_path: Path, exclude_paths: list[Path]) -> int:
-        count = 0
-        for file_path in target_path.rglob("*"):
-            if not file_path.is_file() or file_path.suffix not in _SOURCE_EXTENSIONS:
-                continue
-            if self._is_skipped(file_path, target_path, exclude_paths):
-                continue
-            count += 1
-        return count
-
-    def _is_skipped(self, file_path: Path, target_path: Path, exclude_paths: list[Path]) -> bool:
-        relative_parts = file_path.relative_to(target_path).parts
-        if any(part in _SKIP_DIRNAMES for part in relative_parts):
-            return True
-        return any(
-            excluded == file_path or excluded in file_path.parents for excluded in exclude_paths
-        )

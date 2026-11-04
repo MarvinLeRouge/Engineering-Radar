@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import tempfile
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.junit import no_report_output
+from radar_audit.runners.shared import relativize_file_field, run_timed, tool_output
 
 
 class VitestRunner:
@@ -68,23 +67,10 @@ class VitestRunner:
                     f"--coverage.reportsDirectory={coverage_dir}",
                 ]
 
-            start = time.monotonic()
-            completed = subprocess.run(
-                command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-            )
-            duration_ms = int((time.monotonic() - start) * 1000)
+            completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
             if not report_path.exists():
-                return RawToolOutput(
-                    command=" ".join(command),
-                    raw_output={
-                        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
-                        "failures": [],
-                        "coverage_percent": None,
-                    },
-                    exit_code=completed.returncode,
-                    duration_ms=duration_ms,
-                )
+                return no_report_output(command, completed.returncode, duration_ms)
 
             report = json.loads(report_path.read_text())
             raw_output = self._to_raw_output(report, target_path)
@@ -98,12 +84,7 @@ class VitestRunner:
             else:
                 raw_output["coverage_percent"] = None
 
-            return RawToolOutput(
-                command=" ".join(command),
-                raw_output=raw_output,
-                exit_code=completed.returncode,
-                duration_ms=duration_ms,
-            )
+            return tool_output(command, raw_output, completed, duration_ms)
 
     def _to_raw_output(self, report: dict[str, object], target_path: Path) -> dict[str, object]:
         total = report.get("numTotalTests", 0)

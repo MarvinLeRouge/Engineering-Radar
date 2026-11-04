@@ -3,23 +3,18 @@
 from __future__ import annotations
 
 import re
-import subprocess
-import time
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import relativize_file_field
+from radar_audit.runners.shared import (
+    SKIP_GLOB_SUFFIXES,
+    relativize_file_field,
+    run_timed,
+    tool_output,
+)
 from radar_audit.scope import MIGRATIONS, exclusion_glob
 
-_SKIP_GLOB_SUFFIXES = (
-    "/.venv/*",
-    "/__pycache__/*",
-    "/node_modules/*",
-    "/vendor/*",
-    "/dist/*",
-    "/build/*",
-)
 _IGNORE_DECORATORS = "@app.command,@app.callback"
 _LINE_PATTERN = re.compile(
     r"^(?P<file>.+):(?P<line>\d+): unused (?P<kind>\S+) '(?P<name>[^']+)' "
@@ -44,7 +39,7 @@ class VultureRunner:
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
         """Runs vulture over the target with audit ignore decorators and parses its findings."""
-        patterns = [f"{target_path}{suffix}" for suffix in _SKIP_GLOB_SUFFIXES]
+        patterns = [f"{target_path}{suffix}" for suffix in SKIP_GLOB_SUFFIXES]
         patterns.extend(exclusion_glob(excluded, excluded, "/*") for excluded in exclude_paths)
         command = [
             "uvx",
@@ -56,12 +51,8 @@ class VultureRunner:
             ",".join(patterns),
         ]
 
-        start = time.monotonic()
         # vulture prints paths relative to its cwd: pin it so they never depend on the caller.
-        completed = subprocess.run(
-            command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         findings = []
         for line in completed.stdout.splitlines():
@@ -92,9 +83,4 @@ class VultureRunner:
 
         relativize_file_field(findings, target_path)
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"findings": findings},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
-        )
+        return tool_output(command, {"findings": findings}, completed, duration_ms)

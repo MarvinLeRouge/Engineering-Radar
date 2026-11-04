@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -10,7 +10,12 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    band_value,
+    is_dismissed,
+    save_criterion_score,
+)
 
 _RELEVANT_TOOLS = {"dependency-cruiser", "pydeps"}
 # Band thresholds per quality-framework.md§4.1, keyed on the number of distinct
@@ -59,17 +64,7 @@ def normalize_dependency_circularity(
     if worst_value is None:
         return None
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=worst_value,
-        confidence=Confidence.HIGH,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, worst_value, Confidence.HIGH)
 
 
 def _score_tool_result(
@@ -82,7 +77,7 @@ def _score_tool_result(
         finding = _add_cycle_finding(session, scoring_run, criterion, tool_result, cycle_nodes)
         if not is_dismissed(session, finding):
             counted += 1
-    return _band_value(counted)
+    return band_value(counted, _BANDS, _ABOVE_HIGHEST_BAND_VALUE)
 
 
 def _add_cycle_finding(
@@ -111,13 +106,6 @@ def _add_cycle_finding(
         "Break the circular dependency by introducing an interface, applying "
         "dependency inversion, or moving the shared code to a separate module.",
     )
-
-
-def _band_value(cycle_count: int) -> float:
-    for max_count, value in _BANDS:
-        if cycle_count <= max_count:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE
 
 
 def _detect_cycles(tool_result: ToolResult) -> list[frozenset[str]]:

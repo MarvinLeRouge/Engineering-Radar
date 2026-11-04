@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -10,7 +10,11 @@ from radar_core.models.methodology import Criterion
 from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    is_dismissed,
+    save_criterion_score,
+)
 
 _RECOMMENDATION_TEXT = (
     "Rebuild the container image on top of a patched base image or package version."
@@ -69,14 +73,6 @@ def normalize_container_image_vulnerabilities(
             if _SEVERITY_RANK.get(severity, 1) > _SEVERITY_RANK[worst]:
                 worst = severity
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=_BAND_VALUE[worst],
-        confidence=Confidence.HIGH,
+    return save_criterion_score(
+        session, scoring_run, criterion, _BAND_VALUE[worst], Confidence.HIGH
     )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
+from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
 from radar_core.models.finding import Finding
@@ -13,7 +13,13 @@ from radar_core.models.scoring import Score, ScoringRun
 from sqlmodel import Session
 
 from radar_audit.normalizers.cyclomatic_complexity import _extract_blocks, _has_usable_payload
-from radar_audit.normalizers.shared import add_finding_with_recommendation, is_dismissed
+from radar_audit.normalizers.shared import (
+    add_finding_with_recommendation,
+    band_value,
+    is_dismissed,
+    save_criterion_score,
+    worst_of,
+)
 
 _USABLE_EXIT_CODES_BY_TOOL = {
     "radon-cc": {0},
@@ -45,28 +51,10 @@ def normalize_complexity_hotspots(
     if not relevant:
         return None
 
-    worst_value: float | None = None
-    worst_confidence: Confidence | None = None
-    for tool_result in relevant:
-        value, tool_confidence = _score_tool_result(session, scoring_run, criterion, tool_result)
-        if worst_value is None or value < worst_value:
-            worst_value = value
-            worst_confidence = tool_confidence
-
-    if worst_value is None or worst_confidence is None:
+    worst = worst_of(_score_tool_result(session, scoring_run, criterion, r) for r in relevant)
+    if worst is None:
         return None
-
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=worst_value,
-        confidence=worst_confidence,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, *worst)
 
 
 def _score_tool_result(
@@ -87,7 +75,7 @@ def _score_tool_result(
         )
         if not is_dismissed(session, finding):
             counted += 1
-    return _band_value(counted), tool_confidence
+    return band_value(counted, _BANDS, _ABOVE_HIGHEST_BAND_VALUE), tool_confidence
 
 
 def _add_hotspot_finding(
@@ -126,13 +114,6 @@ def _add_hotspot_finding(
         ),
         _RECOMMENDATION_TEXT,
     )
-
-
-def _band_value(outlier_count: int) -> float:
-    for max_count, value in _BANDS:
-        if outlier_count <= max_count:
-            return value
-    return _ABOVE_HIGHEST_BAND_VALUE
 
 
 def _confidence_for_tool(tool_name: str) -> Confidence:

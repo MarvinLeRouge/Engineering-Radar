@@ -16,6 +16,7 @@ from radar_audit.normalizers.shared import (
     add_repo_level_finding,
     find_prod_compose,
     get_repository_path,
+    save_criterion_score,
 )
 
 _CANDIDATE_FILENAMES = frozenset(
@@ -83,17 +84,7 @@ def normalize_deployment_automation(
             "deployment-workflow-not-pushing",
         )
 
-    score = Score(
-        scoring_run_id=scoring_run.id,
-        criterion_id=criterion.id,
-        level=ScoreLevel.CRITERION,
-        value=value,
-        confidence=Confidence.MEDIUM,
-    )
-    session.add(score)
-    session.commit()
-    session.refresh(score)
-    return score
+    return save_criterion_score(session, scoring_run, criterion, value, Confidence.MEDIUM)
 
 
 def _is_wired_to_registry_push(workflow_path: Path) -> bool:

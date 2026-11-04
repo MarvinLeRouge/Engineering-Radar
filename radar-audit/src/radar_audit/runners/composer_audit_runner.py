@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 import subprocess
-import time
 from pathlib import Path
 from typing import Any, Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.runners.shared import run_timed, tool_output
 
 _SEVERITY_MAP = {
     "critical": "CRITICAL",
@@ -43,11 +43,7 @@ class ComposerAuditRunner:
         # vendor/ is still audited (without it, composer only audits installed packages).
         if (target_path / "composer.lock").exists():
             command.append("--locked")
-        start = time.monotonic()
-        completed = subprocess.run(
-            command, capture_output=True, text=True, timeout=self.timeout_s, cwd=target_path
-        )
-        duration_ms = int((time.monotonic() - start) * 1000)
+        completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         # With zero packages to audit, `composer audit` prints nothing to stdout
         # ("No packages - skipping audit." goes to stderr instead) - confirmed
@@ -75,11 +71,11 @@ class ComposerAuditRunner:
             )
         vulnerabilities = _parse_vulnerabilities(advisories) if isinstance(advisories, dict) else []
 
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={"manifest_found": True, "vulnerabilities": vulnerabilities},
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
+        return tool_output(
+            command,
+            {"manifest_found": True, "vulnerabilities": vulnerabilities},
+            completed,
+            duration_ms,
         )
 
     @staticmethod
@@ -90,16 +86,16 @@ class ComposerAuditRunner:
         error: str,
     ) -> RawToolOutput:
         """Build the failure shape: an "error" key and no "vulnerabilities" list."""
-        return RawToolOutput(
-            command=" ".join(command),
-            raw_output={
+        return tool_output(
+            command,
+            {
                 "manifest_found": True,
                 "error": error,
                 "stdout": completed.stdout,
                 "stderr": completed.stderr,
             },
-            exit_code=completed.returncode,
-            duration_ms=duration_ms,
+            completed,
+            duration_ms,
         )
 
 
