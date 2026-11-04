@@ -398,6 +398,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Align readme tagline with repository description
 - *(roadmap)* Add two open questions to discuss for the next session
 - *(toolchain)* Attach the Spectral row to its table (DOCS-008)
+- Note explanatory verdict note as a potential feature (DOCS-009)
 
 ### 🧪 Testing
 
