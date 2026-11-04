@@ -11,9 +11,11 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
-# docvet's built-in `exclude` default, as reported by `docvet config`.
-_DOCVET_DEFAULT_EXCLUDES = ("tests", "scripts")
+# docvet's built-in `exclude` default ("tests", "scripts"), minus "tests": the audit
+# excludes tests through radar_audit.scope (orchestrator), like every other runner.
+_DOCVET_DEFAULT_EXCLUDES = ("scripts",)
 
 
 class DocvetRunner:
@@ -26,6 +28,7 @@ class DocvetRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"python"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 30
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -38,7 +41,7 @@ class DocvetRunner:
             except ValueError:
                 continue
             # docvet only matches multi-segment entries as globs, not as prefixes.
-            entry = "*" if relative == Path(".") else f"{relative}/*"
+            entry = "*" if relative == Path(".") else exclusion_glob(excluded, relative, "/*")
             if entry not in exclude_entries:
                 exclude_entries.append(entry)
 

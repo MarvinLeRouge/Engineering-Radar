@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 
 class PhpdocCheckerRunner:
@@ -22,6 +23,7 @@ class PhpdocCheckerRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"php"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:

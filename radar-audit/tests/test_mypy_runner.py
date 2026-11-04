@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 from radar_audit.runners.mypy_runner import MypyRunner
 
 from tests.git_helpers import init_git_repo
@@ -94,3 +97,14 @@ def test_uses_target_path_as_cwd_not_the_caller_process_cwd(tmp_path, monkeypatc
     # (which has no mypy config of its own), mypy runs in default mode and
     # the file is clean.
     assert result.raw_output["diagnostics"] == []
+
+
+def test_exclude_regex_matches_only_the_whole_path_component():
+    from radar_audit.runners.mypy_runner import _exclude_regex
+
+    pattern = re.compile(_exclude_regex(Path("tests/conftest.py")))
+
+    assert pattern.search("tests/conftest.py")
+    assert not pattern.search("src/tests/myconftest.py")
+    assert re.compile(_exclude_regex(Path("tests"))).search("tests/test_a.py")
+    assert not re.compile(_exclude_regex(Path("tests"))).search("src/latests/a.py")

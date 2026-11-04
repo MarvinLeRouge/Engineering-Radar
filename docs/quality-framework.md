@@ -93,6 +93,40 @@ Unchanged from `system-design.md`§7: a criterion that could not be evaluated (t
 
 Added at second Phase 3 pilot calibration (Summit-Stats, 2026-08-27). A criterion whose evidence *could* be read from a checked-in artifact (a committed `coverage.xml`, `coverage-summary.json`, or any other generated report file the target repo happens to track) must instead be evaluated from a **live run performed by the audit itself**, never from reading that artifact directly — even when it's present and its numbers look plausible. Confirmed case: Summit-Stats' committed `coverage.xml` showed 73.97% statement coverage, apparently below the repo's own 80% CI gate; a fresh `pest --coverage` run produced 91.4%, the committed file simply hadn't been regenerated since an earlier point in the repo's history. A stale artifact is indistinguishable from a fresh one by inspection alone, so this isn't a per-repo judgment call — it's a standing rule for any tool-generated evidence that can go stale between commits (coverage reports today; the same logic would apply to e.g. a committed SBOM or a committed dependency-audit snapshot if either is ever used as evidence). See `toolchain.md`'s Python section for the tool-level detail.
 
+### 3.6 Audit scope: tests and migrations
+
+Added 2026-11-04 (FEAT-030). Some criteria judge the **application code** only; others judge **everything committed**, because the risk they measure exists wherever the code lives. The audit applies this per tool: tests and migrations are removed from what the tool analyzes (not filtered out of its results afterwards), so ratios such as "clean files / analyzed files" are computed on the right set of files.
+
+**Zones** (defined once, in `radar-audit/src/radar_audit/scope.py`):
+
+| Zone | Directories (whole tree below) | Files anywhere else |
+|---|---|---|
+| Tests | `tests/`, `test/`, `__tests__/`, `e2e/` | `test_*.py`, `*_test.py`, `conftest.py`, `*.spec.*`, `*.test.*` |
+| Migrations | `alembic/` (only when it holds a `versions/` directory, Alembic's layout), `migrations/` (Django, Laravel `database/migrations/`, Flask-Migrate) | none |
+
+**Per criterion**:
+
+| Criterion | Tools | Tests | Migrations |
+|---|---|---|---|
+| 1.3 Module size distribution | radon raw, static LOC count | excluded | excluded |
+| 2.2 Type-checking pass | mypy, tsc / vue-tsc, PHPStan | excluded | excluded |
+| 2.3 Cyclomatic complexity, 5.1 Complexity hotspots | radon cc, ESLint complexity, PHPMD | excluded | excluded |
+| 2.5 Code duplication | jscpd | excluded | excluded |
+| 5.2 Dead code / unused exports | vulture, knip | analyzed, but findings inside them are dropped (see below) | excluded |
+| 5.3 Documentation-in-code (docstrings) | docvet, phpdoc-checker | excluded | excluded |
+| 2.1 Linter clean pass rate | Ruff, ESLint | **kept** | excluded |
+| Security (secrets, SAST, dependency and image vulnerabilities, Dockerfile hardening) | gitleaks, Semgrep, pip-audit, pnpm audit, composer audit, Trivy, Hadolint | **kept** | **kept** |
+| Testing & reliability (unit, integration, E2E) | pytest, Vitest, Pest, Playwright | measured on the tests themselves | not applicable |
+
+**Why**:
+- **Tests** are not shipped code. A long parametrized test function is not product complexity, fixtures are expected to repeat each other, test helpers look unused to a dead-code tool, and most projects type-check `src/` only (this repository's own pre-commit mypy does). Tests stay in scope for lint (they are maintained code) and for security: a real credential committed in a test fixture is still a leak.
+- **Dead code is the exception** to "removed from what the tool analyzes": a dead-code tool needs to see tests as callers, otherwise code used only by tests would be reported as dead. Tests are therefore analyzed, and only the findings located inside test files are dropped (on Engineering-Radar, excluding them outright made vulture report about 60 model fields of `radar-core` as unused). This is safe because dead code is scored on a count of items, not a ratio of files.
+- **Migrations** are frozen once applied: they are never refactored, their module-level `revision` / `down_revision` variables are read by Alembic and look unused to vulture, and a directory named `alembic/` shadows the installed `alembic` package for mypy (`Module "alembic" has no attribute "op"`, a false positive of the audit itself, found on this repository). They stay in scope for security: a migration can still embed a secret or an injectable statement.
+
+**Impact on scores**: excluding these zones removes findings, so scores of the criteria above rise from the first audit run on or after 2026-11-04. On Engineering-Radar, type-checking findings fell from 2156 to the application code's own count (see the FEAT-030 pull request for the before/after table). This step on the trend charts is a change of rules, not an improvement of the code: compare scores across that date with this in mind.
+
+**Known limits**: matching is by name, so a helper module named `test_*.py` or an application package named `test/` is treated as tests (`*.spec.*` / `*.test.*` only match code files, so `openapi.spec.yaml` is not). Pint (PHP lint) has no command-line exclusion, so Laravel migrations are still linted by it. The type-checking rule does not read each project's own type-checker configuration (mypy `files`, tsconfig `include`); a project that deliberately type-checks its tests is judged without them.
+
 ---
 
 ## 4. Criteria catalog
@@ -266,3 +300,5 @@ These gaps, plus the critical-penalty list (§3.2) and the default equal-weighti
 ## 6. Versioning
 
 Identifier: **Quality Framework v1.0**, frozen 2026-08-26, per the format and bump rules in `system-design.md`§9. This is the first `MethodologyVersion` record. Any change after this point (weight rebalancing, gap closure once a candidate tool is smoke-tested, taxonomy merge/split) is a version bump per those rules, not a silent edit of this document.
+
+**Amendment 2026-11-04 (FEAT-030)**: §3.6 (audit scope: tests and migrations) was added without bumping the `MethodologyVersion` record. A new version creates new criterion rows, and a finding's fingerprint includes its criterion id, so a bump would silently drop every human verdict (won't fix, false positive) on the next scoring run. The amendment date in §3.6 marks the change instead, until methodology versioning can carry verdicts across versions.

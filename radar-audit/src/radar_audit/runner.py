@@ -18,7 +18,11 @@ class RawToolOutput:
 
 
 class ToolRunner(Protocol):
-    """Interface every audit tool runner implements to execute one external tool."""
+    """Interface every audit tool runner implements to execute one external tool.
+
+    A runner may also define `excluded_zones` (see radar_audit.scope): the zones its
+    criterion does not judge, whose paths the orchestrator adds to `exclude_paths`.
+    """
 
     tool_name: str
     tool_version: str

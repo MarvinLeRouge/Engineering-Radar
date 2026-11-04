@@ -19,6 +19,7 @@ from radar_audit.normalizers.shared import (
     is_dismissed,
     read_source_line,
 )
+from radar_audit.scope import is_test_path
 
 _USABLE_EXIT_CODES_BY_TOOL = {
     "vulture": {0, 3},
@@ -86,6 +87,9 @@ def _score_tool_result(
 ) -> tuple[float, Confidence]:
     counted = 0
     for item in _extract_items(tool_result):
+        # Tests are analyzed so test-only usage counts as usage, but not judged themselves.
+        if is_test_path(item.get("file") or ""):
+            continue
         finding = _add_dead_code_finding(
             session, scoring_run, criterion, tool_result, item, repo_path
         )

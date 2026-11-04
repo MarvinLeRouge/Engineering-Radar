@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 _DIAGNOSTIC_PATTERN = re.compile(
     r"^(?P<file>.+?)\((?P<line>\d+),(?P<column>\d+)\): error (?P<code>TS\d+): (?P<message>.+)$"
@@ -25,6 +26,7 @@ class TypeScriptRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"javascript"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -58,7 +60,10 @@ class TypeScriptRunner:
         diagnostics = []
         for line in completed.stdout.splitlines():
             match = _DIAGNOSTIC_PATTERN.match(line.strip())
-            if match:
+            # tsc checks what the project's tsconfig includes: out-of-scope files are dropped here.
+            if match and not self._is_skipped(
+                target_path / match.group("file"), target_path, exclude_paths
+            ):
                 diagnostics.append(
                     {
                         "file": match.group("file"),

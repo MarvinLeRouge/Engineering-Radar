@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _ALWAYS_EXCLUDED_DIRNAMES = (
     "node_modules",
@@ -17,16 +18,6 @@ _ALWAYS_EXCLUDED_DIRNAMES = (
     "dist",
     "build",
     "docs",
-    # Test files are expected to duplicate setup/fixture code across each
-    # other for independence -- confirmed empirically across this portfolio's
-    # real naming conventions: "tests" (GeoChallenge-Tracker, Summit-Stats),
-    # "test" (HexaRot's NestJS backend), "__tests__" (Summit-Stats' Vue
-    # frontend), "e2e" (Summit-Stats' Playwright suite, where spec files
-    # share a helpers/auth.js fixture).
-    "tests",
-    "test",
-    "__tests__",
-    "e2e",
 )
 _DOT_DIRECTORY_IGNORE_SUFFIX = "**/.*/**"
 # Code duplication (criterion 2.5) means source code, not prose: without an
@@ -44,6 +35,7 @@ class JscpdRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset()
     scope: Literal["repo", "subproject"] = "repo"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -52,7 +44,7 @@ class JscpdRunner:
             ignore_patterns = [f"{target_path}/**/{name}/**" for name in _ALWAYS_EXCLUDED_DIRNAMES]
             ignore_patterns.append(f"{target_path}/{_DOT_DIRECTORY_IGNORE_SUFFIX}")
             for excluded in exclude_paths:
-                ignore_patterns.append(f"{excluded}/**")
+                ignore_patterns.append(exclusion_glob(excluded, excluded, "/**"))
 
             command = [
                 "npx",

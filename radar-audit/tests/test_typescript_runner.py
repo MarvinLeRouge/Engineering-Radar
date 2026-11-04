@@ -89,3 +89,23 @@ def test_reports_tool_identity():
     assert runner.tool_name == "tsc"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"javascript"})
+
+
+@pytest.mark.slow
+def test_drops_diagnostics_of_excluded_files(tmp_path):
+    repo_path = tmp_path / "repo"
+    code_with_error = "export function add(a: number, b: number): number {\n  return a + b;\n}\n"
+    init_git_repo(
+        repo_path,
+        files={
+            "src/a.ts": code_with_error,
+            "src/a.spec.ts": "import { add } from './a';\nadd('x', 1);\n",
+        },
+    )
+    _write_package_json(repo_path)
+
+    runner = TypeScriptRunner()
+    result = runner.run(repo_path, exclude_paths=[(repo_path / "src" / "a.spec.ts").resolve()])
+
+    assert result.raw_output["diagnostics"] == []
+    assert result.raw_output["total_files"] == 1

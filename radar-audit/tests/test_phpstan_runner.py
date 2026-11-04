@@ -90,3 +90,16 @@ def test_build_neon_content_includes_block_only_when_laravel(tmp_path):
     assert "includes:" in laravel_neon
     assert "vendor/larastan/larastan/extension.neon" in laravel_neon
     assert "includes:" not in bare_neon
+
+
+def test_build_neon_content_excludes_a_single_file_as_is(tmp_path):
+    runner = PhpstanRunner()
+    test_file = tmp_path / "src" / "UserTest.php"
+    test_file.parent.mkdir()
+    test_file.write_text("<?php\n")
+
+    neon = runner._build_neon_content(
+        is_laravel=False, target_path=tmp_path, exclude_paths=[test_file]
+    )
+
+    assert f"- {test_file}\n" in neon

@@ -166,6 +166,27 @@ Both tools are Go/Haskell binaries with no `uvx`/`npx` wrapper — run via Docke
 
 ---
 
+## Audit scope: tests and migrations (FEAT-030, 2026-11-04)
+
+Rule and rationale: `docs/quality-framework.md` §3.6. Each runner declares the zones its criterion does not judge (`excluded_zones`, zones defined in `radar-audit/src/radar_audit/scope.py`), and the orchestrator passes the matching directories and files to the tool through its own exclusion mechanism:
+
+| Tool | Excluded zones | Mechanism |
+|---|---|---|
+| radon cc, radon raw, vulture | tests and migrations (vulture: migrations only) | `-e` / `--exclude` globs |
+| mypy | tests and migrations | `--exclude` regex, anchored on whole path components |
+| Ruff | migrations | `--exclude` |
+| ESLint (lint, complexity) | migrations (lint), tests and migrations (complexity) | `--ignore-pattern` |
+| tsc / vue-tsc | tests and migrations | runs on the project's own tsconfig, diagnostics in excluded files are dropped and those files are not counted |
+| PHPStan | tests and migrations | `parameters.excludePaths` in the generated neon |
+| PHPMD, phpdoc-checker | tests and migrations | `--exclude` |
+| jscpd | tests and migrations | `--ignore` globs (replaces its former hard-coded test directory list, FIX-012) |
+| knip | migrations | `ignore` in the generated config |
+| docvet | tests and migrations | `exclude` in the scratch config (replaces docvet's own `tests` default) |
+| static LOC count | tests and migrations | skipped during the file walk |
+| Pint | none | no command-line exclusion; known limit |
+
+Vulture and knip keep analyzing tests so that test-only usage still counts as usage; the dead-code normalizer drops the findings located inside test files. Security tools (gitleaks, Semgrep, dependency audits, Trivy, Hadolint) see the whole repository.
+
 ## Performance (frontend only — category 6, see `docs/quality-framework.md`§4.6)
 
 Backend/DB performance is deliberately excluded from Quality Framework v1.0 (no objective definition without a per-project SLA) — not a toolchain gap, no candidate evaluated here. Frontend has one plausible candidate, listed for Phase-2-triggered validation, not yet smoke-tested this session.

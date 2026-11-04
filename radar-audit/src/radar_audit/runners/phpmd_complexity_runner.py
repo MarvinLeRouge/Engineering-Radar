@@ -12,6 +12,7 @@ from typing import Literal
 
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import relativize_file_field
+from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
 
 _COMPLEXITY_PATTERN = re.compile(r"Cyclomatic Complexity of (\d+)")
 
@@ -23,6 +24,7 @@ class PhpmdComplexityRunner:
     tool_version = "1.0.0"
     supported_stacks: frozenset[str] = frozenset({"php"})
     scope: Literal["repo", "subproject"] = "subproject"
+    excluded_zones = TESTS_AND_MIGRATIONS
     timeout_s = 60
 
     def run(self, target_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
@@ -93,7 +95,7 @@ def _build_exclude_patterns(target_path: Path, exclude_paths: list[Path]) -> lis
             relative = excluded.relative_to(target_path)
         except ValueError:
             continue
-        patterns.append(f"{relative}/*")
+        patterns.append(exclusion_glob(excluded, relative, "/*"))
     return patterns
 
 
