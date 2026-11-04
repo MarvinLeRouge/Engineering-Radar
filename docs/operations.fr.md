@@ -61,6 +61,38 @@ les erreurs gérées par la CLI ne sont jamais envoyés. Aucune donnée
 utilisateur, en-tête, corps de requête, query string ni variable de pile
 n'est collectée.
 
+## Logs
+
+`radar-api` et `radar-audit` écrivent des **logs structurés** avec structlog : chaque ligne est un événement avec des champs nommés, écrit sur **stderr** (stdout reste réservé à l'affichage propre à la CLI, comme les plans `--dry-run` et les rapports).
+
+- **Format** : lignes JSON dans Docker ou toute sortie qui n'est pas un terminal, texte coloré lisible dans un terminal. Forcer l'un ou l'autre avec `RADAR_LOG_FORMAT=json` ou `RADAR_LOG_FORMAT=console`.
+- **Niveau** : `RADAR_LOG_LEVEL` (`debug`, `info`, `warning`, `error`), `info` par défaut.
+- **Jamais journalisés** : les paramètres de requête, les en-têtes (la clé d'API passe dans l'un d'eux), les corps de requête.
+
+| Événement | Émis par | Champs |
+|---|---|---|
+| `request_handled` | radar-api, un par requête HTTP (niveau error pour les 5xx) | `method`, `path`, `status`, `duration_ms` |
+| `audit_started` | radar-audit `run` | `repo`, `subprojects` |
+| `tool_finished` | radar-audit, un par exécution d'outil | `tool`, `subproject`, `exit_code`, `duration_ms`, `audit_id` |
+| `tool_crashed` | radar-audit, niveau error, quand un outil lève une exception | `tool`, `target`, `error`, `audit_id` |
+| `audit_finished` | radar-audit `run` | `repo`, `tools_run`, `duration_ms`, `audit_id` |
+| `scoring_finished` | radar-audit `score` | `repo`, `global_score`, `findings`, `audit_id` |
+
+Chaque ligne écrite pendant un audit porte son `audit_id`, ce qui permet d'isoler un audit entier. Chaque ligne a aussi un `timestamp` (UTC, ISO 8601) et un `level`.
+
+Les lire en local :
+
+```bash
+docker compose logs -f radar-api
+# seulement les erreurs serveur, en JSON compact :
+docker compose logs --no-log-prefix radar-api | jq -c 'select(.level == "error")'
+# les outils les plus lents d'un audit lancé dans un terminal :
+RADAR_LOG_FORMAT=json uv run radar-audit run some-repo 2>&1 >/dev/null \
+  | jq -s 'map(select(.event == "tool_finished")) | sort_by(-.duration_ms) | .[:5]'
+```
+
+**Logs et Sentry sont complémentaires.** Sentry (ci-dessus) collecte les *erreurs* : exceptions regroupées, stack traces, alertes. Les logs enregistrent *tout ce qui se passe*, y compris quand rien ne plante : durées, décisions, étapes. Quand Sentry est activé, les dernières lignes de log sont jointes à chaque erreur qu'il remonte, sous forme de fil d'Ariane (breadcrumbs). Pour chercher dans les logs sur plusieurs jours ou construire des tableaux de bord, voir le [guide d'agrégation des logs](guides/log-aggregation.fr.md) (Loki et Grafana, optionnels, hors de la stack du projet).
+
 ## CI / automatisation
 
 - `CHANGELOG.md` est régénéré principalement par un hook local `post-commit` intégré au framework `pre-commit` (`scripts/changelog-post-commit.sh`, exécute git-cliff et intègre le résultat dans le même commit), si bien que les PR de fonctionnalité contiennent déjà leur propre entrée de changelog

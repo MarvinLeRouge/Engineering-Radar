@@ -158,6 +158,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Note won't-fix findings left out of the risk bar (FEAT-028)
 - *(radar-dashboard)* Add Playwright end-to-end tests run in CI (FEAT-029)
 - *(radar-audit)* Exclude tests and migrations from application-code criteria (FEAT-030)
+- Add structured logging with structlog (FEAT-031)
 
 ### 🐛 Bug Fixes
 

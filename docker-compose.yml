@@ -8,6 +8,8 @@ services:
       - RADAR_API_KEY=${RADAR_API_KEY}
       - SENTRY_DSN=${SENTRY_BACKEND_DSN:-}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
+      - RADAR_LOG_LEVEL=${RADAR_LOG_LEVEL:-info}
+      - RADAR_LOG_FORMAT=${RADAR_LOG_FORMAT:-}
     volumes:
       - radar-data:/data
     ports:
@@ -35,6 +37,8 @@ services:
       - RADAR_DATABASE_URL=sqlite:////data/radar.db
       - SENTRY_DSN=${SENTRY_BACKEND_DSN:-}
       - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
+      - RADAR_LOG_LEVEL=${RADAR_LOG_LEVEL:-info}
+      - RADAR_LOG_FORMAT=${RADAR_LOG_FORMAT:-}
     volumes:
       - radar-data:/data
       - ${RADAR_PORTFOLIO_PATH:-./portfolio}:/portfolio:ro

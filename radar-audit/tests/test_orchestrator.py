@@ -493,3 +493,25 @@ def test_execute_audit_excludes_a_runners_out_of_scope_zones(db_session, tmp_pat
     # A runner without excluded_zones (e.g. secrets, SAST) still sees everything.
     assert resolved / "tests" not in unscoped.calls[0][1]
     assert resolved / "alembic" not in unscoped.calls[0][1]
+
+
+def test_execute_audit_logs_its_progress_with_the_audit_id(db_session, tmp_path):
+    import structlog
+    from structlog.testing import capture_logs
+
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path)
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    # capture_logs skips the configured processors: merge the bound context explicitly.
+    with capture_logs(processors=[structlog.contextvars.merge_contextvars]) as logs:
+        audit = execute_audit(db_session, config, "repo", [_StubRunner(), _AlwaysCrashesRunner()])
+
+    events = {log["event"]: log for log in logs}
+    assert events["audit_started"]["repo"] == "repo"
+    assert events["tool_finished"]["tool"] == "stub-runner"
+    assert events["tool_finished"]["exit_code"] == 0
+    assert events["tool_crashed"]["tool"] == "crashes-runner"
+    assert events["tool_crashed"]["log_level"] == "error"
+    assert events["audit_finished"]["tools_run"] == 2
+    assert all(log["audit_id"] == audit.id for log in logs if log["event"] != "audit_started")

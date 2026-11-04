@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import UTC, datetime
 
+import structlog
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import Audit, ToolResult
@@ -13,7 +14,7 @@ from radar_core.models.links import FindingImprovementTaskLink
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlmodel import Session, select
 
 from radar_audit.normalizers import CRITERION_NORMALIZERS
@@ -24,6 +25,8 @@ from radar_audit.normalizers.shared import (
 )
 from radar_audit.roadmap_promotion import promote_improvement_tasks
 from radar_audit.taxonomy.seed import seed_taxonomy
+
+log = structlog.get_logger("radar_audit.scoring")
 
 _CONFIDENCE_RANK = {Confidence.HIGH: 0, Confidence.MEDIUM: 1, Confidence.LOW: 2}
 
@@ -75,7 +78,17 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
         },
     )
     try:
-        return _score_run(session, audit, methodology_version, scoring_run, carried_verdicts)
+        with structlog.contextvars.bound_contextvars(audit_id=audit.id):
+            scored = _score_run(session, audit, methodology_version, scoring_run, carried_verdicts)
+            log.info(
+                "scoring_finished",
+                repo=repo_name,
+                global_score=scored.global_score,
+                findings=session.exec(
+                    select(func.count()).where(Finding.scoring_run_id == scored.id)
+                ).one(),
+            )
+            return scored
     finally:
         set_dismissed_fingerprints(session, set())
 

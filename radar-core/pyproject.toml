@@ -7,6 +7,7 @@ dependencies = [
     "sqlmodel>=0.0.22",
     "alembic>=1.13",
     "sentry-sdk>=2.73.0",
+    "structlog>=26.1.0",
 ]
 
 [dependency-groups]

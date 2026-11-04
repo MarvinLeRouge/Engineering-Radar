@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+import structlog
 from radar_core.enums import FindingStatus, HumanVerdict
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
@@ -20,6 +22,10 @@ from radar_audit.runner import RawToolOutput, ToolRunner
 from radar_audit.scope import out_of_scope_paths
 from radar_audit.taxonomy.seed import seed_taxonomy
 from radar_audit.worktree import compute_exclude_paths
+
+log = structlog.get_logger("radar_audit.audit")
+# exit_code recorded for a runner that raised instead of returning a result.
+_CRASHED_EXIT_CODE = -1
 
 
 def resolve_repository(session: Session, repo_path: Path, repo_name: str) -> Repository:
@@ -180,16 +186,26 @@ def execute_audit(
 ) -> Audit:
     """Run every planned tool for a repository and persist the results under an Audit row."""
     plan = plan_audit(config, repo_name)
+    start = time.monotonic()
+    log.info("audit_started", repo=repo_name, subprojects=len(plan.subprojects))
 
     seed_taxonomy(session)
     repository = resolve_repository(session, plan.repository_path, repo_name)
     audit = get_or_create_audit(session, repository)
 
-    _cleanup_stale_tool_results(session, audit)
-    _run_planned_tools(session, audit, plan, runners)
+    # Every line logged until the audit ends carries its id, to follow one audit end to end.
+    with structlog.contextvars.bound_contextvars(audit_id=audit.id):
+        _cleanup_stale_tool_results(session, audit)
+        tools_run = _run_planned_tools(session, audit, plan, runners)
 
-    session.commit()
-    session.refresh(audit)
+        session.commit()
+        session.refresh(audit)
+        log.info(
+            "audit_finished",
+            repo=repo_name,
+            tools_run=tools_run,
+            duration_ms=int((time.monotonic() - start) * 1000),
+        )
     return audit
 
 
@@ -251,8 +267,9 @@ def _delete_dependents(session: Session, stale_finding_ids: list[int]) -> None:
 
 def _run_planned_tools(
     session: Session, audit: Audit, plan: AuditPlan, runners: list[ToolRunner]
-) -> None:
-    for run in planned_runs(plan, runners):
+) -> int:
+    runs = planned_runs(plan, runners)
+    for run in runs:
         if run.runner.scope == "subproject":
             run_exclude_paths = plan.exclude_paths + _subproject_exclusions(
                 run.target_path, plan.subprojects
@@ -263,10 +280,19 @@ def _run_planned_tools(
         zones: frozenset[str] = getattr(run.runner, "excluded_zones", frozenset())
         run_exclude_paths = run_exclude_paths + out_of_scope_paths(run.target_path, zones)
         raw = _run_tool_safely(run.runner, run.target_path, run_exclude_paths)
+        subproject_path = _relative_subproject_path(run.target_path, plan.repository_path)
+        if raw.exit_code != _CRASHED_EXIT_CODE:
+            log.info(
+                "tool_finished",
+                tool=run.runner.tool_name,
+                subproject=subproject_path,
+                exit_code=raw.exit_code,
+                duration_ms=raw.duration_ms,
+            )
         session.add(
             ToolResult(
                 audit_id=audit.id,
-                subproject_path=_relative_subproject_path(run.target_path, plan.repository_path),
+                subproject_path=subproject_path,
                 tool_name=run.runner.tool_name,
                 tool_version=run.runner.tool_version,
                 command=raw.command,
@@ -275,6 +301,7 @@ def _run_planned_tools(
                 duration_ms=raw.duration_ms,
             )
         )
+    return len(runs)
 
 
 def _relative_subproject_path(target_path: Path, repository_path: Path) -> str:
@@ -291,9 +318,10 @@ def _run_tool_safely(
     try:
         return runner.run(target_path, exclude_paths)
     except Exception as exc:  # noqa: BLE001 - a tool crash must persist as evidence, never abort the audit
+        log.error("tool_crashed", tool=runner.tool_name, target=str(target_path), error=str(exc))
         return RawToolOutput(
             command=f"{runner.tool_name} (crashed)",
             raw_output={"error": str(exc)},
-            exit_code=-1,
+            exit_code=_CRASHED_EXIT_CODE,
             duration_ms=0,
         )

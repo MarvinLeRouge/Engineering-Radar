@@ -58,6 +58,38 @@ unexpected crashes: tool failures and handled CLI errors are never sent.
 No user data, headers, bodies, query strings or stack-frame variables are
 collected.
 
+## Logging
+
+`radar-api` and `radar-audit` write **structured logs** with structlog: each line is one event with named fields, written to **stderr** (stdout stays reserved for the CLI's own output, such as `--dry-run` plans and reports).
+
+- **Format**: JSON lines in Docker or any non-terminal output, readable colored text in a terminal. Force one with `RADAR_LOG_FORMAT=json` or `RADAR_LOG_FORMAT=console`.
+- **Level**: `RADAR_LOG_LEVEL` (`debug`, `info`, `warning`, `error`), `info` by default.
+- **Never logged**: query strings, headers (the API key travels in one), request bodies.
+
+| Event | Emitted by | Fields |
+|---|---|---|
+| `request_handled` | radar-api, one per HTTP request (error level for 5xx) | `method`, `path`, `status`, `duration_ms` |
+| `audit_started` | radar-audit `run` | `repo`, `subprojects` |
+| `tool_finished` | radar-audit, one per tool run | `tool`, `subproject`, `exit_code`, `duration_ms`, `audit_id` |
+| `tool_crashed` | radar-audit, error level, when a tool raises | `tool`, `target`, `error`, `audit_id` |
+| `audit_finished` | radar-audit `run` | `repo`, `tools_run`, `duration_ms`, `audit_id` |
+| `scoring_finished` | radar-audit `score` | `repo`, `global_score`, `findings`, `audit_id` |
+
+Every line logged during one audit carries its `audit_id`, so a whole audit can be isolated. Every line also has `timestamp` (UTC, ISO 8601) and `level`.
+
+Reading them locally:
+
+```bash
+docker compose logs -f radar-api
+# only server errors, as compact JSON:
+docker compose logs --no-log-prefix radar-api | jq -c 'select(.level == "error")'
+# the slowest tools of an audit run in a terminal:
+RADAR_LOG_FORMAT=json uv run radar-audit run some-repo 2>&1 >/dev/null \
+  | jq -s 'map(select(.event == "tool_finished")) | sort_by(-.duration_ms) | .[:5]'
+```
+
+**Logs and Sentry are complementary.** Sentry (above) collects *errors*: grouped exceptions, stack traces, alerts. Logs record *everything that happens*, including when nothing fails: durations, decisions, steps. When Sentry is enabled, the most recent log lines are attached to each error it reports as breadcrumbs. To search logs across days or build dashboards, see the [log aggregation guide](guides/log-aggregation.md) (Loki and Grafana, optional, not part of this project's stack).
+
 ## CI / automation
 
 - `CHANGELOG.md` is regenerated primarily by a local `post-commit` hook wired into the `pre-commit` framework (`scripts/changelog-post-commit.sh`, runs git-cliff and folds the result into the same commit), so feature PRs already carry their own changelog entry
