@@ -90,6 +90,14 @@ cd radar-dashboard && npm run test:coverage
 
 Certains tests `radar-audit` sont marqués `slow` (vrais téléchargements `npx`/`composer` nécessitant un accès réseau et, pour les runners PHP, une chaîne d'outils PHP/Composer locale). Lancer `pytest -m "not slow"` pour les ignorer localement ; la CI les exécute dans un job séparé, non bloquant (voir ci-dessous).
 
+Les tests end-to-end (Playwright) pilotent le dashboard compilé contre un vrai `radar-api`, sur une base SQLite jetable remplie par `scripts/seed_e2e_db.py`, avec leur propre clé d'API de test et leurs propres ports (8020, 4180) : ils ne touchent jamais `radar.db`, le `.env` ni les services en cours. Télécharger le navigateur une fois, puis les lancer :
+
+```bash
+cd radar-dashboard
+npx playwright install chromium
+npm run test:e2e
+```
+
 ## Pipeline CI
 
 `.github/workflows/ci.yml` s'exécute à chaque push et pull request vers `main` :
@@ -97,6 +105,7 @@ Certains tests `radar-audit` sont marqués `slow` (vrais téléchargements `npx`
 - `radar-core`, `radar-api` et `radar-audit` (rapide, `-m "not slow"`) lancent les tests avec un seuil de couverture de 80% et bloquent la PR en cas d'échec.
 - `radar-audit` (lent) lance séparément les tests dépendant de `npx`/`composer` et ne bloque pas la PR.
 - `radar-dashboard` lance Vitest avec un seuil de couverture de 80% et bloque la PR en cas d'échec.
+- `radar-dashboard` (e2e) lance la suite Playwright et bloque la PR en cas d'échec ; le rapport HTML est conservé comme artefact en cas d'échec.
 
 ## Gates de qualité du code
 
