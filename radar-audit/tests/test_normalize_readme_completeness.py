@@ -104,3 +104,76 @@ def test_generic_overview_header_alone_does_not_count_as_architecture(db_session
     score = normalize_readme_completeness(db_session, scoring_run, criterion, [])
 
     assert score.value == 7.0
+
+
+def _score_readme(db_session, tmp_path, text):
+    (tmp_path / "README.md").write_text(text)
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+    return normalize_readme_completeness(db_session, scoring_run, criterion, [])
+
+
+def test_a_comment_inside_a_code_block_is_not_a_section_header(db_session, tmp_path):
+    score = _score_readme(
+        db_session,
+        tmp_path,
+        "# My Project\n\n## Architecture\n\ntext\n\n"
+        "```bash\n# install deps\n# usage example\n```\n",
+    )
+
+    assert score.value == 7.0
+
+
+def test_quick_start_counts_as_both_setup_and_usage(db_session, tmp_path):
+    score = _score_readme(
+        db_session, tmp_path, "# My Project\n\n## Quick start\n\nsteps\n\n## Architecture\n\nx\n"
+    )
+
+    assert score.value == 10.0
+
+
+def test_common_section_synonyms_are_recognized(db_session, tmp_path):
+    score = _score_readme(
+        db_session,
+        tmp_path,
+        "# P\n\n## Installation & Launch\n\nsteps\n\n## How it works\n\nx\n",
+    )
+
+    assert score.value == 10.0
+
+
+def test_a_tests_heading_is_not_usage(db_session, tmp_path):
+    score = _score_readme(
+        db_session,
+        tmp_path,
+        "# P\n\n## Installation\n\nx\n\n## Running tests\n\nx\n\n## Architecture\n\nx\n",
+    )
+
+    assert score.value == 7.0
+
+
+def test_a_link_to_a_local_doc_credits_the_sections_its_line_names(db_session, tmp_path):
+    (tmp_path / "docs").mkdir()
+    for name in ("architecture.md", "dev.md", "operations.md"):
+        (tmp_path / "docs" / name).write_text("content\n")
+
+    score = _score_readme(
+        db_session,
+        tmp_path,
+        "# P\n\n## Documentation\n\n"
+        "- [Architecture](docs/architecture.md): overview\n"
+        "- [Developer guide](docs/dev.md): local setup, tests\n"
+        "- [Operations](docs/operations.md): running the system locally\n",
+    )
+
+    assert score.value == 10.0
+
+
+def test_a_link_to_a_missing_or_remote_doc_credits_nothing(db_session, tmp_path):
+    score = _score_readme(
+        db_session,
+        tmp_path,
+        "# P\n\n- [Setup guide](docs/missing.md): installation\n"
+        "- [Usage](https://example.com/usage.md): usage\n",
+    )
+
+    assert score.value == 4.0

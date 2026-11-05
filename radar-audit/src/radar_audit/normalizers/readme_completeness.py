@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
@@ -23,11 +24,34 @@ _README_FILENAME = "readme.md"
 # "overview" alone is deliberately not a standalone match for this group: a
 # generic "## Overview" header (product overview, not architecture) would
 # otherwise be credited as architecture documentation.
-_SECTION_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "setup": ("setup", "install"),
-    "usage": ("usage",),
-    "architecture overview": ("architecture",),
+# Each keyword is a group of terms that must all appear in the header (or link line).
+# "quick start" credits both setup and usage: it is the usual home of both.
+_SECTION_KEYWORDS: dict[str, tuple[tuple[str, ...], ...]] = {
+    "setup": (
+        ("setup",),
+        ("install",),
+        ("getting started",),
+        ("quick start",),
+        ("quickstart",),
+        ("prerequisites",),
+    ),
+    "usage": (
+        ("usage",),
+        ("how to use",),
+        ("getting started",),
+        ("quick start",),
+        ("quickstart",),
+        ("launch",),
+        ("examples",),
+        # "running" alone would credit "Running tests"; running the app locally is usage.
+        ("running", "locally"),
+        ("run", "locally"),
+    ),
+    "architecture overview": (("architecture",), ("how it works",), ("project structure",)),
 }
+_CODE_FENCE = ("```", "~~~")
+# A markdown link to a local markdown file: [text](path/to/doc.md) or (doc.md#anchor).
+_LOCAL_DOC_LINK = re.compile(r"\[[^\]]*\]\((?P<target>[^)\s#]+\.md)(?:#[^)]*)?\)", re.IGNORECASE)
 _NO_SECTION_VALUE = 4.0
 _PARTIAL_SECTION_VALUE = 7.0
 _ALL_SECTIONS_VALUE = 10.0
@@ -84,23 +108,49 @@ def _find_readme(target_path: Path) -> Path | None:
 
 
 def _matched_sections(readme_path: Path) -> set[str]:
+    """Sections named by a header, or by a line linking to an existing local doc.
+
+    Lines inside fenced code blocks are skipped: a shell comment is not a header.
+    """
     try:
         text = readme_path.read_text()
     except (OSError, UnicodeDecodeError):
         return set()
 
     found: set[str] = set()
+    in_code_block = False
     for line in text.splitlines():
         stripped = line.strip()
-        if not stripped.startswith("#"):
+        if stripped.startswith(_CODE_FENCE):
+            in_code_block = not in_code_block
             continue
-        header = stripped.lstrip("#").strip().lower()
-        for section_name, keywords in _SECTION_KEYWORDS.items():
-            if section_name in found:
-                continue
-            if any(keyword in header for keyword in keywords):
-                found.add(section_name)
+        if in_code_block:
+            continue
+        if stripped.startswith("#"):
+            found |= _sections_named_in(stripped.lstrip("#"))
+        elif _links_to_local_doc(stripped, readme_path.parent):
+            found |= _sections_named_in(stripped)
     return found
+
+
+def _sections_named_in(text: str) -> set[str]:
+    lowered = text.lower()
+    return {
+        section_name
+        for section_name, keywords in _SECTION_KEYWORDS.items()
+        if any(all(term in lowered for term in keyword) for keyword in keywords)
+    }
+
+
+def _links_to_local_doc(line: str, readme_dir: Path) -> bool:
+    """Whether the line links to a markdown file that exists in the repository."""
+    for match in _LOCAL_DOC_LINK.finditer(line):
+        target = match.group("target")
+        if "://" in target:
+            continue
+        if (readme_dir / target).is_file():
+            return True
+    return False
 
 
 def _add_finding(

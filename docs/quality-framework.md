@@ -213,7 +213,7 @@ Given these three structural limitations, backend/DB performance is **excluded f
 
 | # | Criterion | Archetype | Evidence / tool | Confidence | Notes |
 |---|---|---|---|---|---|
-| 8.1 | README completeness | A | Heuristic: standard section headers present (setup, usage, architecture overview) | MEDIUM | |
+| 8.1 | README completeness | A | Heuristic: three standard sections present (setup, usage, architecture overview), each named by a header with a common synonym ("Installation", "Quick start" for both setup and usage, "How it works"...) or by a line linking to an existing local `.md` doc that names it (a README pointing to its own guides); headers inside code blocks are ignored. 10 for all three, 7 for some, 4 for none, 0 without a README | MEDIUM | |
 | 8.2 | Architecture documentation | A | Shares evidence with 1.2, Documentation framing ("present and readable") vs. Architecture framing ("reflects real structure") | MEDIUM | Cross-ref, not double-weighted |
 | 8.3 | API documentation | C | OpenAPI/Swagger schema present & served (FastAPI auto-docs, Laravel L5-Swagger); `N/A` for repos with no API | MEDIUM | |
 

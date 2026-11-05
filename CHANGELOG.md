@@ -270,6 +270,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Run uv projects' tests with their locked dependencies (FIX-026)
 - *(radar-audit)* Make dead-code paths independent of the audit's cwd (FIX-027)
 - *(radar-dashboard)* Keep prettier's cache inside the dashboard (CHORE-007)
+- *(radar-audit)* Recognize common README section names and doc links (FIX-028)
 
 ### 🚜 Refactor
 
