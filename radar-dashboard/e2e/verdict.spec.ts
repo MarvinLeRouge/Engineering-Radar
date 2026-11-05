@@ -33,6 +33,7 @@ test('marking a finding as false positive moves it out of the counts', async ({ 
   const note = dismissedCard.getByTestId('verdict-note')
   await note.fill('Framework convention, used at runtime')
   await note.press('Enter')
+  await expect(dismissedCard.getByTestId('verdict-note-saved')).toBeVisible()
 
   await page.reload()
   await secrets.getByTestId('dismissed-findings').locator('summary').click()

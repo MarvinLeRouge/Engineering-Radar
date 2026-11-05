@@ -160,6 +160,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Exclude tests and migrations from application-code criteria (FEAT-030)
 - Add structured logging with structlog (FEAT-031)
 - Add an explanatory note to dismissed findings (FEAT-032)
+- *(radar-dashboard)* Confirm a saved verdict note with a check mark (FEAT-033)
 
 ### 🐛 Bug Fixes
 

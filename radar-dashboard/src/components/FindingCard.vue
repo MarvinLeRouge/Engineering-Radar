@@ -44,18 +44,42 @@
             <circle cx="8" cy="4.75" r="0.9" fill="currentColor" />
           </svg>
         </span>
-        <input
-          v-model="note"
-          type="text"
-          data-testid="verdict-note"
-          :list="reasonsId"
-          :aria-describedby="hintId"
-          maxlength="200"
-          placeholder="Add a short reason"
-          @change="submitNote"
-        />
+        <span class="finding-card__note-field">
+          <input
+            v-model="note"
+            type="text"
+            data-testid="verdict-note"
+            :list="reasonsId"
+            :aria-describedby="hintId"
+            maxlength="200"
+            placeholder="Add a short reason"
+            @input="noteSaved = false"
+            @change="submitNote"
+          />
+          <svg
+            v-if="noteSaved"
+            data-testid="verdict-note-saved"
+            class="finding-card__saved-icon"
+            viewBox="0 0 16 16"
+            width="16"
+            height="16"
+            aria-hidden="true"
+          >
+            <path
+              d="M3.5 8.5l3 3 6-7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
       </label>
       <span :id="hintId" class="finding-card__visually-hidden">{{ NOTE_HINT }}</span>
+      <span data-testid="verdict-note-status" role="status" class="finding-card__visually-hidden">{{
+        noteSaved ? 'Saved' : ''
+      }}</span>
       <datalist :id="reasonsId">
         <option v-for="reason in PRESET_REASONS" :key="reason" :value="reason" />
       </datalist>
@@ -90,6 +114,8 @@ const emit = defineEmits<{ updated: [] }>()
 const verdict = ref(props.finding.human_verdict)
 const status = ref(props.finding.status)
 const note = ref(props.finding.verdict_note ?? '')
+// Shown once the API confirms the note; cleared as soon as the text is edited again.
+const noteSaved = ref(false)
 const errorMessage = ref<string | null>(null)
 
 const instanceId = useId()
@@ -138,6 +164,7 @@ async function submitNote(): Promise<void> {
   errorMessage.value = null
   try {
     await updateFindingNote(props.finding.id, note.value)
+    noteSaved.value = true
     emit('updated')
   } catch (error) {
     handleError(error)
@@ -260,6 +287,36 @@ async function submitStatus(): Promise<void> {
   flex-shrink: 0;
   color: var(--color-ink-faint);
   cursor: help;
+}
+
+.finding-card__note-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.finding-card__note-field input {
+  flex: 1;
+  min-width: 0;
+}
+
+.finding-card__saved-icon {
+  flex-shrink: 0;
+  color: var(--text-success);
+  animation: finding-card-saved-in 160ms ease-out;
+}
+
+@keyframes finding-card-saved-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finding-card__saved-icon {
+    animation: none;
+  }
 }
 
 .finding-card__note input {

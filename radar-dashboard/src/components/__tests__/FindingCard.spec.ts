@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import * as client from '@/api/client'
 import { ApiError } from '@/api/client'
 import FindingCard from '../FindingCard.vue'
@@ -177,6 +177,40 @@ describe('FindingCard', () => {
         'Framework convention, used at runtime',
       )
       expect(wrapper.emitted('updated')).toHaveLength(1)
+    })
+
+    it('confirms a saved note next to the field until it is edited again', async () => {
+      vi.mocked(client.updateFindingNote).mockResolvedValue(undefined)
+      const wrapper = mount(FindingCard, {
+        props: { finding: { ...finding, human_verdict: 'FALSE_POSITIVE' } },
+      })
+      const input = wrapper.find('[data-testid="verdict-note"]')
+      const status = wrapper.find('[data-testid="verdict-note-status"]')
+      expect(status.attributes('role')).toBe('status')
+      expect(status.text()).toBe('')
+
+      await input.setValue('Accepted risk, local-only image')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="verdict-note-saved"]').exists()).toBe(true)
+      expect(status.text()).toBe('Saved')
+
+      await input.trigger('input')
+
+      expect(wrapper.find('[data-testid="verdict-note-saved"]').exists()).toBe(false)
+      expect(status.text()).toBe('')
+    })
+
+    it('shows no confirmation when saving the note fails', async () => {
+      vi.mocked(client.updateFindingNote).mockRejectedValue(new Error('boom'))
+      const wrapper = mount(FindingCard, {
+        props: { finding: { ...finding, human_verdict: 'FALSE_POSITIVE' } },
+      })
+
+      await wrapper.find('[data-testid="verdict-note"]').setValue('x')
+      await flushPromises()
+
+      expect(wrapper.find('[data-testid="verdict-note-saved"]').exists()).toBe(false)
     })
 
     it('shows the API error when saving the note fails', async () => {
