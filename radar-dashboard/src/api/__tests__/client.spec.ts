@@ -6,6 +6,7 @@ import {
   getRepositoryReport,
   getRoadmapItemEvidenceCandidates,
   listRepositories,
+  updateFindingNote,
   updateFindingStatus,
   updateFindingVerdict,
   updateRoadmapItemStatus,
@@ -87,6 +88,20 @@ describe('api/client', () => {
     expect(url).toBe('/api/findings/1/status')
     expect((init!.headers as Record<string, string>)['X-API-Key']).toBe('secret')
     expect(JSON.parse(init!.body as string)).toEqual({ status: 'RESOLVED' })
+  })
+
+  it('sends verdict_note as the body for updateFindingNote', async () => {
+    useApiKeyStore().setApiKey('secret')
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({}))
+
+    await updateFindingNote(1, 'Waiting for an upstream fix')
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0]!
+    expect(url).toBe('/api/findings/1/note')
+    expect(init!.method).toBe('PATCH')
+    expect(JSON.parse(init!.body as string)).toEqual({
+      verdict_note: 'Waiting for an upstream fix',
+    })
   })
 
   it('sends human_verdict as the body for updateFindingVerdict', async () => {

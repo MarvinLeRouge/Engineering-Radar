@@ -592,7 +592,7 @@ def test_reverting_a_carried_false_positive_sticks_on_the_next_audit(db_session,
         db_session,
         {
             fp
-            for fp, (_, verdict) in _collect_carried_verdicts(db_session, repository).items()
+            for fp, (_, verdict, _) in _collect_carried_verdicts(db_session, repository).items()
             if verdict == HumanVerdict.FALSE_POSITIVE
         },
     )
@@ -699,3 +699,38 @@ def test_score_repository_logs_the_result_with_the_audit_id(db_session, tmp_path
     assert entry["audit_id"] == audit.id
     assert entry["global_score"] == scoring_run.global_score
     assert isinstance(entry["findings"], int)
+
+
+def test_verdict_note_is_carried_to_a_new_audit_and_dropped_when_the_verdict_is_reverted(
+    db_session, tmp_path
+):
+    from radar_core.enums import HumanVerdict
+
+    _audited_repo(db_session, tmp_path, files={"x.py": "x = 1\n"})
+    run_a = score_repository(db_session, "repo")
+    finding = db_session.exec(select(Finding).where(Finding.scoring_run_id == run_a.id)).first()
+    assert finding is not None
+    fingerprint = finding.fingerprint
+    finding.human_verdict = HumanVerdict.FALSE_POSITIVE
+    finding.verdict_note = "Framework convention, used at runtime"
+    db_session.add(finding)
+    db_session.commit()
+
+    run_b = _new_commit_and_score(db_session, tmp_path, "b")
+    carried = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == run_b.id, Finding.fingerprint == fingerprint
+        )
+    ).one()
+    assert carried.verdict_note == "Framework convention, used at runtime"
+    carried.human_verdict = HumanVerdict.UNREVIEWED
+    db_session.add(carried)
+    db_session.commit()
+
+    run_c = _new_commit_and_score(db_session, tmp_path, "c")
+    latest = db_session.exec(
+        select(Finding).where(
+            Finding.scoring_run_id == run_c.id, Finding.fingerprint == fingerprint
+        )
+    ).one()
+    assert latest.verdict_note is None

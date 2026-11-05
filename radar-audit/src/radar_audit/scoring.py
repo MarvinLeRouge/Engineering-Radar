@@ -28,6 +28,9 @@ from radar_audit.taxonomy.seed import seed_taxonomy
 
 log = structlog.get_logger("radar_audit.scoring")
 
+# Human status, verdict and note of one fingerprint, as carried to the next scoring run.
+CarriedVerdict = tuple[FindingStatus, HumanVerdict, str | None]
+
 _CONFIDENCE_RANK = {Confidence.HIGH: 0, Confidence.MEDIUM: 1, Confidence.LOW: 2}
 
 
@@ -73,7 +76,7 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
         session,
         {
             fingerprint
-            for fingerprint, (_, verdict) in carried_verdicts.items()
+            for fingerprint, (_, verdict, _) in carried_verdicts.items()
             if verdict == HumanVerdict.FALSE_POSITIVE
         },
     )
@@ -98,7 +101,7 @@ def _score_run(
     audit: Audit,
     methodology_version: MethodologyVersion,
     scoring_run: ScoringRun,
-    carried_verdicts: dict[str, tuple[FindingStatus, HumanVerdict]],
+    carried_verdicts: dict[str, CarriedVerdict],
 ) -> ScoringRun:
     existing_findings = session.exec(
         select(Finding).where(Finding.scoring_run_id == scoring_run.id)
@@ -188,7 +191,7 @@ def _write_category_scores(
 
 def _collect_carried_verdicts(
     session: Session, repository: Repository
-) -> dict[str, tuple[FindingStatus, HumanVerdict]]:
+) -> dict[str, CarriedVerdict]:
     """Collect the most recent human-set status/verdict per fingerprint, across every
     `ScoringRun` this repository has ever had -- not just the current one.
 
@@ -207,17 +210,17 @@ def _collect_carried_verdicts(
         .order_by(ScoringRun.scored_at)  # type: ignore[arg-type]
     ).all()
     image_subprojects = _legacy_image_subprojects(session, repository)
-    latest: dict[str, tuple[FindingStatus, HumanVerdict]] = {}
+    latest: dict[str, CarriedVerdict] = {}
     for finding in historical_findings:
         fingerprint = _current_fingerprint(finding, image_subprojects)
         if fingerprint is not None:
-            latest[fingerprint] = (finding.status, finding.human_verdict)
+            latest[fingerprint] = (finding.status, finding.human_verdict, finding.verdict_note)
     # Filter only after last-write-wins: a verdict reverted to OPEN/UNREVIEWED on a
     # later run must override the older human verdict, not be skipped in favor of it.
     return {
         fingerprint: verdict
         for fingerprint, verdict in latest.items()
-        if verdict != (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
+        if verdict[:2] != (FindingStatus.OPEN, HumanVerdict.UNREVIEWED)
     }
 
 
@@ -254,7 +257,7 @@ def _current_fingerprint(finding: Finding, image_subprojects: dict[int, str]) ->
 def _carry_forward_human_verdicts(
     session: Session,
     scoring_run: ScoringRun,
-    carried_verdicts: dict[str, tuple[FindingStatus, HumanVerdict]],
+    carried_verdicts: dict[str, CarriedVerdict],
 ) -> None:
     if not carried_verdicts:
         return
@@ -267,7 +270,7 @@ def _carry_forward_human_verdicts(
         verdict = carried_verdicts.get(finding.fingerprint)
         if verdict is None:
             continue
-        finding.status, finding.human_verdict = verdict
+        finding.status, finding.human_verdict, finding.verdict_note = verdict
         session.add(finding)
     session.commit()
 

@@ -27,14 +27,60 @@
         </select>
       </label>
     </div>
+    <div v-if="isDismissed" class="finding-card__note">
+      <label class="finding-card__control finding-card__note-control">
+        <span class="finding-card__control-label finding-card__note-label">
+          Why
+          <svg
+            class="finding-card__hint-icon"
+            viewBox="0 0 16 16"
+            width="12"
+            height="12"
+            aria-hidden="true"
+          >
+            <title>{{ NOTE_HINT }}</title>
+            <circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+            <path d="M8 7.25v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            <circle cx="8" cy="4.75" r="0.9" fill="currentColor" />
+          </svg>
+        </span>
+        <input
+          v-model="note"
+          type="text"
+          data-testid="verdict-note"
+          :list="reasonsId"
+          :aria-describedby="hintId"
+          maxlength="200"
+          placeholder="Add a short reason"
+          @change="submitNote"
+        />
+      </label>
+      <span :id="hintId" class="finding-card__visually-hidden">{{ NOTE_HINT }}</span>
+      <datalist :id="reasonsId">
+        <option v-for="reason in PRESET_REASONS" :key="reason" :value="reason" />
+      </datalist>
+    </div>
     <p v-if="errorMessage" class="finding-card__error">{{ errorMessage }}</p>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import type { FindingReport } from '@/api/client'
-import { ApiError, updateFindingStatus, updateFindingVerdict } from '@/api/client'
+import {
+  ApiError,
+  updateFindingNote,
+  updateFindingStatus,
+  updateFindingVerdict,
+} from '@/api/client'
+
+// Short on purpose: new reasons are added here deliberately, never from past free text.
+const PRESET_REASONS = [
+  'Waiting for an upstream fix',
+  'Framework convention, used at runtime',
+  'Accepted risk, local-only image',
+] as const
+const NOTE_HINT = 'Free text, or start typing to pick a common reason.'
 
 const props = withDefaults(defineProps<{ finding: FindingReport; showFile?: boolean }>(), {
   showFile: true,
@@ -43,7 +89,15 @@ const emit = defineEmits<{ updated: [] }>()
 
 const verdict = ref(props.finding.human_verdict)
 const status = ref(props.finding.status)
+const note = ref(props.finding.verdict_note ?? '')
 const errorMessage = ref<string | null>(null)
+
+const instanceId = useId()
+const reasonsId = `${instanceId}-reasons`
+const hintId = `${instanceId}-hint`
+
+// A note explains why a finding was set aside, so it only shows once it is.
+const isDismissed = computed(() => verdict.value === 'FALSE_POSITIVE' || status.value !== 'OPEN')
 
 const severityClass = computed(
   () => `finding-card__severity--${props.finding.severity.toLowerCase()}`,
@@ -74,6 +128,16 @@ async function submitVerdict(): Promise<void> {
   errorMessage.value = null
   try {
     await updateFindingVerdict(props.finding.id, verdict.value)
+    emit('updated')
+  } catch (error) {
+    handleError(error)
+  }
+}
+
+async function submitNote(): Promise<void> {
+  errorMessage.value = null
+  try {
+    await updateFindingNote(props.finding.id, note.value)
     emit('updated')
   } catch (error) {
     handleError(error)
@@ -176,6 +240,47 @@ async function submitStatus(): Promise<void> {
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
+}
+
+.finding-card__note {
+  margin-top: var(--space-3);
+}
+
+.finding-card__note-control {
+  max-width: 28rem;
+}
+
+.finding-card__note-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.finding-card__hint-icon {
+  flex-shrink: 0;
+  color: var(--color-ink-faint);
+  cursor: help;
+}
+
+.finding-card__note input {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: var(--text-meta);
+}
+
+.finding-card__note input::placeholder {
+  color: var(--color-ink-faint);
+}
+
+.finding-card__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .finding-card__error {

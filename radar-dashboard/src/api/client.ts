@@ -26,6 +26,7 @@ export interface FindingReport {
   line: number | null
   status: string
   human_verdict: string
+  verdict_note: string | null
   recommendation: string | null
 }
 
@@ -172,6 +173,14 @@ export function updateFindingVerdict(findingId: number, humanVerdict: string): P
     method: 'PATCH',
     headers: writeHeaders(),
     body: JSON.stringify({ human_verdict: humanVerdict }),
+  })
+}
+
+export function updateFindingNote(findingId: number, note: string): Promise<void> {
+  return request<void>(`/findings/${findingId}/note`, {
+    method: 'PATCH',
+    headers: writeHeaders(),
+    body: JSON.stringify({ verdict_note: note }),
   })
 }
 
