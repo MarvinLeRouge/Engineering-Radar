@@ -1,4 +1,4 @@
-"""Git worktree discovery used to exclude linked worktrees from audits."""
+"""Git discovery of what audits must skip: linked worktrees and git-ignored paths."""
 
 from __future__ import annotations
 
@@ -23,3 +23,28 @@ def compute_exclude_paths(repo_path: Path) -> list[Path]:
 
     main_path = repo_path.resolve()
     return [path for path in all_paths if path != main_path]
+
+
+def compute_ignored_paths(repo_path: Path) -> list[Path]:
+    """Return every git-ignored file under `repo_path`, and every fully ignored directory whole.
+
+    Generated or third-party files (a tool cache such as Laravel's `storage/phpstan`,
+    `node_modules`, build output) are not the repository's code, so no runner audits them.
+    """
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_path),
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "--directory",
+            "-z",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return [repo_path / entry.rstrip("/") for entry in result.stdout.split("\0") if entry]

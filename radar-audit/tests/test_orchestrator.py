@@ -165,6 +165,44 @@ def test_plan_audit_returns_repo_subprojects_and_exclude_paths(tmp_path):
     assert plan.repository_path == repo_path.resolve()
     assert len(plan.subprojects) == 1
     assert plan.exclude_paths == []
+    assert plan.ignored_paths == []
+
+
+def test_plan_audit_lists_git_ignored_paths_and_skips_subprojects_inside_them(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={".gitignore": "/generated\n", "pyproject.toml": "[project]\nname='x'\n"},
+    )
+    (repo_path / "generated" / "pkg").mkdir(parents=True)
+    (repo_path / "generated" / "pkg" / "package.json").write_text("{}\n")
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+
+    plan = plan_audit(config, "repo")
+
+    assert plan.ignored_paths == [plan.repository_path / "generated"]
+    assert [subproject.path for subproject in plan.subprojects] == [plan.repository_path]
+
+
+def test_execute_audit_passes_git_ignored_paths_to_every_runner(db_session, tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files={
+            ".gitignore": "/storage/cache\n",
+            "pyproject.toml": "[project]\nname='x'\n",
+            "storage/.gitkeep": "",
+        },
+    )
+    (repo_path / "storage" / "cache").mkdir(parents=True)
+    (repo_path / "storage" / "cache" / "generated.py").write_text("x = 1\n")
+    config = PortfolioConfig(repos_root=tmp_path, repositories=["repo"])
+    runner = _RecordingRunner()
+
+    execute_audit(db_session, config, "repo", [runner])
+
+    [(_, exclude_paths)] = runner.calls
+    assert repo_path.resolve() / "storage" / "cache" in exclude_paths
 
 
 def test_execute_audit_persists_one_tool_result_per_subproject_and_runner(db_session, tmp_path):

@@ -168,6 +168,7 @@ def run(
 def _print_plan(plan: AuditPlan) -> None:
     typer.echo(f"Repository: {plan.repository_name} ({plan.repository_path})")
     typer.echo(f"Excluded worktrees: {[str(p) for p in plan.exclude_paths]}")
+    typer.echo(f"Excluded git-ignored paths: {len(plan.ignored_paths)}")
     for subproject in plan.subprojects:
         typer.echo(f"  subproject: {subproject.path} [{subproject.stack}]")
     for run in planned_runs(plan, DEFAULT_RUNNERS):

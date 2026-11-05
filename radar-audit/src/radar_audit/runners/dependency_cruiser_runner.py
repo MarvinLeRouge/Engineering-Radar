@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import raw_fallback, run_timed, tool_output
+from radar_audit.runners.shared import anchored_path_regex, raw_fallback, run_timed, tool_output
 
 # Directory names always excluded regardless of exclude_paths: --no-config disables
 # dependency-cruiser's own default node_modules exclusion, and none of these hold
@@ -57,5 +57,5 @@ class DependencyCruiserRunner:
                 relative = excluded.relative_to(target_path)
             except ValueError:
                 continue  # not under target_path, dependency-cruiser will never visit it
-            relative_patterns.append(re.escape(relative.as_posix()))
+            relative_patterns.append(anchored_path_regex(relative))
         return "|".join(relative_patterns)
