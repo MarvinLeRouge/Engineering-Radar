@@ -15,6 +15,7 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.links import FindingImprovementTaskLink
 from radar_core.models.repository import Repository
 from sqlmodel import Session, select
+from sqlmodel.sql.expression import SelectOfScalar
 
 from radar_audit.config import PortfolioConfig
 from radar_audit.discovery import SubProject, discover_subprojects
@@ -211,13 +212,18 @@ def execute_audit(
 
 def _cleanup_stale_tool_results(session: Session, audit: Audit) -> None:
     existing_results = session.exec(select(ToolResult).where(ToolResult.audit_id == audit.id)).all()
-    existing_result_ids = [result.id for result in existing_results]
-    if existing_result_ids:
+    if existing_results:
+        # Subqueries, not lists of ids: SQLite caps bound parameters (32766) per statement.
+        audit_result_ids = select(ToolResult.id).where(ToolResult.audit_id == audit.id)
         stale_findings = session.exec(
-            select(Finding).where(Finding.tool_result_id.in_(existing_result_ids))  # type: ignore[union-attr]
+            select(Finding).where(Finding.tool_result_id.in_(audit_result_ids))  # type: ignore[union-attr]
         ).all()
         findings_to_delete = _detach_human_set_findings(session, stale_findings)
-        stale_finding_ids = [f.id for f in findings_to_delete if f.id is not None]
+        # Detached findings no longer point at this audit's results, so this keeps only the rest.
+        session.flush()
+        stale_finding_ids = select(Finding.id).where(
+            Finding.tool_result_id.in_(audit_result_ids)  # type: ignore[union-attr]
+        )
         _delete_dependents(session, stale_finding_ids)
         session.flush()
         for finding in findings_to_delete:
@@ -250,7 +256,9 @@ def _detach_human_set_findings(
     return findings_to_delete
 
 
-def _delete_dependents(session: Session, stale_finding_ids: list[int]) -> None:
+def _delete_dependents(
+    session: Session, stale_finding_ids: SelectOfScalar[int] | SelectOfScalar[None]
+) -> None:
     stale_recommendations = session.exec(
         select(Recommendation).where(Recommendation.finding_id.in_(stale_finding_ids))  # type: ignore[attr-defined]
     ).all()

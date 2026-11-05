@@ -63,12 +63,14 @@ def promote_improvement_tasks(session: Session, scoring_run: ScoringRun) -> None
 
 
 def _build_recommendation_lookup(session: Session, findings: list[Finding]) -> dict[int, str]:
+    # A subquery, not a list of ids: SQLite caps bound parameters (32766) per statement.
+    run_ids = {f.scoring_run_id for f in findings}
     return {
         r.finding_id: r.text
         for r in session.exec(
             select(Recommendation).where(
                 Recommendation.finding_id.in_(  # type: ignore[attr-defined]
-                    [f.id for f in findings if f.id is not None]
+                    select(Finding.id).where(Finding.scoring_run_id.in_(run_ids))  # type: ignore[attr-defined]
                 )
             )
         )
