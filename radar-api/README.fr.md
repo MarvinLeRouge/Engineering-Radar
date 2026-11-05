@@ -22,7 +22,8 @@ humain.
 
 - `GET /repositories` — liste tous les dépôts avec leur statut d'audit et leur score global les plus récents.
 - `GET /repositories/{repository_id}` — détail d'un dépôt.
-- `GET /repositories/{repository_id}/report` — rapport de qualité complet (catégories, critères, findings, recommandations) pour le dernier run de scoring.
+- `GET /repositories/{repository_id}/report` — rapport de qualité complet (catégories, critères, findings, recommandations) pour le dernier run de scoring (ou `?scoring_run_id=`). Chaque critère liste ses 1000 premiers findings par ordre de priorité, avec `findings_total`, `severity_counts` et `dismissed_count` qui les comptent tous.
+- `GET /repositories/{repository_id}/report/criteria/{criterion_id}/findings?scoring_run_id=&offset=` : les pages suivantes des findings d'un critère, 1000 à la fois, dans le même ordre (dernier run de scoring si `scoring_run_id` est omis).
 - `GET /repositories/{repository_id}/badge` — payload de badge compatible shields.io pour le dernier score global.
 - `GET /repositories/{repository_id}/findings` — findings du dernier run de scoring, filtrables via les paramètres de requête `status` et `severity`.
 - `GET /repositories/{repository_id}/roadmap` — éléments de roadmap liés aux findings du dépôt.

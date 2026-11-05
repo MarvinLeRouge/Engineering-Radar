@@ -33,7 +33,12 @@ class CriterionReport(BaseModel):
     implemented: bool
     value: float | None
     na_reason: str | None
+    # First page only: the rest comes from the criterion findings endpoint.
     findings: list[FindingReport]
+    findings_total: int
+    # Findings not dismissed as false positives, by severity; absent severities are omitted.
+    severity_counts: dict[str, int]
+    dismissed_count: int
 
 
 class CategoryReport(BaseModel):
@@ -55,6 +60,7 @@ class RepositoryReport(BaseModel):
 
     repository_id: int
     repository_name: str
+    scoring_run_id: int
     commit_sha: str
     audited_at: datetime
     scored_at: datetime

@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from sqlalchemy import case, func
+from sqlmodel import col
+
 from radar_core.enums import FindingSeverity
 from radar_core.models.finding import Finding
 
@@ -36,3 +39,16 @@ def _priority_key(finding: Finding) -> tuple[int, int, float, str, str]:
     if finding.magnitude is None:
         return (severity_rank, 1, 0.0, file_key, description_key)
     return (severity_rank, 0, -finding.magnitude, file_key, description_key)
+
+
+# Same order as sort_findings_by_priority, for ORDER BY ... LIMIT/OFFSET pagination.
+# SQLite's BINARY collation compares strings by code point, like Python. The trailing
+# id breaks exact ties, so pages never overlap or skip a row.
+PRIORITY_ORDER_BY = (
+    case(_SEVERITY_RANK, value=col(Finding.severity), else_=len(_SEVERITY_RANK)),
+    col(Finding.magnitude).is_(None),
+    col(Finding.magnitude).desc(),
+    func.coalesce(col(Finding.file), ""),
+    col(Finding.description),
+    col(Finding.id),
+)

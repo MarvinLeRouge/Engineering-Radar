@@ -6,7 +6,7 @@
         v-for="group in severityGroups"
         :key="group.severity"
         :severity="group.severity"
-        :count-label="String(group.findings.length)"
+        :count-label="String(group.count)"
         :expanded="expanded.has(group.severity)"
         :controls-id="`${instanceId}-${group.severity}`"
         @toggle="toggle(group.severity)"
@@ -35,11 +35,12 @@
     </template>
 
     <details
-      v-if="dismissed.length"
+      v-if="criterion.dismissed_count"
       data-testid="dismissed-findings"
       class="criterion-findings__dismissed"
+      @toggle="dismissedOpen = ($event.target as HTMLDetailsElement).open"
     >
-      <summary>Dismissed as false positive ({{ dismissed.length }})</summary>
+      <summary>Dismissed as false positive ({{ criterion.dismissed_count }})</summary>
       <div class="criterion-findings__group">
         <FindingCard
           v-for="finding in dismissed"
@@ -49,20 +50,37 @@
         />
       </div>
     </details>
+
+    <p v-if="loadError" role="alert" class="criterion-findings__error">{{ loadError }}</p>
+    <button
+      v-if="remaining > 0 && (expanded.size > 0 || dismissedOpen)"
+      type="button"
+      data-testid="more-findings"
+      class="criterion-findings__more"
+      :disabled="loadingMore"
+      @click="loadMore"
+    >
+      More ({{ remaining.toLocaleString() }} remaining)
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import FindingCard from './FindingCard.vue'
 import SeverityToggleChip from './SeverityToggleChip.vue'
 import { useExpandedSet } from '@/composables/useExpandedSet'
-import type { FindingReport } from '@/api/client'
+import { getCriterionFindings } from '@/api/client'
+import type { CriterionReport, FindingReport } from '@/api/client'
 import { SEVERITY_ORDER, isFalsePositive } from '@/utils/severity'
 
 const instanceId = useId()
 
-const props = defineProps<{ findings: FindingReport[] }>()
+const props = defineProps<{
+  criterion: CriterionReport
+  repositoryId: number
+  scoringRunId: number
+}>()
 defineEmits<{ updated: [] }>()
 
 const { expanded, toggle } = useExpandedSet()
@@ -92,13 +110,80 @@ function groupByFile(findings: FindingReport[]): FileGroup[] {
   return order.map((file) => ({ file, findings: byFile.get(file)! }))
 }
 
-const dismissed = computed(() => props.findings.filter(isFalsePositive))
+// The report holds the first page of findings; "More" appends the next pages here.
+const extraFindings = ref<FindingReport[]>([])
+const loadingMore = ref(false)
+const loadError = ref<string | null>(null)
+const dismissedOpen = ref(false)
+// Bumped on every reload, so a slow response for an outdated report is dropped.
+let reloadToken = 0
+
+const findings = computed(() => [...props.criterion.findings, ...extraFindings.value])
+const remaining = computed(() => props.criterion.findings_total - findings.value.length)
+
+async function fetchPages(offset: number, count: number): Promise<FindingReport[]> {
+  const pages: FindingReport[] = []
+  while (pages.length < count) {
+    const page = await getCriterionFindings(
+      props.repositoryId,
+      props.criterion.id,
+      props.scoringRunId,
+      offset + pages.length,
+    )
+    if (page.length === 0) break
+    pages.push(...page)
+  }
+  return pages
+}
+
+async function loadFindings(offset: number, count: number, append: boolean): Promise<void> {
+  const token = ++reloadToken
+  loadingMore.value = true
+  loadError.value = null
+  try {
+    const pages = await fetchPages(offset, count)
+    if (token !== reloadToken) return
+    extraFindings.value = append ? [...extraFindings.value, ...pages] : pages
+  } catch (error) {
+    if (token === reloadToken) {
+      loadError.value = error instanceof Error ? error.message : 'loading findings failed'
+      // A failed reload would leave stale verdicts on screen: drop them, "More" brings them back.
+      if (!append) extraFindings.value = []
+    }
+  } finally {
+    if (token === reloadToken) loadingMore.value = false
+  }
+}
+
+function loadMore(): void {
+  loadFindings(findings.value.length, 1, true)
+}
+
+// A verdict change refetches the whole report: reload the pages already shown so the
+// list keeps its length. Another scoring run starts again from its first page.
+watch(
+  () => [props.criterion, props.scoringRunId] as const,
+  ([criterion, scoringRunId], [, previousScoringRunId]) => {
+    const shown = extraFindings.value.length
+    if (scoringRunId !== previousScoringRunId || shown === 0) {
+      reloadToken++
+      extraFindings.value = []
+      loadingMore.value = false
+      return
+    }
+    loadFindings(criterion.findings.length, shown, false)
+  },
+)
+
+const dismissed = computed(() => findings.value.filter(isFalsePositive))
 
 const severityGroups = computed(() =>
   SEVERITY_ORDER.map((severity) => {
-    const findings = props.findings.filter((f) => f.severity === severity && !isFalsePositive(f))
-    return { severity, findings, fileGroups: groupByFile(findings) }
-  }).filter((group) => group.findings.length > 0),
+    const loaded = findings.value.filter((f) => f.severity === severity && !isFalsePositive(f))
+    // The count comes from the server: it covers the pages not loaded yet.
+    const count = props.criterion.severity_counts[severity] ?? 0
+    return { severity, count, fileGroups: groupByFile(loaded) }
+  }).filter((group) => group.count > 0),
 )
 </script>
 
@@ -141,6 +226,32 @@ const severityGroups = computed(() =>
 
 .criterion-findings__dismissed summary:hover {
   color: var(--color-accent);
+}
+
+.criterion-findings__more {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-top: var(--space-3);
+  font-size: var(--text-meta);
+  color: var(--color-accent);
+  cursor: pointer;
+}
+
+.criterion-findings__more:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.criterion-findings__more:disabled {
+  color: var(--color-ink-soft);
+  cursor: progress;
+}
+
+.criterion-findings__error {
+  margin-top: var(--space-3);
+  font-size: var(--text-meta);
+  color: var(--text-danger);
 }
 
 .criterion-findings__dismissed .criterion-findings__group {

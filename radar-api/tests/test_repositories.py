@@ -11,6 +11,7 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
+from sqlmodel import select
 
 
 def _make_repository(db_session, name="repo"):
@@ -282,9 +283,8 @@ def _add_report_finding(db_session, scoring_run, criterion, severity, **override
             scoring_run_id=scoring_run.id,
             criterion_id=criterion.id,
             severity=severity,
-            description="a finding",
             confidence=Confidence.HIGH,
-            **overrides,
+            **{"description": "a finding", **overrides},
         )
     )
     db_session.commit()
@@ -479,3 +479,119 @@ def test_get_repository_report_handles_more_findings_than_sqlite_bound_parameter
 
     assert response.status_code == 200
     assert len(response.json()["categories"][0]["criteria"][0]["findings"]) == 80
+
+
+def _seed_paged_criterion(db_session, monkeypatch, name="repo-paged"):
+    """A criterion with 5 findings (one dismissed) and a page size of 3."""
+    monkeypatch.setattr("radar_api.routers.repositories.FINDINGS_PAGE_SIZE", 3)
+    repo = _make_repository(db_session, name)
+    run = _make_scoring_run(db_session, repo, global_score=6.0)
+    _, criterion = _seed_category_and_criterion(db_session, run.methodology_version_id)
+    for index, severity in enumerate(
+        [FindingSeverity.LOW, FindingSeverity.HIGH, FindingSeverity.LOW, FindingSeverity.HIGH]
+    ):
+        _add_report_finding(db_session, run, criterion, severity, description=f"finding {index}")
+    _add_report_finding(
+        db_session,
+        run,
+        criterion,
+        FindingSeverity.LOW,
+        description="dismissed",
+        human_verdict=HumanVerdict.FALSE_POSITIVE,
+    )
+    return repo, run, criterion
+
+
+def test_get_repository_report_sends_one_page_of_findings_with_full_counts(
+    client, db_session, monkeypatch
+):
+    repo, run, _ = _seed_paged_criterion(db_session, monkeypatch)
+
+    response = client.get(f"/repositories/{repo.id}/report")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["scoring_run_id"] == run.id
+    criterion = body["categories"][0]["criteria"][0]
+    assert [f["description"] for f in criterion["findings"]] == [
+        "finding 1",
+        "finding 3",
+        "dismissed",
+    ]
+    assert criterion["findings_total"] == 5
+    assert criterion["severity_counts"] == {"HIGH": 2, "LOW": 2}
+    assert criterion["dismissed_count"] == 1
+
+
+def test_get_repository_report_counts_are_empty_for_a_criterion_without_findings(
+    client, db_session
+):
+    repo = _make_repository(db_session, "repo-no-findings")
+    run = _make_scoring_run(db_session, repo, global_score=6.0)
+    _seed_category_and_criterion(db_session, run.methodology_version_id)
+
+    criterion = client.get(f"/repositories/{repo.id}/report").json()["categories"][0]["criteria"][0]
+
+    assert criterion["findings"] == []
+    assert criterion["findings_total"] == 0
+    assert criterion["severity_counts"] == {}
+    assert criterion["dismissed_count"] == 0
+
+
+def test_criterion_findings_returns_the_next_page_in_report_order(client, db_session, monkeypatch):
+    repo, run, criterion = _seed_paged_criterion(db_session, monkeypatch)
+    finding = db_session.exec(select(Finding).where(Finding.description == "finding 2")).one()
+    db_session.add(Recommendation(finding_id=finding.id, text="fix it"))
+    db_session.commit()
+
+    response = client.get(
+        f"/repositories/{repo.id}/report/criteria/{criterion.id}/findings",
+        params={"scoring_run_id": run.id, "offset": 3},
+    )
+
+    assert response.status_code == 200
+    page = response.json()
+    assert [f["description"] for f in page] == ["finding 0", "finding 2"]
+    assert page[1]["recommendation"] == "fix it"
+
+
+def test_criterion_findings_defaults_to_the_latest_run_and_ends_empty(
+    client, db_session, monkeypatch
+):
+    repo, _, criterion = _seed_paged_criterion(db_session, monkeypatch)
+    url = f"/repositories/{repo.id}/report/criteria/{criterion.id}/findings"
+
+    assert len(client.get(url).json()) == 3
+    assert client.get(url, params={"offset": 5}).json() == []
+
+
+def test_criterion_findings_rejects_a_negative_offset(client, db_session, monkeypatch):
+    repo, _, criterion = _seed_paged_criterion(db_session, monkeypatch)
+
+    response = client.get(
+        f"/repositories/{repo.id}/report/criteria/{criterion.id}/findings",
+        params={"offset": -1},
+    )
+
+    assert response.status_code == 422
+
+
+def test_criterion_findings_returns_404s(client, db_session, monkeypatch):
+    repo, run, criterion = _seed_paged_criterion(db_session, monkeypatch)
+    other = _make_repository(db_session, "repo-without-runs")
+
+    assert (
+        client.get(f"/repositories/999/report/criteria/{criterion.id}/findings").status_code == 404
+    )
+    assert client.get(f"/repositories/{repo.id}/report/criteria/999/findings").status_code == 404
+    assert (
+        client.get(
+            f"/repositories/{repo.id}/report/criteria/{criterion.id}/findings",
+            params={"scoring_run_id": run.id + 1},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(f"/repositories/{other.id}/report/criteria/{criterion.id}/findings").status_code
+        == 404
+    )

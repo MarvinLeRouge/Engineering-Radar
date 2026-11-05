@@ -38,7 +38,12 @@ export interface CriterionReport {
   implemented: boolean
   value: number | null
   na_reason: string | null
+  /** First page only; `getCriterionFindings` serves the rest. */
   findings: FindingReport[]
+  findings_total: number
+  /** Findings not dismissed as false positives, by severity; absent severities are omitted. */
+  severity_counts: Record<string, number>
+  dismissed_count: number
 }
 
 export interface CategoryReport {
@@ -56,6 +61,7 @@ export interface CategoryReport {
 export interface RepositoryReport {
   repository_id: number
   repository_name: string
+  scoring_run_id: number
   commit_sha: string
   audited_at: string
   scored_at: string
@@ -157,6 +163,18 @@ export function getRepositoryReport(
 ): Promise<RepositoryReport> {
   const query = scoringRunId !== undefined ? `?scoring_run_id=${scoringRunId}` : ''
   return request<RepositoryReport>(`/repositories/${repositoryId}/report${query}`)
+}
+
+/** One page of a criterion's findings, in report order, starting at `offset`. */
+export function getCriterionFindings(
+  repositoryId: number,
+  criterionId: number,
+  scoringRunId: number,
+  offset: number,
+): Promise<FindingReport[]> {
+  return request<FindingReport[]>(
+    `/repositories/${repositoryId}/report/criteria/${criterionId}/findings?scoring_run_id=${scoringRunId}&offset=${offset}`,
+  )
 }
 
 export function getScoreHistory(repositoryId: number): Promise<ScoreHistoryPoint[]> {

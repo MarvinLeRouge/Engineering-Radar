@@ -57,7 +57,9 @@
               </h3>
               <CriterionFindings
                 v-if="criterion.implemented !== false"
-                :findings="criterion.findings"
+                :criterion="criterion"
+                :repository-id="store.report.repository_id"
+                :scoring-run-id="store.report.scoring_run_id"
                 @updated="refetchReport(activeScoringRunId ?? undefined)"
               />
             </div>
