@@ -275,6 +275,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-dashboard)* Keep prettier's cache inside the dashboard (CHORE-007)
 - *(radar-audit)* Recognize common README section names and doc links (FIX-028)
 - *(radar-audit)* Stop binding one SQL parameter per finding (FIX-029)
+- *(radar-audit)* Stop PHPStan analysing git-ignored files (FIX-030)
 
 ### 🚜 Refactor
 
