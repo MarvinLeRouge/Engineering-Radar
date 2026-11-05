@@ -26,3 +26,15 @@ def test_every_registry_key_resolves_to_a_seeded_criterion(db_session):
 def test_every_registry_value_is_callable():
     for normalizer in CRITERION_NORMALIZERS.values():
         assert callable(normalizer)
+
+
+def test_scoring_marks_registry_criteria_as_implemented(db_session):
+    from radar_audit.scoring import _sync_implemented
+    from radar_core.models.methodology import Criterion
+    from sqlmodel import select
+
+    methodology_version = seed_taxonomy(db_session)
+    _sync_implemented(db_session, methodology_version)
+
+    implemented = {c.name for c in db_session.exec(select(Criterion)).all() if c.implemented}
+    assert implemented == {name for _, name in CRITERION_NORMALIZERS}

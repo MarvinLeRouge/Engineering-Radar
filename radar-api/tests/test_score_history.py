@@ -138,8 +138,8 @@ def test_score_history_includes_category_scores_ordered_by_category_order(client
     assert response.status_code == 200
     categories = response.json()[0]["categories"]
     assert categories == [
-        {"id": architecture.id, "name": "Architecture", "value": 8.0},
-        {"id": security.id, "name": "Security", "value": 4.0},
+        {"id": architecture.id, "name": "Architecture", "value": 8.0, "implemented": False},
+        {"id": security.id, "name": "Security", "value": 4.0, "implemented": False},
     ]
 
 
@@ -152,7 +152,9 @@ def test_score_history_reports_null_value_for_category_not_yet_scored(client, db
 
     assert response.status_code == 200
     categories = response.json()[0]["categories"]
-    assert categories == [{"id": categories[0]["id"], "name": "Performance", "value": None}]
+    assert categories == [
+        {"id": categories[0]["id"], "name": "Performance", "value": None, "implemented": False}
+    ]
 
 
 def test_score_history_does_not_leak_categories_across_methodology_versions(client, db_session):
@@ -170,8 +172,12 @@ def test_score_history_does_not_leak_categories_across_methodology_versions(clie
 
     assert response.status_code == 200
     body = response.json()
-    assert body[0]["categories"] == [{"id": old_category.id, "name": "Old category", "value": 5.0}]
-    assert body[1]["categories"] == [{"id": new_category.id, "name": "New category", "value": 6.0}]
+    assert body[0]["categories"] == [
+        {"id": old_category.id, "name": "Old category", "value": 5.0, "implemented": False}
+    ]
+    assert body[1]["categories"] == [
+        {"id": new_category.id, "name": "New category", "value": 6.0, "implemented": False}
+    ]
 
 
 def _add_findings(db_session, scoring_run, severity, count, **overrides):
@@ -255,3 +261,27 @@ def test_score_history_risk_is_zero_without_findings(client, db_session):
 
     assert point["risk_index"] == 0
     assert all(entry["count"] == 0 for entry in point["risk"])
+
+
+def test_score_history_marks_categories_with_no_implemented_criterion(client, db_session):
+    repo = _make_repository(db_session, "repo-implemented")
+    _audit, run = _make_scoring_run(db_session, repo, "d" * 40, "2026-04-01T00:00:00+00:00", 6.0)
+    built = _make_category(db_session, run.methodology_version_id, "Built", 1)
+    planned = _make_category(db_session, run.methodology_version_id, "Planned", 2)
+    for category, implemented in ((built, True), (built, False), (planned, False)):
+        db_session.add(
+            Criterion(
+                category_id=category.id,
+                name=f"{category.name}-{implemented}",
+                description="...",
+                weight=1.0,
+                scoring_model=ScoringModel.FIXED_SCALE,
+                implemented=implemented,
+            )
+        )
+    db_session.commit()
+
+    body = client.get(f"/repositories/{repo.id}/score-history").json()
+
+    flags = {c["name"]: c["implemented"] for c in body[0]["categories"]}
+    assert flags == {"Built": True, "Planned": False}

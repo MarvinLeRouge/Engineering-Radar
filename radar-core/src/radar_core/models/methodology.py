@@ -59,3 +59,5 @@ class Criterion(SQLModel, table=True):
             nullable=False,
         )
     )
+    # Whether radar-audit has a normalizer for this criterion; synced from its registry on score.
+    implemented: bool = Field(default=False)

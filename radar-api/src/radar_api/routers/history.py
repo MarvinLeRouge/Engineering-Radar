@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 from radar_core.enums import ScoreLevel
 from radar_core.models.audit import Audit
-from radar_core.models.methodology import Category
+from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
 from sqlalchemy import asc
@@ -18,7 +18,9 @@ from radar_api.schemas.history import CategoryScorePoint, ScoreHistoryPoint
 router = APIRouter(tags=["history"])
 
 
-def _category_scores(session: Session, scoring_run: ScoringRun) -> list[CategoryScorePoint]:
+def _category_scores(
+    session: Session, scoring_run: ScoringRun, implemented: set[int]
+) -> list[CategoryScorePoint]:
     # Mirrors get_repository_report's own defensive level filter in
     # repositories.py, rather than relying solely on the convention that
     # category_id is only ever set on CATEGORY-level rows.
@@ -36,9 +38,28 @@ def _category_scores(session: Session, scoring_run: ScoringRun) -> list[Category
     ).all()
 
     return [
-        CategoryScorePoint(id=category.id, name=category.name, value=score.value if score else None)  # type: ignore[arg-type]
+        CategoryScorePoint(
+            id=category.id,  # type: ignore[arg-type]
+            name=category.name,
+            value=score.value if score else None,
+            implemented=category.id in implemented,
+        )
         for category, score in rows
     ]
+
+
+def _implemented_category_ids(session: Session, methodology_version_id: int) -> set[int]:
+    """Categories of a methodology version with at least one implemented criterion."""
+    return set(
+        session.exec(
+            select(Criterion.category_id)
+            .join(Category, Category.id == Criterion.category_id)  # type: ignore[arg-type]
+            .where(
+                Category.methodology_version_id == methodology_version_id,
+                Criterion.implemented,
+            )
+        ).all()
+    )
 
 
 @router.get("/repositories/{repository_id}/score-history", response_model=list[ScoreHistoryPoint])
@@ -58,6 +79,11 @@ def get_score_history(
         .order_by(asc(ScoringRun.scored_at))  # type: ignore[arg-type]
     ).all()
 
+    # One query per methodology version, not per run: a history rarely spans more than one.
+    implemented_by_version = {
+        version_id: _implemented_category_ids(session, version_id)
+        for version_id in {scoring_run.methodology_version_id for scoring_run, _ in rows}
+    }
     points = []
     for scoring_run, audit in rows:
         risk = compute_risk(session, scoring_run)
@@ -68,7 +94,9 @@ def get_score_history(
                 commit_sha=audit.commit_sha,
                 scored_at=scoring_run.scored_at,
                 global_score=scoring_run.global_score,
-                categories=_category_scores(session, scoring_run),
+                categories=_category_scores(
+                    session, scoring_run, implemented_by_version[scoring_run.methodology_version_id]
+                ),
                 risk=risk,
                 risk_index=sum(entry.weighted for entry in risk),
             )

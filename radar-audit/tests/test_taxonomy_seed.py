@@ -71,3 +71,18 @@ def test_seed_taxonomy_default_path_loads_the_real_catalog(db_session):
     assert abs(total_category_weight - 100.0) < 0.2
 
     assert TAXONOMY_PATH.exists()
+
+
+def test_sync_implemented_criteria_flags_exactly_the_given_criteria(db_session):
+    from radar_audit.taxonomy.seed import sync_implemented_criteria
+
+    version = seed_taxonomy(db_session, yaml_path=SAMPLE_YAML)
+    criteria = db_session.exec(select(Criterion)).all()
+    category = db_session.get(Category, criteria[0].category_id)
+    chosen = (category.name, criteria[0].name)
+
+    sync_implemented_criteria(db_session, version, {chosen})
+    sync_implemented_criteria(db_session, version, {chosen})
+
+    flagged = {c.name for c in db_session.exec(select(Criterion)).all() if c.implemented}
+    assert flagged == {criteria[0].name}

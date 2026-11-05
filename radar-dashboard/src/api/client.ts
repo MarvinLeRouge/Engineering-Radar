@@ -34,6 +34,8 @@ export interface CriterionReport {
   id: number
   name: string
   status: 'scored' | 'not_applicable' | 'not_yet_audited'
+  /** False when radar-audit has no normalizer for this criterion yet. */
+  implemented: boolean
   value: number | null
   na_reason: string | null
   findings: FindingReport[]
@@ -44,6 +46,8 @@ export interface CategoryReport {
   name: string
   order: number
   status: 'scored' | 'not_yet_audited'
+  /** True when at least one of its criteria is implemented. */
+  implemented: boolean
   value: number | null
   confidence: string | null
   criteria: CriterionReport[]
@@ -65,6 +69,7 @@ export interface CategoryScorePoint {
   id: number
   name: string
   value: number | null
+  implemented: boolean
 }
 
 /** Findings of one severity at a scoring run; `count` = OPEN and not FALSE_POSITIVE, `excluded` = the rest. */

@@ -55,3 +55,22 @@ def seed_taxonomy(session: Session, yaml_path: Path = TAXONOMY_PATH) -> Methodol
     session.commit()
     session.refresh(methodology_version)
     return methodology_version
+
+
+def sync_implemented_criteria(
+    session: Session,
+    methodology_version: MethodologyVersion,
+    implemented: set[tuple[str, str]],
+) -> None:
+    """Flag each criterion of the version as implemented iff its (category, name) is given."""
+    rows = session.exec(
+        select(Category, Criterion)
+        .join(Criterion, Criterion.category_id == Category.id)  # type: ignore[arg-type]
+        .where(Category.methodology_version_id == methodology_version.id)
+    ).all()
+    for category, criterion in rows:
+        flag = (category.name, criterion.name) in implemented
+        if criterion.implemented != flag:
+            criterion.implemented = flag
+            session.add(criterion)
+    session.commit()
