@@ -42,9 +42,14 @@
         type="button"
         class="score-history-chart__metric-toggle"
         :aria-pressed="isSelected(metric.id)"
-        @click="toggleMetric(metric.id)"
+        :aria-disabled="metric.implemented ? undefined : 'true'"
+        :title="metric.implemented ? undefined : NOT_IMPLEMENTED"
+        @click="metric.implemented && toggleMetric(metric.id)"
       >
-        {{ metric.name }}
+        {{ metric.name
+        }}<span v-if="!metric.implemented" class="score-history-chart__visually-hidden"
+          >, {{ NOT_IMPLEMENTED.toLowerCase() }}</span
+        >
       </button>
     </div>
     <p v-if="points.length === 0" class="score-history-chart__status">No audit history yet.</p>
@@ -128,18 +133,26 @@ const titleRef = ref<HTMLHeadingElement | null>(null)
 // registered, so it never draws on any other chart elsewhere in the app.
 const chartPlugins = [lastPointValueLabelPlugin]
 
+const NOT_IMPLEMENTED = 'Not implemented yet'
+
 // "Global" plus every category seen across the history, in first-seen
 // order (stable for one methodology version, which is the common case).
-const metrics = computed<{ id: MetricId; name: string }[]>(() => {
-  const seen = new Map<number, string>()
+// A category stays listed, greyed out, while no criterion of it is implemented.
+const metrics = computed<{ id: MetricId; name: string; implemented: boolean }[]>(() => {
+  const seen = new Map<number, { name: string; implemented: boolean }>()
   for (const point of props.points) {
     for (const category of point.categories) {
-      if (!seen.has(category.id)) seen.set(category.id, category.name)
+      const known = seen.get(category.id)
+      seen.set(category.id, {
+        name: category.name,
+        // Only an explicit false greys a category out: an older API sends no flag.
+        implemented: (known?.implemented ?? false) || category.implemented !== false,
+      })
     }
   }
   return [
-    { id: 'global' as MetricId, name: 'Global score' },
-    ...Array.from(seen, ([id, name]) => ({ id, name })),
+    { id: 'global' as MetricId, name: 'Global score', implemented: true },
+    ...Array.from(seen, ([id, metric]) => ({ id, ...metric })),
   ]
 })
 
@@ -356,6 +369,26 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
 
 .score-history-chart__zoom-toggle {
   flex-shrink: 0;
+}
+
+.score-history-chart__metric-toggle[aria-disabled='true'] {
+  border-style: dashed;
+  color: var(--color-ink-faint);
+  cursor: not-allowed;
+}
+
+.score-history-chart__metric-toggle[aria-disabled='true']:hover {
+  color: var(--color-ink-faint);
+  border-color: var(--color-border-strong);
+}
+
+.score-history-chart__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .score-history-chart__status {

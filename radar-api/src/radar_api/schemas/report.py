@@ -30,6 +30,7 @@ class CriterionReport(BaseModel):
     id: int
     name: str
     status: Literal["scored", "not_applicable", "not_yet_audited"]
+    implemented: bool
     value: float | None
     na_reason: str | None
     findings: list[FindingReport]
@@ -42,6 +43,8 @@ class CategoryReport(BaseModel):
     name: str
     order: int
     status: Literal["scored", "not_yet_audited"]
+    # True when at least one of its criteria is implemented.
+    implemented: bool
     value: float | None
     confidence: str | None
     criteria: list[CriterionReport]

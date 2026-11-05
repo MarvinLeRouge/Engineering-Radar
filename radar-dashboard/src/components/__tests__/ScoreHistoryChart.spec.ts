@@ -220,12 +220,12 @@ describe('ScoreHistoryChart', () => {
     function pointsWithCategories(): ScoreHistoryPoint[] {
       return [
         makePoint(1, '2026-01-01', 5, [
-          { id: 10, name: 'Security', value: 4 },
-          { id: 20, name: 'Architecture', value: 6 },
+          { id: 10, name: 'Security', value: 4, implemented: true },
+          { id: 20, name: 'Architecture', value: 6, implemented: true },
         ]),
         makePoint(2, '2026-02-01', 7, [
-          { id: 10, name: 'Security', value: 8 },
-          { id: 20, name: 'Architecture', value: 7 },
+          { id: 10, name: 'Security', value: 8, implemented: true },
+          { id: 20, name: 'Architecture', value: 7, implemented: true },
         ]),
       ]
     }
@@ -245,6 +245,36 @@ describe('ScoreHistoryChart', () => {
       expect(chips[0]!.attributes('aria-pressed')).toBe('true')
       expect(chips[1]!.attributes('aria-pressed')).toBe('false')
       expect(chips[2]!.attributes('aria-pressed')).toBe('false')
+    })
+
+    it('greys out a category that is not implemented yet and ignores clicks on it', async () => {
+      const points = [
+        makePoint(1, '2026-01-01', 5, [
+          { id: 10, name: 'Security', value: 4, implemented: true },
+          { id: 30, name: 'Technical debt', value: null, implemented: false },
+        ]),
+        makePoint(2, '2026-02-01', 6, [
+          { id: 10, name: 'Security', value: 8, implemented: true },
+          { id: 30, name: 'Technical debt', value: null, implemented: false },
+        ]),
+      ]
+      const wrapper = mount(ScoreHistoryChart, { props: { points } })
+
+      const chip = wrapper.findAll('.score-history-chart__metric-toggle')[2]!
+      expect(chip.attributes('aria-disabled')).toBe('true')
+      expect(chip.attributes('title')).toBe('Not implemented yet')
+      expect(chip.text()).toContain('Technical debt')
+      expect(
+        wrapper.findAll('.score-history-chart__metric-toggle')[1]!.attributes(),
+      ).not.toHaveProperty('aria-disabled')
+
+      await chip.trigger('click')
+
+      expect(chip.attributes('aria-pressed')).toBe('false')
+      const data = wrapper.findComponent({ name: 'LineStub' }).props('data')
+      expect(data.datasets.map((dataset: { label: string }) => dataset.label)).toEqual([
+        'Global score',
+      ])
     })
 
     it('plots only the Global score dataset by default', () => {
@@ -385,6 +415,7 @@ describe('ScoreHistoryChart', () => {
         id: i + 1,
         name: `Category ${i + 1}`,
         value: i,
+        implemented: true,
       }))
       const points = [
         makePoint(1, '2026-01-01', 5, categories),
@@ -464,8 +495,10 @@ describe('ScoreHistoryChart', () => {
 
     it('formats a not-yet-scored selected metric as "not yet audited" in the list', async () => {
       const points = [
-        makePoint(1, '2026-01-01', 5, [{ id: 10, name: 'Security', value: null }]),
-        makePoint(2, '2026-02-01', 7, [{ id: 10, name: 'Security', value: 8 }]),
+        makePoint(1, '2026-01-01', 5, [
+          { id: 10, name: 'Security', value: null, implemented: true },
+        ]),
+        makePoint(2, '2026-02-01', 7, [{ id: 10, name: 'Security', value: 8, implemented: true }]),
       ]
       const wrapper = mount(ScoreHistoryChart, { props: { points } })
       await wrapper.findAll('.score-history-chart__metric-toggle')[1]!.trigger('click')

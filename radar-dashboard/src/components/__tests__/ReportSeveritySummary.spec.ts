@@ -22,7 +22,7 @@ function makeFinding(
 }
 
 function makeCriterion(id: number, name: string, findings: FindingReport[]): CriterionReport {
-  return { id, name, status: 'scored', value: 5, na_reason: null, findings }
+  return { id, name, status: 'scored', implemented: true, value: 5, na_reason: null, findings }
 }
 
 function makeCategory(
@@ -31,7 +31,16 @@ function makeCategory(
   order: number,
   criteria: CriterionReport[],
 ): CategoryReport {
-  return { id, name, order, status: 'scored', value: 5, confidence: 'HIGH', criteria }
+  return {
+    id,
+    name,
+    order,
+    status: 'scored',
+    implemented: true,
+    value: 5,
+    confidence: 'HIGH',
+    criteria,
+  }
 }
 
 describe('ReportSeveritySummary', () => {

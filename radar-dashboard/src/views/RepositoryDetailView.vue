@@ -32,22 +32,44 @@
         <div v-for="category in store.report.categories" :key="category.id" class="category">
           <h2 class="category__heading">
             <span class="category__name">{{ category.name }}</span>
-            <ScoreGauge :value="category.value" :status="category.status" />
-          </h2>
-          <div v-for="criterion in category.criteria" :key="criterion.id" class="criterion">
-            <h3 :id="`criterion-${criterion.id}`" class="criterion__heading">
-              <span class="criterion__name">{{ criterion.name }}</span>
-              <ScoreGauge
-                :value="criterion.value"
-                :status="criterion.status"
-                :na-reason="criterion.na_reason"
-              />
-            </h3>
-            <CriterionFindings
-              :findings="criterion.findings"
-              @updated="refetchReport(activeScoringRunId ?? undefined)"
+            <ScoreGauge
+              v-if="category.implemented !== false"
+              :value="category.value"
+              :status="category.status"
             />
-          </div>
+            <span v-else data-testid="not-implemented" class="not-implemented">{{
+              NOT_IMPLEMENTED
+            }}</span>
+          </h2>
+          <template v-if="category.implemented !== false">
+            <div v-for="criterion in category.criteria" :key="criterion.id" class="criterion">
+              <h3 :id="`criterion-${criterion.id}`" class="criterion__heading">
+                <span class="criterion__name">{{ criterion.name }}</span>
+                <ScoreGauge
+                  v-if="criterion.implemented !== false"
+                  :value="criterion.value"
+                  :status="criterion.status"
+                  :na-reason="criterion.na_reason"
+                />
+                <span v-else data-testid="not-implemented" class="not-implemented">{{
+                  NOT_IMPLEMENTED
+                }}</span>
+              </h3>
+              <CriterionFindings
+                v-if="criterion.implemented !== false"
+                :findings="criterion.findings"
+                @updated="refetchReport(activeScoringRunId ?? undefined)"
+              />
+            </div>
+          </template>
+          <details v-else data-testid="planned-criteria" class="category__planned">
+            <summary>Planned criteria ({{ category.criteria.length }})</summary>
+            <ul>
+              <li v-for="criterion in category.criteria" :key="criterion.id">
+                {{ criterion.name }}
+              </li>
+            </ul>
+          </details>
         </div>
       </template>
     </section>
@@ -123,6 +145,7 @@ const route = useRoute()
 const router = useRouter()
 const store = useRepositoriesStore()
 const tab = ref<'report' | 'roadmap' | 'trends'>('report')
+const NOT_IMPLEMENTED = 'Not implemented yet'
 
 const repositoryId = extractRepositoryId(route.params.idSlug as string)
 const activeScoringRunId = ref<number | null>(null)
@@ -178,6 +201,32 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.not-implemented {
+  padding: var(--space-1) var(--space-2);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-meta);
+  font-weight: var(--weight-medium);
+  color: var(--color-ink-faint);
+  white-space: nowrap;
+}
+
+.category__planned {
+  font-size: var(--text-meta);
+  color: var(--color-ink-soft);
+}
+
+.category__planned summary {
+  cursor: pointer;
+  color: var(--color-ink-soft);
+}
+
+.category__planned ul {
+  margin-top: var(--space-2);
+  padding-left: var(--space-5);
+  color: var(--color-ink-faint);
+}
+
 .repository-detail-view__tabs {
   display: flex;
   gap: var(--space-5);

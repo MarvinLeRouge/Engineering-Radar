@@ -13,6 +13,7 @@ class CategoryScorePoint(BaseModel):
     id: int
     name: str
     value: float | None
+    implemented: bool
 
 
 class SeverityRiskPoint(BaseModel):

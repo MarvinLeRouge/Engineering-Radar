@@ -391,3 +391,33 @@ def test_get_repository_report_includes_each_finding_verdict_note(client, db_ses
 
     findings = body["categories"][0]["criteria"][0]["findings"]
     assert findings[0]["verdict_note"] == "Waiting for an upstream fix"
+
+
+def test_get_repository_report_flags_implemented_criteria_and_categories(client, db_session):
+    repo = _make_repository(db_session, "repo-implemented-report")
+    run = _make_scoring_run(db_session, repo, global_score=6.0)
+    category, criterion = _seed_category_and_criterion(db_session, run.methodology_version_id)
+    criterion.implemented = True
+    db_session.add(criterion)
+    db_session.add(
+        Criterion(
+            category_id=category.id,
+            name="Planned check",
+            description="...",
+            weight=1.0,
+            scoring_model=ScoringModel.FIXED_SCALE,
+        )
+    )
+    planned_category = Category(
+        methodology_version_id=run.methodology_version_id, name="Planned", weight=1.0, order=2
+    )
+    db_session.add(planned_category)
+    db_session.commit()
+
+    body = client.get(f"/repositories/{repo.id}/report").json()
+
+    by_name = {c["name"]: c for c in body["categories"]}
+    assert by_name["Security"]["implemented"] is True
+    assert by_name["Planned"]["implemented"] is False
+    criteria = {c["name"]: c["implemented"] for c in by_name["Security"]["criteria"]}
+    assert criteria == {"Dependency vulns": True, "Planned check": False}

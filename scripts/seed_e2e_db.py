@@ -141,6 +141,7 @@ def seed(session: Session) -> None:
             description="Known CVEs in dependencies.",
             weight=1.0,
             scoring_model=ScoringModel.FIXED_SCALE,
+            implemented=True,
         ),
     )
     secrets = _add(
@@ -149,6 +150,22 @@ def seed(session: Session) -> None:
             category_id=security.id,
             name="Secrets in tracked history",
             description="Credentials committed to git.",
+            weight=1.0,
+            scoring_model=ScoringModel.FIXED_SCALE,
+            implemented=True,
+        ),
+    )
+    # A category radar-audit cannot score yet: shown greyed out in Trends and the report.
+    planned = _add(
+        session,
+        Category(methodology_version_id=methodology.id, name="Technical debt", weight=1.0, order=2),
+    )
+    _add(
+        session,
+        Criterion(
+            category_id=planned.id,
+            name="TODO/FIXME density",
+            description="Leftover markers per KLOC.",
             weight=1.0,
             scoring_model=ScoringModel.FIXED_SCALE,
         ),

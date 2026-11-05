@@ -102,6 +102,7 @@ def _build_criterion_report(
         id=criterion.id,  # type: ignore[arg-type]
         name=criterion.name,
         status=status,  # type: ignore[arg-type]
+        implemented=criterion.implemented,
         value=criterion_score.value
         if criterion_score is not None and status != "not_applicable"
         else None,
@@ -135,6 +136,7 @@ def _build_category_report(
         name=category.name,
         order=category.order,
         status="scored" if category_score is not None else "not_yet_audited",
+        implemented=any(c.implemented for c in criteria),
         value=category_score.value if category_score else None,
         confidence=category_score.confidence.value if category_score else None,
         criteria=criterion_reports,

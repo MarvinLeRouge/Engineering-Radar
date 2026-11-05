@@ -71,6 +71,7 @@ describe('RepositoryDetailView', () => {
             name: 'Security',
             order: 1,
             status: 'scored',
+            implemented: true,
             value: 5,
             confidence: 'HIGH',
             criteria: [
@@ -78,6 +79,7 @@ describe('RepositoryDetailView', () => {
                 id: 1,
                 name: 'SAST findings',
                 status: 'scored',
+                implemented: true,
                 value: 4,
                 na_reason: null,
                 findings: [
@@ -118,6 +120,71 @@ describe('RepositoryDetailView', () => {
       .trigger('click')
 
     expect(wrapper.findComponent({ name: 'FindingCard' }).exists()).toBe(true)
+  })
+
+  it('marks categories and criteria that are not implemented yet', async () => {
+    const store = useRepositoriesStore()
+    const criterion = (id: number, name: string, implemented: boolean) => ({
+      id,
+      name,
+      status: implemented ? ('scored' as const) : ('not_yet_audited' as const),
+      implemented,
+      value: implemented ? 7 : null,
+      na_reason: null,
+      findings: [],
+    })
+    store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.report = {
+        repository_id: 1,
+        repository_name: 'repo-a',
+        commit_sha: 'a',
+        audited_at: '2026-01-01',
+        scored_at: '2026-01-01',
+        risk: [],
+        risk_index: 0,
+        categories: [
+          {
+            id: 1,
+            name: 'Testing',
+            order: 1,
+            status: 'scored',
+            implemented: true,
+            value: 7,
+            confidence: 'HIGH',
+            criteria: [criterion(1, 'Unit tests', true), criterion(2, 'Test quality', false)],
+          },
+          {
+            id: 2,
+            name: 'Technical debt',
+            order: 2,
+            status: 'not_yet_audited',
+            implemented: false,
+            value: null,
+            confidence: null,
+            criteria: [
+              criterion(3, 'TODO density', false),
+              criterion(4, 'Runtime currency', false),
+            ],
+          },
+        ],
+      }
+    })
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = await mountView()
+
+    const [testing, debt] = wrapper.findAll('.category')
+    expect(testing!.find('.category__heading [data-testid="not-implemented"]').exists()).toBe(false)
+    expect(testing!.find('#criterion-2 [data-testid="not-implemented"]').exists()).toBe(true)
+    expect(testing!.find('#criterion-1 [data-testid="not-implemented"]').exists()).toBe(false)
+    expect(debt!.find('.category__heading [data-testid="not-implemented"]').text()).toBe(
+      'Not implemented yet',
+    )
+    const planned = debt!.find('[data-testid="planned-criteria"]')
+    expect(planned.element.tagName).toBe('DETAILS')
+    expect(planned.find('summary').text()).toBe('Planned criteria (2)')
+    expect(planned.text()).toContain('TODO density')
+    expect(debt!.findAll('.criterion')).toHaveLength(0)
   })
 
   it('shows the scored date and marks it as latest when there is no scoringRun query', async () => {
@@ -223,6 +290,7 @@ describe('RepositoryDetailView', () => {
               name: 'Security',
               order: 1,
               status: 'scored',
+              implemented: true,
               value: 5,
               confidence: 'HIGH',
               criteria: [
@@ -230,6 +298,7 @@ describe('RepositoryDetailView', () => {
                   id: 10,
                   name: 'Secrets',
                   status: 'scored',
+                  implemented: true,
                   value: 5,
                   na_reason: null,
                   findings: [],
@@ -267,6 +336,7 @@ describe('RepositoryDetailView', () => {
           name: 'Security',
           order: 1,
           status: 'scored' as const,
+          implemented: true,
           value: 5,
           confidence: 'HIGH' as const,
           criteria: [
@@ -274,6 +344,7 @@ describe('RepositoryDetailView', () => {
               id: 1,
               name: 'SAST findings',
               status: 'scored' as const,
+              implemented: true,
               value: 4,
               na_reason: null,
               findings: [

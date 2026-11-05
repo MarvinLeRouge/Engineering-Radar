@@ -47,3 +47,20 @@ test('shows the score and risk history across both audits', async ({ page }) => 
   await expect(page.getByRole('heading', { name: 'Weighted risk history' })).toBeVisible()
   await expect(page.getByRole('img', { name: 'Weighted risk history' })).toBeVisible()
 })
+
+test('marks a category radar-audit cannot score yet, in the report and in Trends', async ({
+  page,
+}) => {
+  const debt = page.locator('.category', {
+    has: page.getByRole('heading', { name: 'Technical debt' }),
+  })
+  await expect(debt.getByTestId('not-implemented')).toHaveText('Not implemented yet')
+  await expect(debt.getByTestId('planned-criteria').locator('summary')).toHaveText(
+    'Planned criteria (1)',
+  )
+
+  await page.getByRole('button', { name: 'Trends' }).click()
+  const chip = page.locator('.score-history-chart__metric-toggle', { hasText: 'Technical debt' })
+  await expect(chip).toHaveAttribute('aria-disabled', 'true')
+  await expect(chip).toHaveAttribute('title', 'Not implemented yet')
+})

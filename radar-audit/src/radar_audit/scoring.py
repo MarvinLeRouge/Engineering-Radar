@@ -24,7 +24,7 @@ from radar_audit.normalizers.shared import (
     set_dismissed_fingerprints,
 )
 from radar_audit.roadmap_promotion import promote_improvement_tasks
-from radar_audit.taxonomy.seed import seed_taxonomy
+from radar_audit.taxonomy.seed import seed_taxonomy, sync_implemented_criteria
 
 log = structlog.get_logger("radar_audit.scoring")
 
@@ -69,6 +69,7 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
     repository = get_repository_by_name(session, repo_name)
     audit = _get_latest_audit(session, repository)
     methodology_version = seed_taxonomy(session)
+    _sync_implemented(session, methodology_version)
     scoring_run = get_or_create_scoring_run(session, audit, methodology_version)
 
     carried_verdicts = _collect_carried_verdicts(session, repository)
@@ -94,6 +95,11 @@ def score_repository(session: Session, repo_name: str) -> ScoringRun:
             return scored
     finally:
         set_dismissed_fingerprints(session, set())
+
+
+def _sync_implemented(session: Session, methodology_version: MethodologyVersion) -> None:
+    """Record which criteria radar-audit can score, so the API can tell "not implemented"."""
+    sync_implemented_criteria(session, methodology_version, set(CRITERION_NORMALIZERS))
 
 
 def _score_run(

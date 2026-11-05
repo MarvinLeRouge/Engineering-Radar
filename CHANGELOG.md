@@ -161,6 +161,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add structured logging with structlog (FEAT-031)
 - Add an explanatory note to dismissed findings (FEAT-032)
 - *(radar-dashboard)* Confirm a saved verdict note with a check mark (FEAT-033)
+- Mark criteria and categories that are not implemented yet (FEAT-034)
 
 ### 🐛 Bug Fixes
 
