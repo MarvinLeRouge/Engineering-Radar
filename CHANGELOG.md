@@ -162,6 +162,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Add an explanatory note to dismissed findings (FEAT-032)
 - *(radar-dashboard)* Confirm a saved verdict note with a check mark (FEAT-033)
 - Mark criteria and categories that are not implemented yet (FEAT-034)
+- *(radar-api)* List unimplemented categories and criteria last (FEAT-035)
 
 ### 🐛 Bug Fixes
 

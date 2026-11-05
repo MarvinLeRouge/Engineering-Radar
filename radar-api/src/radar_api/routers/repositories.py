@@ -129,7 +129,8 @@ def _build_category_report(
             findings_by_criterion,
             recommendation_by_finding,
         )
-        for criterion in criteria
+        # Stable sort: implemented criteria first, each group in its own order.
+        for criterion in sorted(criteria, key=lambda c: not c.implemented)
     ]
     return CategoryReport(
         id=category.id,  # type: ignore[arg-type]
@@ -228,6 +229,8 @@ def get_repository_report(
         )
         for category in categories
     ]
+    # Categories radar-audit cannot score yet go last, keeping the taxonomy order otherwise.
+    category_reports.sort(key=lambda report: not report.implemented)
 
     risk = compute_risk(session, scoring_run)
     return RepositoryReport(

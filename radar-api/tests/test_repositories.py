@@ -421,3 +421,41 @@ def test_get_repository_report_flags_implemented_criteria_and_categories(client,
     assert by_name["Planned"]["implemented"] is False
     criteria = {c["name"]: c["implemented"] for c in by_name["Security"]["criteria"]}
     assert criteria == {"Dependency vulns": True, "Planned check": False}
+
+
+def test_get_repository_report_lists_unimplemented_categories_and_criteria_last(client, db_session):
+    repo = _make_repository(db_session, "repo-unimplemented-last")
+    run = _make_scoring_run(db_session, repo, global_score=6.0)
+
+    def category(name, order):
+        row = Category(
+            methodology_version_id=run.methodology_version_id, name=name, weight=1.0, order=order
+        )
+        db_session.add(row)
+        db_session.commit()
+        db_session.refresh(row)
+        return row
+
+    def criterion(cat, name, implemented):
+        db_session.add(
+            Criterion(
+                category_id=cat.id,
+                name=name,
+                description="...",
+                weight=1.0,
+                scoring_model=ScoringModel.FIXED_SCALE,
+                implemented=implemented,
+            )
+        )
+        db_session.commit()
+
+    planned = category("Planned", 1)
+    criterion(planned, "Planned check", False)
+    built = category("Built", 2)
+    criterion(built, "Not yet", False)
+    criterion(built, "Done", True)
+
+    body = client.get(f"/repositories/{repo.id}/report").json()
+
+    assert [c["name"] for c in body["categories"]] == ["Built", "Planned"]
+    assert [c["name"] for c in body["categories"][0]["criteria"]] == ["Done", "Not yet"]

@@ -37,7 +37,7 @@ def _category_scores(
         .order_by(Category.order)  # type: ignore[arg-type]
     ).all()
 
-    return [
+    points = [
         CategoryScorePoint(
             id=category.id,  # type: ignore[arg-type]
             name=category.name,
@@ -46,6 +46,8 @@ def _category_scores(
         )
         for category, score in rows
     ]
+    # Categories radar-audit cannot score yet go last, keeping the taxonomy order otherwise.
+    return sorted(points, key=lambda point: not point.implemented)
 
 
 def _implemented_category_ids(session: Session, methodology_version_id: int) -> set[int]:
