@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -42,6 +43,15 @@ def relativize_path_keys(mapping: dict[str, Any], target_path: Path) -> dict[str
     path as the top-level key rather than a "file" field.
     """
     return {_to_relative(path, target_path): value for path, value in mapping.items()}
+
+
+def anchored_path_regex(relative: Path) -> str:
+    """Regex matching `relative` on whole path components, for tools that apply it with search.
+
+    Unanchored, an excluded `.env` would also drop `.env.example`, and `build` would drop
+    `src/rebuild/`.
+    """
+    return rf"(^|/){re.escape(relative.as_posix())}(/|$)"
 
 
 _SKIPPED_DIRS = (".venv", "__pycache__", "node_modules", "vendor", "dist", "build")

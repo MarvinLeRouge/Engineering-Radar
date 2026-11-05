@@ -1,3 +1,5 @@
+import re
+
 from radar_audit.runners.dependency_cruiser_runner import DependencyCruiserRunner
 
 from tests.git_helpers import init_git_repo
@@ -140,3 +142,17 @@ def test_reports_tool_identity():
     assert runner.tool_name == "dependency-cruiser"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"javascript"})
+
+
+def test_exclude_pattern_matches_excluded_paths_on_whole_components(tmp_path):
+    # Git-ignored paths are excluded too: an ignored .env must not drop .env.example.
+    pattern = re.compile(
+        DependencyCruiserRunner()._build_exclude_pattern(
+            tmp_path, [tmp_path / ".env", tmp_path / "web" / "build"]
+        )
+    )
+
+    assert pattern.search(".env")
+    assert pattern.search("web/build/app.js")
+    assert not pattern.search(".env.example")
+    assert not pattern.search("web/rebuild/app.js")

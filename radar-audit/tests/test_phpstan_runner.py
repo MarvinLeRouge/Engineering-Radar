@@ -105,59 +105,16 @@ def test_build_neon_content_excludes_a_single_file_as_is(tmp_path):
     assert f"- '{test_file}'\n" in neon
 
 
-def test_build_neon_content_excludes_what_git_ignores(tmp_path):
-    # PHPStan's own cache (Laravel: storage/phpstan) holds generated PHP that it would analyse.
-    repo_path = tmp_path / "repo"
-    init_git_repo(
-        repo_path,
-        files={".gitignore": "/storage/phpstan\n/node_modules\n.env\n", "app/A.php": "<?php\n"},
-    )
-    (repo_path / "storage" / "phpstan" / "cache").mkdir(parents=True)
-    (repo_path / "storage" / "phpstan" / "cache" / "Container.php").write_text("<?php\n")
-    (repo_path / "node_modules" / "flatted" / "php").mkdir(parents=True)
-    (repo_path / ".env").write_text("APP_KEY=\n")
-
-    neon = PhpstanRunner()._build_neon_content(
-        is_laravel=False, target_path=repo_path, exclude_paths=[]
-    )
-
-    assert f"- '{repo_path}/storage/phpstan/*'\n" in neon
-    assert f"- '{repo_path}/node_modules/*'\n" in neon
-    assert f"- '{repo_path}/.env'\n" in neon
-    assert f"{repo_path}/app" not in neon
-
-
 def test_build_neon_content_quotes_entries_with_neon_special_characters(tmp_path):
-    repo_path = tmp_path / "repo"
-    init_git_repo(repo_path, files={".gitignore": "*.log\n"})
-    (repo_path / "it's #1: debug.log").write_text("x\n")
+    # Excluded paths now include every git-ignored file, whose names can hold # or :.
+    odd_file = tmp_path / "it's #1: debug.log"
+    odd_file.write_text("x\n")
 
     neon = PhpstanRunner()._build_neon_content(
-        is_laravel=False, target_path=repo_path, exclude_paths=[]
+        is_laravel=False, target_path=tmp_path, exclude_paths=[odd_file]
     )
 
-    assert f"- '{repo_path}/it''s #1: debug.log'\n" in neon
-
-
-def test_build_neon_content_lists_ignored_paths_of_a_subproject_relative_to_it(tmp_path):
-    repo_path = tmp_path / "repo"
-    init_git_repo(repo_path, files={".gitignore": "cache/\n", "backend/app/A.php": "<?php\n"})
-    (repo_path / "backend" / "cache").mkdir()
-    (repo_path / "backend" / "cache" / "C.php").write_text("<?php\n")
-
-    neon = PhpstanRunner()._build_neon_content(
-        is_laravel=False, target_path=repo_path / "backend", exclude_paths=[]
-    )
-
-    assert f"- '{repo_path}/backend/cache/*'\n" in neon
-
-
-def test_build_neon_content_outside_a_git_repo_only_excludes_vendor(tmp_path):
-    neon = PhpstanRunner()._build_neon_content(
-        is_laravel=False, target_path=tmp_path, exclude_paths=[]
-    )
-
-    assert neon.count("        - ") == 1
+    assert f"- '{tmp_path}/it''s #1: debug.log'\n" in neon
 
 
 @pytest.mark.slow

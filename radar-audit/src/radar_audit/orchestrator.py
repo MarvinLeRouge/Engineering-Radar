@@ -22,7 +22,7 @@ from radar_audit.discovery import SubProject, discover_subprojects
 from radar_audit.runner import RawToolOutput, ToolRunner
 from radar_audit.scope import out_of_scope_paths
 from radar_audit.taxonomy.seed import seed_taxonomy
-from radar_audit.worktree import compute_exclude_paths
+from radar_audit.worktree import compute_exclude_paths, compute_ignored_paths
 
 log = structlog.get_logger("radar_audit.audit")
 # exit_code recorded for a runner that raised instead of returning a result.
@@ -94,28 +94,33 @@ def get_or_create_audit(session: Session, repository: Repository) -> Audit:
 
 @dataclass(frozen=True)
 class AuditPlan:
-    """The resolved repository location, audited subprojects and excluded worktrees."""
+    """The resolved repository location, audited subprojects and the paths no runner audits."""
 
     repository_name: str
     repository_path: Path
     subprojects: list[SubProject]
+    # Linked git worktrees.
     exclude_paths: list[Path]
+    # Git-ignored files and directories (tool caches, node_modules, build output).
+    ignored_paths: list[Path]
 
 
 def plan_audit(config: PortfolioConfig, repo_name: str) -> AuditPlan:
     """Resolve a repository's subprojects and excluded worktrees without running any tool."""
     repo_path = config.resolve_repo_path(repo_name)
     exclude_paths = compute_exclude_paths(repo_path)
+    ignored_paths = compute_ignored_paths(repo_path)
     subprojects = [
         subproject
         for subproject in discover_subprojects(repo_path)
-        if not _is_excluded(subproject.path, exclude_paths)
+        if not _is_excluded(subproject.path, [*exclude_paths, *ignored_paths])
     ]
     return AuditPlan(
         repository_name=repo_name,
         repository_path=repo_path,
         subprojects=subprojects,
         exclude_paths=exclude_paths,
+        ignored_paths=ignored_paths,
     )
 
 
@@ -278,12 +283,13 @@ def _run_planned_tools(
 ) -> int:
     runs = planned_runs(plan, runners)
     for run in runs:
+        repo_exclusions = plan.exclude_paths + plan.ignored_paths
         if run.runner.scope == "subproject":
-            run_exclude_paths = plan.exclude_paths + _subproject_exclusions(
+            run_exclude_paths = repo_exclusions + _subproject_exclusions(
                 run.target_path, plan.subprojects
             )
         else:
-            run_exclude_paths = plan.exclude_paths
+            run_exclude_paths = repo_exclusions
         # Optional attribute: only runners whose criterion skips tests/migrations declare it.
         zones: frozenset[str] = getattr(run.runner, "excluded_zones", frozenset())
         run_exclude_paths = run_exclude_paths + out_of_scope_paths(run.target_path, zones)

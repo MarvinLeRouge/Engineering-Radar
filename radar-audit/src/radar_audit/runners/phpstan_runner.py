@@ -8,13 +8,9 @@ import time
 from pathlib import Path
 from typing import Literal
 
-import structlog
-
 from radar_audit.runner import RawToolOutput
 from radar_audit.runners.shared import raw_fallback, relativize_path_keys, tool_output
 from radar_audit.scope import TESTS_AND_MIGRATIONS, exclusion_glob
-
-log = structlog.get_logger("radar_audit.runners.phpstan")
 
 
 class PhpstanRunner:
@@ -113,15 +109,10 @@ class PhpstanRunner:
         picks up third-party code under its own `vendor/`, including the
         `phpstan/phpstan`/`larastan/larastan` packages this runner just installed
         there, producing noise unrelated to the target's own code.
-
-        Everything git ignores is excluded too: generated PHP such as PHPStan's own
-        cache (Laravel projects put it in `storage/phpstan`) or a `node_modules`
-        package shipping PHP is not the target's code.
         """
         exclude_entries = [str(target_path / "vendor" / "*")]
         exclude_entries.extend(
-            exclusion_glob(excluded, excluded, "/*")
-            for excluded in [*exclude_paths, *_git_ignored_paths(target_path)]
+            exclusion_glob(excluded, excluded, "/*") for excluded in exclude_paths
         )
 
         lines: list[str] = []
@@ -136,23 +127,3 @@ class PhpstanRunner:
             quoted = entry.replace("'", "''")
             lines.append(f"        - '{quoted}'")
         return "\n".join(lines) + "\n"
-
-
-def _git_ignored_paths(target_path: Path) -> list[Path]:
-    """Ignored files and directories under `target_path`, empty outside a git repository."""
-    completed = subprocess.run(
-        ["git", "ls-files", "--others", "--ignored", "--exclude-standard", "--directory", "-z"],
-        cwd=target_path,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if completed.returncode != 0:
-        # Without this list PHPStan analyses generated files again (FIX-030): say so.
-        log.warning(
-            "phpstan.git_ignored_paths_unavailable",
-            target_path=str(target_path),
-            stderr=completed.stderr.strip(),
-        )
-        return []
-    return [target_path / entry.rstrip("/") for entry in completed.stdout.split("\0") if entry]

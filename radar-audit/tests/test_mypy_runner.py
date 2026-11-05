@@ -100,7 +100,7 @@ def test_uses_target_path_as_cwd_not_the_caller_process_cwd(tmp_path, monkeypatc
 
 
 def test_exclude_regex_matches_only_the_whole_path_component():
-    from radar_audit.runners.mypy_runner import _exclude_regex
+    from radar_audit.runners.shared import anchored_path_regex as _exclude_regex
 
     pattern = re.compile(_exclude_regex(Path("tests/conftest.py")))
 

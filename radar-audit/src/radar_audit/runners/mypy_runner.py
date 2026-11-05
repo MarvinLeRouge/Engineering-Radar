@@ -3,13 +3,18 @@
 from __future__ import annotations
 
 import json
-import re
 import tomllib
 from pathlib import Path
 from typing import Literal
 
 from radar_audit.runner import RawToolOutput
-from radar_audit.runners.shared import count_files, relativize_file_field, run_timed, tool_output
+from radar_audit.runners.shared import (
+    anchored_path_regex,
+    count_files,
+    relativize_file_field,
+    run_timed,
+    tool_output,
+)
 from radar_audit.scope import TESTS_AND_MIGRATIONS
 
 
@@ -39,7 +44,7 @@ class MypyRunner:
                 try:
                     relative = excluded.relative_to(target_path)
                     # Use regex-escaped path for mypy's --exclude (which expects regex)
-                    command.extend(["--exclude", _exclude_regex(relative)])
+                    command.extend(["--exclude", anchored_path_regex(relative)])
                 except ValueError:
                     pass  # not under target_path, skip
 
@@ -73,8 +78,3 @@ class MypyRunner:
         if mypy_ini.exists() and "plugins" in mypy_ini.read_text():
             return True
         return False
-
-
-def _exclude_regex(relative: Path) -> str:
-    """Anchor an excluded path on whole path components: mypy applies --exclude with re.search."""
-    return rf"(^|/){re.escape(relative.as_posix())}(/|$)"
