@@ -459,3 +459,23 @@ def test_get_repository_report_lists_unimplemented_categories_and_criteria_last(
 
     assert [c["name"] for c in body["categories"]] == ["Built", "Planned"]
     assert [c["name"] for c in body["categories"][0]["criteria"]] == ["Done", "Not yet"]
+
+
+def test_get_repository_report_handles_more_findings_than_sqlite_bound_parameters(
+    client, db_session
+):
+    import sqlite3
+
+    # SQLite caps bound parameters per statement; lower it so a few findings reproduce it.
+    raw = db_session.connection().connection.driver_connection
+    raw.setlimit(sqlite3.SQLITE_LIMIT_VARIABLE_NUMBER, 50)
+    repo = _make_repository(db_session, "repo-many-findings")
+    run = _make_scoring_run(db_session, repo, global_score=6.0)
+    _, criterion = _seed_category_and_criterion(db_session, run.methodology_version_id)
+    for _ in range(80):
+        _add_report_finding(db_session, run, criterion, FindingSeverity.LOW)
+
+    response = client.get(f"/repositories/{repo.id}/report")
+
+    assert response.status_code == 200
+    assert len(response.json()["categories"][0]["criteria"][0]["findings"]) == 80

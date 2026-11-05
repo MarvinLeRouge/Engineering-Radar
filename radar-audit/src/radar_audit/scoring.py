@@ -139,7 +139,8 @@ def _wipe_scoring_run_data(
     for existing in existing_scores:
         session.delete(existing)
 
-    existing_finding_ids = [f.id for f in existing_findings if f.id is not None]
+    # A subquery, not a list of ids: SQLite caps bound parameters (32766) per statement.
+    existing_finding_ids = select(Finding.id).where(Finding.scoring_run_id == scoring_run.id)
     existing_recommendations = session.exec(
         select(Recommendation).where(Recommendation.finding_id.in_(existing_finding_ids))  # type: ignore[attr-defined]
     ).all()

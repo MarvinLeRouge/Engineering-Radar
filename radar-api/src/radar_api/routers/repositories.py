@@ -210,7 +210,8 @@ def get_repository_report(
     for finding in sort_findings_by_priority(findings):
         findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
 
-    finding_ids = [f.id for f in findings if f.id is not None]
+    # A subquery, not a list of ids: SQLite caps bound parameters (32766) per statement.
+    finding_ids = select(Finding.id).where(Finding.scoring_run_id == scoring_run.id)
     recommendations = session.exec(
         select(Recommendation).where(
             Recommendation.finding_id.in_(finding_ids)  # type: ignore[attr-defined]
