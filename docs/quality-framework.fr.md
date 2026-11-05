@@ -211,7 +211,7 @@ Compte tenu de ces trois limitations structurelles, la performance backend/BDD e
 
 | # | Critère | Archétype | Preuve / outil | Confiance | Notes |
 |---|---|---|---|---|---|
-| 8.1 | Exhaustivité du README | A | Heuristique : présence des en-têtes de section standards (installation, usage, aperçu d'architecture) | MOYENNE | |
+| 8.1 | Exhaustivité du README | A | Heuristique : présence des trois sections standards (installation, usage, aperçu d'architecture), chacune nommée par un titre avec un synonyme courant ("Installation", "Quick start" pour installation et usage, "How it works"...) ou par une ligne qui renvoie vers une doc `.md` locale existante et la nomme (un README qui pointe vers ses propres guides) ; les titres dans les blocs de code sont ignorés. 10 pour les trois, 7 pour une partie, 4 pour aucune, 0 sans README | MOYENNE | |
 | 8.2 | Documentation d'architecture | A | Partage la preuve avec 1.2, cadrage Documentation (« présente et lisible ») vs cadrage Architecture (« reflète la structure réelle ») | MOYENNE | Référence croisée, pas pondéré deux fois |
 | 8.3 | Documentation d'API | C | Schéma OpenAPI/Swagger présent & servi (auto-docs FastAPI, Laravel L5-Swagger) ; `N/A` pour les dépôts sans API | MOYENNE | |
 
