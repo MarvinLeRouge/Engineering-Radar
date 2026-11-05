@@ -4,7 +4,8 @@ RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 
-RUN pip install --no-cache-dir uv
+# uv pinned to the version the images already ran (FIX-014 floor: >=0.13.4); bump it here on purpose.
+RUN pip install --no-cache-dir "uv==0.13.7"
 
 COPY pyproject.toml uv.lock ./
 COPY radar-core ./radar-core
@@ -20,6 +21,7 @@ RUN uv sync --frozen --package radar-audit
 RUN useradd --create-home --uid 1000 appuser \
     && mkdir -p /data \
     && chown -R appuser:appuser /workspace /data
-USER appuser
+# Numeric id (appuser, created above with --uid 1000) so the host can resolve it.
+USER 1000
 
 ENTRYPOINT ["uv", "run", "--package", "radar-audit", "radar-audit"]
