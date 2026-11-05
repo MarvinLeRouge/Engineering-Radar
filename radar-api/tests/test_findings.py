@@ -246,3 +246,68 @@ def test_update_finding_status_succeeds(client, db_session, monkeypatch):
 
     assert response.status_code == 200
     assert response.json()["status"] == "WONT_FIX"
+
+
+def _patch_note(client, finding_id, note):
+    return client.patch(
+        f"/findings/{finding_id}/note",
+        json={"verdict_note": note},
+        headers={"X-API-Key": "secret"},
+    )
+
+
+def test_update_finding_note_requires_api_key(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-note-noauth")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = client.patch(f"/findings/{finding.id}/note", json={"verdict_note": "x"})
+
+    assert response.status_code == 401
+
+
+def test_update_finding_note_returns_404_when_missing(client, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+
+    assert _patch_note(client, 999, "x").status_code == 404
+
+
+def test_update_finding_note_stores_trimmed_text(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-note-ok")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    response = _patch_note(client, finding.id, "  Waiting for an upstream fix  ")
+
+    assert response.status_code == 200
+    assert response.json()["verdict_note"] == "Waiting for an upstream fix"
+
+
+def test_update_finding_note_clears_on_blank_text(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-note-clear")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+    _patch_note(client, finding.id, "something")
+
+    response = _patch_note(client, finding.id, "   ")
+
+    assert response.status_code == 200
+    assert response.json()["verdict_note"] is None
+
+
+def test_update_finding_note_rejects_text_over_200_characters(client, db_session, monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "secret")
+    repo = _make_repository(db_session, "repo-note-long")
+    scoring_run = _make_scoring_run(db_session, repo)
+    criterion = _make_criterion(db_session, scoring_run.methodology_version_id)
+    finding = _make_finding(db_session, scoring_run, criterion)
+
+    assert _patch_note(client, finding.id, "x" * 201).status_code == 422
+    assert _patch_note(client, finding.id, "x" * 200).status_code == 200
+    assert _patch_note(client, finding.id, " " + "x" * 200 + " ").status_code == 200

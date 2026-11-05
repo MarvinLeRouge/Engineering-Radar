@@ -31,6 +31,7 @@ humain.
 
 - `PATCH /findings/{finding_id}/verdict` — met à jour le verdict humain d'un finding.
 - `PATCH /findings/{finding_id}/status` — met à jour le statut d'un finding.
+- `PATCH /findings/{finding_id}/note` : définit la courte note qui explique le verdict d'un finding (200 caractères au plus, espaces de bord retirés ; un texte vide l'efface).
 - `PATCH /roadmap-items/{roadmap_item_id}/status` — met à jour le statut d'un élément de roadmap ; la transition vers `DONE` requiert un `done_evidence_id` référençant une ligne `Evidence` liée à l'un des findings de l'élément de roadmap.
 
 ## Lancement en local

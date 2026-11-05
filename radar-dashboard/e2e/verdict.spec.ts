@@ -24,4 +24,22 @@ test('marking a finding as false positive moves it out of the counts', async ({ 
     'HIGH (1 / 3)',
   ])
   await expect(page.locator('.risk-bar').getByTestId('risk-total')).toHaveText('32')
+
+  const dismissed = secrets.getByTestId('dismissed-findings')
+  await dismissed.locator('summary').click()
+  const dismissedCard = dismissed.locator('.finding-card', {
+    hasText: 'Generic token in docs/setup.md',
+  })
+  const note = dismissedCard.getByTestId('verdict-note')
+  await note.fill('Framework convention, used at runtime')
+  await note.press('Enter')
+
+  await page.reload()
+  await secrets.getByTestId('dismissed-findings').locator('summary').click()
+  await expect(
+    secrets
+      .getByTestId('dismissed-findings')
+      .locator('.finding-card', { hasText: 'Generic token in docs/setup.md' })
+      .getByTestId('verdict-note'),
+  ).toHaveValue('Framework convention, used at runtime')
 })

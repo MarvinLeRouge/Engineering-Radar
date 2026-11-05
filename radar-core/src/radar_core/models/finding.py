@@ -11,6 +11,8 @@ from sqlmodel import Field, SQLModel
 from radar_core.enums import Confidence, EvidenceType, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.types import UTCDateTime
 
+VERDICT_NOTE_MAX_LENGTH = 200
+
 
 class Finding(SQLModel, table=True):
     """A single issue detected in a repository by one criterion during a scoring run."""
@@ -87,6 +89,8 @@ class Finding(SQLModel, table=True):
         default_factory=lambda: datetime.now(UTC),
         sa_column=Column(UTCDateTime(), nullable=False),
     )
+    # Why a human dismissed or accepted this finding; carried across re-audits with the verdict.
+    verdict_note: str | None = Field(default=None, max_length=VERDICT_NOTE_MAX_LENGTH)
 
 
 class Evidence(SQLModel, table=True):

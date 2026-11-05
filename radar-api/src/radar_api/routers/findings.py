@@ -13,7 +13,12 @@ from sqlmodel import Session, select
 
 from radar_api.auth import require_api_key
 from radar_api.dependencies import get_db_session
-from radar_api.schemas.findings import FindingRead, FindingStatusUpdate, FindingVerdictUpdate
+from radar_api.schemas.findings import (
+    FindingNoteUpdate,
+    FindingRead,
+    FindingStatusUpdate,
+    FindingVerdictUpdate,
+)
 
 router = APIRouter(tags=["findings"])
 
@@ -29,6 +34,7 @@ def _to_finding_read(finding: Finding) -> FindingRead:
         line=finding.line,
         status=finding.status.value,
         human_verdict=finding.human_verdict.value,
+        verdict_note=finding.verdict_note,
         detected_at=finding.detected_at,
     )
 
@@ -112,6 +118,27 @@ def update_finding_status(
             detail=f"finding already has status {payload.status.value}",
         )
     finding.status = payload.status
+    session.add(finding)
+    session.commit()
+    session.refresh(finding)
+    return _to_finding_read(finding)
+
+
+@router.patch(
+    "/findings/{finding_id}/note",
+    response_model=FindingRead,
+    dependencies=[Depends(require_api_key)],
+)
+def update_finding_note(
+    finding_id: int,
+    payload: FindingNoteUpdate,
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> FindingRead:
+    """Set the explanatory note of a finding's verdict, trimmed; blank text clears it."""
+    finding = session.get(Finding, finding_id)
+    if finding is None:
+        raise HTTPException(status_code=404, detail="finding not found")
+    finding.verdict_note = payload.verdict_note or None
     session.add(finding)
     session.commit()
     session.refresh(finding)

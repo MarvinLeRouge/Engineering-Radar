@@ -20,6 +20,7 @@ class FindingReport(BaseModel):
     line: int | None
     status: str
     human_verdict: str
+    verdict_note: str | None
     recommendation: str | None
 
 

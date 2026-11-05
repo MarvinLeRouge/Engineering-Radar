@@ -74,6 +74,7 @@ def _build_finding_report(
         line=finding.line,
         status=finding.status.value,
         human_verdict=finding.human_verdict.value,
+        verdict_note=finding.verdict_note,
         recommendation=recommendation_by_finding.get(finding.id),  # type: ignore[arg-type]
     )
 

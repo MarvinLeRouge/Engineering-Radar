@@ -16,6 +16,7 @@ function makeFinding(
     line: null,
     status: 'OPEN',
     human_verdict: humanVerdict,
+    verdict_note: null,
     recommendation: null,
   }
 }

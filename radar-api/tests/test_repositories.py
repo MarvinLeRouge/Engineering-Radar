@@ -372,3 +372,22 @@ def test_badge_color_reflects_global_score(client, db_session):
     body = response.json()
     assert body["message"] == "8.5/10"
     assert body["color"] == "brightgreen"
+
+
+def test_get_repository_report_includes_each_finding_verdict_note(client, db_session):
+    repo = _make_repository(db_session, "repo-note")
+    run = _make_scoring_run(db_session, repo, global_score=6.0)
+    _, criterion = _seed_category_and_criterion(db_session, run.methodology_version_id)
+    _add_report_finding(
+        db_session,
+        run,
+        criterion,
+        FindingSeverity.HIGH,
+        status=FindingStatus.WONT_FIX,
+        verdict_note="Waiting for an upstream fix",
+    )
+
+    body = client.get(f"/repositories/{repo.id}/report").json()
+
+    findings = body["categories"][0]["criteria"][0]["findings"]
+    assert findings[0]["verdict_note"] == "Waiting for an upstream fix"

@@ -31,6 +31,7 @@ human-confirmed-only write endpoints.
 
 - `PATCH /findings/{finding_id}/verdict` — update a finding's human verdict.
 - `PATCH /findings/{finding_id}/status` — update a finding's status.
+- `PATCH /findings/{finding_id}/note`: set the short note explaining a finding's verdict (200 characters at most, trimmed; blank text clears it).
 - `PATCH /roadmap-items/{roadmap_item_id}/status` — update a roadmap item's status; transitioning to `DONE` requires a `done_evidence_id` referencing an `Evidence` row linked to one of the roadmap item's findings.
 
 ## Running locally
