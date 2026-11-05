@@ -21,8 +21,30 @@ function makeFinding(
   }
 }
 
-function makeCriterion(id: number, name: string, findings: FindingReport[]): CriterionReport {
-  return { id, name, status: 'scored', implemented: true, value: 5, na_reason: null, findings }
+function makeCriterion(
+  id: number,
+  name: string,
+  findings: FindingReport[],
+  overrides: Partial<CriterionReport> = {},
+): CriterionReport {
+  const kept = findings.filter((f) => f.human_verdict !== 'FALSE_POSITIVE')
+  const severityCounts: Record<string, number> = {}
+  for (const finding of kept) {
+    severityCounts[finding.severity] = (severityCounts[finding.severity] ?? 0) + 1
+  }
+  return {
+    id,
+    name,
+    status: 'scored',
+    implemented: true,
+    value: 5,
+    na_reason: null,
+    findings,
+    findings_total: findings.length,
+    severity_counts: severityCounts,
+    dismissed_count: findings.length - kept.length,
+    ...overrides,
+  }
 }
 
 function makeCategory(
@@ -185,5 +207,24 @@ describe('ReportSeveritySummary', () => {
     const wrapper = mount(ReportSeveritySummary, { props: { categories } })
 
     expect(wrapper.find('[data-testid="dismissed-count"]').exists()).toBe(false)
+  })
+
+  it('counts every finding of a criterion, including the pages not loaded yet', () => {
+    const categories = [
+      makeCategory(1, 'Code quality', 1, [
+        makeCriterion(10, 'Type checking', [makeFinding(1, 'HIGH')], {
+          findings_total: 28510,
+          severity_counts: { HIGH: 28500 },
+          dismissed_count: 10,
+        }),
+      ]),
+    ]
+
+    const wrapper = mount(ReportSeveritySummary, { props: { categories } })
+
+    expect(wrapper.find('[data-testid="severity-chip"]').text()).toBe('HIGH (1 / 28500)')
+    expect(wrapper.find('[data-testid="dismissed-count"]').text()).toContain(
+      '10 findings dismissed',
+    )
   })
 })

@@ -22,7 +22,8 @@ human-confirmed-only write endpoints.
 
 - `GET /repositories` — list all repositories with their latest audit status and global score.
 - `GET /repositories/{repository_id}` — repository detail.
-- `GET /repositories/{repository_id}/report` — full quality report (categories, criteria, findings, recommendations) for the latest scoring run.
+- `GET /repositories/{repository_id}/report` — full quality report (categories, criteria, findings, recommendations) for the latest scoring run (or `?scoring_run_id=`). Each criterion lists its first 1000 findings in priority order, with `findings_total`, `severity_counts` and `dismissed_count` covering all of them.
+- `GET /repositories/{repository_id}/report/criteria/{criterion_id}/findings?scoring_run_id=&offset=`: the next pages of a criterion's findings, 1000 at a time, in the same order (latest scoring run when `scoring_run_id` is omitted).
 - `GET /repositories/{repository_id}/badge` — shields.io-compatible badge payload for the latest global score.
 - `GET /repositories/{repository_id}/findings` — findings for the latest scoring run, optionally filtered by `status` and `severity` query params.
 - `GET /repositories/{repository_id}/roadmap` — roadmap items linked to the repository's findings.

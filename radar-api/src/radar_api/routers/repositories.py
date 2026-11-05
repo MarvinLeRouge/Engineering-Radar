@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException
-from radar_core.enums import ScoreLevel
-from radar_core.finding_ordering import sort_findings_by_priority
+from dataclasses import dataclass, field
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from radar_core.enums import HumanVerdict, ScoreLevel
+from radar_core.finding_ordering import PRIORITY_ORDER_BY
 from radar_core.models.audit import Audit
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
-from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlalchemy import desc, func
+from sqlmodel import Session, col, select
 
 from radar_api.dependencies import get_db_session
 from radar_api.risk import compute_risk
@@ -25,6 +27,9 @@ from radar_api.schemas.report import (
 from radar_api.schemas.repositories import RepositoryRead
 
 router = APIRouter(prefix="/repositories", tags=["repositories"])
+
+# Findings sent per criterion: the report holds the first page, the findings endpoint the rest.
+FINDINGS_PAGE_SIZE = 1000
 
 
 def _latest_scoring_run(session: Session, repository_id: int) -> ScoringRun | None:
@@ -87,17 +92,68 @@ def _criterion_status(criterion_score: Score | None) -> str:
     return "scored"
 
 
+@dataclass
+class _FindingCounts:
+    severity_counts: dict[str, int] = field(default_factory=dict)
+    dismissed_count: int = 0
+
+    @property
+    def total(self) -> int:
+        return sum(self.severity_counts.values()) + self.dismissed_count
+
+
+def _finding_counts_by_criterion(
+    session: Session, scoring_run_id: int
+) -> dict[int, _FindingCounts]:
+    rows = session.exec(
+        select(Finding.criterion_id, Finding.severity, Finding.human_verdict, func.count())
+        .where(Finding.scoring_run_id == scoring_run_id)
+        .group_by(col(Finding.criterion_id), col(Finding.severity), col(Finding.human_verdict))
+    ).all()
+    counts: dict[int, _FindingCounts] = {}
+    for criterion_id, severity, human_verdict, count in rows:
+        criterion_counts = counts.setdefault(criterion_id, _FindingCounts())
+        if human_verdict == HumanVerdict.FALSE_POSITIVE:
+            criterion_counts.dismissed_count += count
+        else:
+            # The enum is a StrEnum: its value is the string key the dashboard reads.
+            key = str(severity)
+            severity_counts = criterion_counts.severity_counts
+            severity_counts[key] = severity_counts.get(key, 0) + count
+    return counts
+
+
+def _findings_page(
+    session: Session, scoring_run_id: int, criterion_id: int, offset: int
+) -> list[FindingReport]:
+    """One page of a criterion's findings, in priority order, with their recommendations."""
+    page = (
+        select(Finding)
+        .where(Finding.scoring_run_id == scoring_run_id, Finding.criterion_id == criterion_id)
+        .order_by(*PRIORITY_ORDER_BY)
+        .offset(offset)
+        .limit(FINDINGS_PAGE_SIZE)
+    )
+    findings = session.exec(page).all()
+    if not findings:
+        return []
+    # A subquery, not a list of ids: SQLite caps bound parameters per statement.
+    page_ids = page.with_only_columns(col(Finding.id))
+    recommendations = session.exec(
+        select(Recommendation).where(col(Recommendation.finding_id).in_(page_ids))
+    ).all()
+    recommendation_by_finding = {r.finding_id: r.text for r in recommendations}
+    return [_build_finding_report(f, recommendation_by_finding) for f in findings]
+
+
 def _build_criterion_report(
+    session: Session,
+    scoring_run_id: int,
     criterion: Criterion,
     criterion_score: Score | None,
-    findings_by_criterion: dict[int | None, list[Finding]],
-    recommendation_by_finding: dict[int, str],
+    counts: _FindingCounts,
 ) -> CriterionReport:
     status = _criterion_status(criterion_score)
-    finding_reports = [
-        _build_finding_report(f, recommendation_by_finding)
-        for f in findings_by_criterion.get(criterion.id, [])
-    ]
     return CriterionReport(
         id=criterion.id,  # type: ignore[arg-type]
         name=criterion.name,
@@ -107,7 +163,12 @@ def _build_criterion_report(
         if criterion_score is not None and status != "not_applicable"
         else None,
         na_reason=criterion_score.na_reason if criterion_score else None,
-        findings=finding_reports,
+        findings=_findings_page(session, scoring_run_id, criterion.id, 0)  # type: ignore[arg-type]
+        if counts.total
+        else [],
+        findings_total=counts.total,
+        severity_counts=counts.severity_counts,
+        dismissed_count=counts.dismissed_count,
     )
 
 
@@ -115,19 +176,20 @@ def _build_category_report(
     session: Session,
     category: Category,
     category_score: Score | None,
+    scoring_run_id: int,
     criterion_scores: dict[int | None, Score],
-    findings_by_criterion: dict[int | None, list[Finding]],
-    recommendation_by_finding: dict[int, str],
+    counts_by_criterion: dict[int, _FindingCounts],
 ) -> CategoryReport:
     criteria = session.exec(
         select(Criterion).where(Criterion.category_id == category.id).order_by(Criterion.id)  # type: ignore[arg-type]
     ).all()
     criterion_reports = [
         _build_criterion_report(
+            session,
+            scoring_run_id,
             criterion,
             criterion_scores.get(criterion.id),
-            findings_by_criterion,
-            recommendation_by_finding,
+            counts_by_criterion.get(criterion.id, _FindingCounts()),  # type: ignore[arg-type]
         )
         # Stable sort: implemented criteria first, each group in its own order.
         for criterion in sorted(criteria, key=lambda c: not c.implemented)
@@ -205,28 +267,16 @@ def get_repository_report(
     category_scores = {s.category_id: s for s in scores if s.level == ScoreLevel.CATEGORY}
     criterion_scores = {s.criterion_id: s for s in scores if s.level == ScoreLevel.CRITERION}
 
-    findings = session.exec(select(Finding).where(Finding.scoring_run_id == scoring_run.id)).all()
-    findings_by_criterion: dict[int | None, list[Finding]] = {}
-    for finding in sort_findings_by_priority(findings):
-        findings_by_criterion.setdefault(finding.criterion_id, []).append(finding)
-
-    # A subquery, not a list of ids: SQLite caps bound parameters (32766) per statement.
-    finding_ids = select(Finding.id).where(Finding.scoring_run_id == scoring_run.id)
-    recommendations = session.exec(
-        select(Recommendation).where(
-            Recommendation.finding_id.in_(finding_ids)  # type: ignore[attr-defined]
-        )
-    ).all()
-    recommendation_by_finding = {r.finding_id: r.text for r in recommendations}
+    counts_by_criterion = _finding_counts_by_criterion(session, scoring_run.id)  # type: ignore[arg-type]
 
     category_reports = [
         _build_category_report(
             session,
             category,
             category_scores.get(category.id),
+            scoring_run.id,  # type: ignore[arg-type]
             criterion_scores,
-            findings_by_criterion,
-            recommendation_by_finding,
+            counts_by_criterion,
         )
         for category in categories
     ]
@@ -237,6 +287,7 @@ def get_repository_report(
     return RepositoryReport(
         repository_id=repository.id,  # type: ignore[arg-type]
         repository_name=repository.name,
+        scoring_run_id=scoring_run.id,  # type: ignore[arg-type]
         commit_sha=audit.commit_sha,
         audited_at=audit.audited_at,
         scored_at=scoring_run.scored_at,
@@ -244,6 +295,32 @@ def get_repository_report(
         risk=risk,
         risk_index=sum(entry.weighted for entry in risk),
     )
+
+
+@router.get(
+    "/{repository_id}/report/criteria/{criterion_id}/findings",
+    response_model=list[FindingReport],
+)
+def list_criterion_findings(
+    repository_id: int,
+    criterion_id: int,
+    scoring_run_id: int | None = None,
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> list[FindingReport]:
+    """Return one page of a criterion's findings, in report order, starting at `offset`.
+
+    The report holds the first page of each criterion; this endpoint serves the next ones,
+    from the requested or latest scoring run. An offset past the end returns an empty list.
+    """
+    if session.get(Repository, repository_id) is None:
+        raise HTTPException(status_code=404, detail="repository not found")
+    if session.get(Criterion, criterion_id) is None:
+        raise HTTPException(status_code=404, detail="criterion not found")
+    scoring_run = _resolve_scoring_run(session, repository_id, scoring_run_id)
+    if scoring_run is None:
+        raise HTTPException(status_code=404, detail="no score found for this repository")
+    return _findings_page(session, scoring_run.id, criterion_id, offset)  # type: ignore[arg-type]
 
 
 @router.get("/{repository_id}/badge", response_model=BadgeResponse)

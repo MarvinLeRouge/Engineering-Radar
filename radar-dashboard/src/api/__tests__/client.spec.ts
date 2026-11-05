@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { useApiKeyStore } from '@/stores/apiKey'
 import {
   ApiError,
+  getCriterionFindings,
   getRepositoryReport,
   getRoadmapItemEvidenceCandidates,
   listRepositories,
@@ -49,6 +50,17 @@ describe('api/client', () => {
     await getRepositoryReport(1)
 
     expect(fetch).toHaveBeenCalledWith('/api/repositories/1/report', {})
+  })
+
+  it('getCriterionFindings calls GET the criterion findings page of a scoring run', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([]))
+
+    await getCriterionFindings(1, 12, 34, 1000)
+
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/repositories/1/report/criteria/12/findings?scoring_run_id=34&offset=1000',
+      {},
+    )
   })
 
   it('getRoadmapItemEvidenceCandidates calls GET /api/roadmap-items/:id/evidence-candidates', async () => {

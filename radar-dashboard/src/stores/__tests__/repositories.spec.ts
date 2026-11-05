@@ -40,6 +40,7 @@ describe('repositories store', () => {
     const report = {
       repository_id: 1,
       repository_name: 'repo',
+      scoring_run_id: 1,
       commit_sha: 'a',
       audited_at: '2026-01-01',
       scored_at: '2026-01-01',
@@ -70,6 +71,7 @@ describe('repositories store', () => {
     const report = {
       repository_id: 1,
       repository_name: 'repo',
+      scoring_run_id: 1,
       commit_sha: 'a',
       audited_at: '2026-01-01',
       scored_at: '2026-01-01',

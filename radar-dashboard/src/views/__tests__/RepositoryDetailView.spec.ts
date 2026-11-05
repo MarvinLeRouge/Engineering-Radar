@@ -60,6 +60,7 @@ describe('RepositoryDetailView', () => {
       store.report = {
         repository_id: 1,
         repository_name: 'repo-a',
+        scoring_run_id: 1,
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-01-01',
@@ -82,6 +83,9 @@ describe('RepositoryDetailView', () => {
                 implemented: true,
                 value: 4,
                 na_reason: null,
+                findings_total: 1,
+                severity_counts: { HIGH: 1 },
+                dismissed_count: 0,
                 findings: [
                   {
                     id: 1,
@@ -131,12 +135,16 @@ describe('RepositoryDetailView', () => {
       implemented,
       value: implemented ? 7 : null,
       na_reason: null,
+      findings_total: 0,
+      severity_counts: {},
+      dismissed_count: 0,
       findings: [],
     })
     store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
       store.report = {
         repository_id: 1,
         repository_name: 'repo-a',
+        scoring_run_id: 1,
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-01-01',
@@ -193,6 +201,7 @@ describe('RepositoryDetailView', () => {
       store.report = {
         repository_id: 1,
         repository_name: 'repo-a',
+        scoring_run_id: 1,
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-03-15',
@@ -215,6 +224,7 @@ describe('RepositoryDetailView', () => {
       store.report = {
         repository_id: 1,
         repository_name: 'repo-a',
+        scoring_run_id: 1,
         commit_sha: 'a',
         audited_at: '2026-01-01',
         scored_at: '2026-03-15',
@@ -246,6 +256,7 @@ describe('RepositoryDetailView', () => {
         store.report = {
           repository_id: 1,
           repository_name: 'repo-a',
+          scoring_run_id: 1,
           commit_sha: 'a',
           audited_at: '2026-01-01',
           scored_at: '2026-02-01',
@@ -279,6 +290,7 @@ describe('RepositoryDetailView', () => {
         store.report = {
           repository_id: 1,
           repository_name: 'repo-a',
+          scoring_run_id: 1,
           commit_sha: 'a',
           audited_at: '2026-01-01',
           scored_at: '2026-02-01',
@@ -301,6 +313,9 @@ describe('RepositoryDetailView', () => {
                   implemented: true,
                   value: 5,
                   na_reason: null,
+                  findings_total: 0,
+                  severity_counts: {},
+                  dismissed_count: 0,
                   findings: [],
                 },
               ],
@@ -325,6 +340,7 @@ describe('RepositoryDetailView', () => {
     const reportFixture = {
       repository_id: 1,
       repository_name: 'repo-a',
+      scoring_run_id: 1,
       commit_sha: 'a',
       audited_at: '2026-01-01',
       scored_at: '2026-01-01',
@@ -347,6 +363,9 @@ describe('RepositoryDetailView', () => {
               implemented: true,
               value: 4,
               na_reason: null,
+              findings_total: 1,
+              severity_counts: { HIGH: 1 },
+              dismissed_count: 0,
               findings: [
                 {
                   id: 1,

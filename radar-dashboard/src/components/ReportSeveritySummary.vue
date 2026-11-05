@@ -43,7 +43,7 @@ import { computed, useId } from 'vue'
 import SeverityToggleChip from './SeverityToggleChip.vue'
 import { useExpandedSet } from '@/composables/useExpandedSet'
 import type { CategoryReport } from '@/api/client'
-import { SEVERITY_ORDER, isFalsePositive } from '@/utils/severity'
+import { SEVERITY_ORDER } from '@/utils/severity'
 
 const props = defineProps<{ categories: CategoryReport[] }>()
 
@@ -54,7 +54,7 @@ const { expanded, toggle } = useExpandedSet()
 const dismissedCount = computed(() =>
   props.categories
     .flatMap((category) => category.criteria)
-    .reduce((sum, criterion) => sum + criterion.findings.filter(isFalsePositive).length, 0),
+    .reduce((sum, criterion) => sum + criterion.dismissed_count, 0),
 )
 
 const severityGroups = computed(() =>
@@ -64,11 +64,10 @@ const severityGroups = computed(() =>
 
     for (const category of props.categories) {
       for (const criterion of category.criteria) {
-        const matches = criterion.findings.filter(
-          (f) => f.severity === severity && !isFalsePositive(f),
-        )
-        if (matches.length === 0) continue
-        findingCount += matches.length
+        // Server totals: `findings` only holds the first page of a large criterion.
+        const count = criterion.severity_counts[severity] ?? 0
+        if (count === 0) continue
+        findingCount += count
         criteria.push({
           criterionId: criterion.id,
           categoryName: category.name,

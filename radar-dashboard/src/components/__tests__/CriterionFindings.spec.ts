@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
 import CriterionFindings from '../CriterionFindings.vue'
-import type { FindingReport } from '@/api/client'
+import { getCriterionFindings } from '@/api/client'
+import type { CriterionReport, FindingReport } from '@/api/client'
+
+vi.mock('@/api/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/api/client')>()),
+  getCriterionFindings: vi.fn<typeof getCriterionFindings>(),
+}))
 
 function makeFinding(
   id: number,
@@ -22,7 +28,39 @@ function makeFinding(
   }
 }
 
+/** The criterion as the report sends it: `findings` is the first page, counts cover all. */
+function makeCriterion(
+  findings: FindingReport[],
+  overrides: Partial<CriterionReport> = {},
+): CriterionReport {
+  const severityCounts: Record<string, number> = {}
+  for (const finding of findings.filter((f) => f.human_verdict !== 'FALSE_POSITIVE')) {
+    severityCounts[finding.severity] = (severityCounts[finding.severity] ?? 0) + 1
+  }
+  return {
+    id: 12,
+    name: 'Type checking',
+    status: 'scored',
+    implemented: true,
+    value: 5,
+    na_reason: null,
+    findings,
+    findings_total: findings.length,
+    severity_counts: severityCounts,
+    dismissed_count: findings.length - Object.values(severityCounts).reduce((a, b) => a + b, 0),
+    ...overrides,
+  }
+}
+
+function propsFor(findings: FindingReport[], overrides: Partial<CriterionReport> = {}) {
+  return { criterion: makeCriterion(findings, overrides), repositoryId: 1, scoringRunId: 34 }
+}
+
 describe('CriterionFindings', () => {
+  beforeEach(() => {
+    vi.mocked(getCriterionFindings).mockReset()
+  })
+
   it('renders one chip per severity present, in descending priority order, with counts', () => {
     const findings = [
       makeFinding(1, 'HIGH'),
@@ -31,7 +69,7 @@ describe('CriterionFindings', () => {
       makeFinding(4, 'LOW'),
     ]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
 
     const chips = wrapper.findAll('[data-testid="severity-chip"]')
     expect(chips.map((c) => c.text())).toEqual(['CRITICAL (1)', 'HIGH (2)', 'LOW (1)'])
@@ -40,7 +78,7 @@ describe('CriterionFindings', () => {
   it('does not render a chip for a severity with zero findings', () => {
     const findings = [makeFinding(1, 'INFO')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
 
     expect(wrapper.text()).not.toContain('CRITICAL')
     expect(wrapper.text()).not.toContain('HIGH')
@@ -52,7 +90,7 @@ describe('CriterionFindings', () => {
   it('shows no findings until a chip is clicked, then shows only that severity', async () => {
     const findings = [makeFinding(1, 'CRITICAL'), makeFinding(2, 'HIGH')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     expect(wrapper.findAllComponents({ name: 'FindingCard' })).toHaveLength(0)
 
     const chips = wrapper.findAll('[data-testid="severity-chip"]')
@@ -66,7 +104,7 @@ describe('CriterionFindings', () => {
   it('reflects the expanded state on the chip via aria-expanded and an arrow indicator', async () => {
     const findings = [makeFinding(1, 'CRITICAL')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     const chip = wrapper.find('[data-testid="severity-chip"]')
 
     expect(chip.attributes('aria-expanded')).toBe('false')
@@ -80,7 +118,7 @@ describe('CriterionFindings', () => {
   it('toggles a severity group closed on a second click', async () => {
     const findings = [makeFinding(1, 'CRITICAL')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     const chip = wrapper.find('[data-testid="severity-chip"]')
 
     await chip.trigger('click')
@@ -93,7 +131,7 @@ describe('CriterionFindings', () => {
   it('forwards a FindingCard updated event as its own updated event', async () => {
     const findings = [makeFinding(1, 'CRITICAL')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     await wrapper.find('[data-testid="severity-chip"]').trigger('click')
 
     await wrapper.findComponent({ name: 'FindingCard' }).vm.$emit('updated')
@@ -108,7 +146,7 @@ describe('CriterionFindings', () => {
       makeFinding(3, 'HIGH', 'src/b.py'),
     ]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     await wrapper.find('[data-testid="severity-chip"]').trigger('click')
 
     const headings = wrapper.findAll('.criterion-findings__file-heading')
@@ -126,7 +164,7 @@ describe('CriterionFindings', () => {
       makeFinding(3, 'HIGH', 'src/a.py'),
     ]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     await wrapper.find('[data-testid="severity-chip"]').trigger('click')
 
     const headings = wrapper.findAll('.criterion-findings__file-heading')
@@ -139,7 +177,7 @@ describe('CriterionFindings', () => {
   it('renders no file heading and leaves showFile true for a fileless finding', async () => {
     const findings = [makeFinding(1, 'HIGH', null)]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     await wrapper.find('[data-testid="severity-chip"]').trigger('click')
 
     expect(wrapper.find('.criterion-findings__file-heading').exists()).toBe(false)
@@ -149,7 +187,7 @@ describe('CriterionFindings', () => {
   it('does not mix file groups across different severities', async () => {
     const findings = [makeFinding(1, 'CRITICAL', 'src/a.py'), makeFinding(2, 'LOW', 'src/a.py')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
     const chips = wrapper.findAll('[data-testid="severity-chip"]')
     await chips[0]!.trigger('click')
     await chips[1]!.trigger('click')
@@ -166,7 +204,7 @@ describe('CriterionFindings', () => {
       makeFinding(3, 'LOW', null, 'FALSE_POSITIVE'),
     ]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
 
     const chips = wrapper.findAll('[data-testid="severity-chip"]')
     expect(chips.map((c) => c.text())).toEqual(['HIGH (1)'])
@@ -175,7 +213,7 @@ describe('CriterionFindings', () => {
   it('lists false positives in a collapsed dismissed section where the verdict can be reverted', async () => {
     const findings = [makeFinding(1, 'HIGH'), makeFinding(2, 'LOW', null, 'FALSE_POSITIVE')]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
 
     const dismissed = wrapper.find('[data-testid="dismissed-findings"]')
     expect(dismissed.element.tagName).toBe('DETAILS')
@@ -191,7 +229,7 @@ describe('CriterionFindings', () => {
   })
 
   it('renders no dismissed section when nothing is a false positive', () => {
-    const wrapper = mount(CriterionFindings, { props: { findings: [makeFinding(1, 'HIGH')] } })
+    const wrapper = mount(CriterionFindings, { props: propsFor([makeFinding(1, 'HIGH')]) })
 
     expect(wrapper.find('[data-testid="dismissed-findings"]').exists()).toBe(false)
   })
@@ -203,8 +241,119 @@ describe('CriterionFindings', () => {
       { ...makeFinding(3, 'HIGH', null, 'FALSE_POSITIVE'), status: 'WONT_FIX' },
     ]
 
-    const wrapper = mount(CriterionFindings, { props: { findings } })
+    const wrapper = mount(CriterionFindings, { props: propsFor(findings) })
 
     expect(wrapper.find('[data-testid="severity-chip"]').text()).toBe('HIGH (2)')
+  })
+
+  describe('pagination', () => {
+    // First page holds findings 1-2, the criterion has 5 (4 HIGH, 1 dismissed).
+    const firstPage = [makeFinding(1, 'HIGH'), makeFinding(2, 'HIGH')]
+    const paged = { findings_total: 5, severity_counts: { HIGH: 4 }, dismissed_count: 1 }
+
+    it('counts chips and dismissed findings from the server totals, not the loaded page', () => {
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+
+      expect(wrapper.find('[data-testid="severity-chip"]').text()).toBe('HIGH (4)')
+      expect(wrapper.find('[data-testid="dismissed-findings"] summary').text()).toBe(
+        'Dismissed as false positive (1)',
+      )
+    })
+
+    it('shows no more link while every group is collapsed', () => {
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+
+      expect(wrapper.find('[data-testid="more-findings"]').exists()).toBe(false)
+    })
+
+    it('shows no more link once every finding is loaded', async () => {
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage) })
+      await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+
+      expect(wrapper.find('[data-testid="more-findings"]').exists()).toBe(false)
+    })
+
+    it('loads the next page from the current offset and hides the link at the end', async () => {
+      vi.mocked(getCriterionFindings).mockResolvedValueOnce([
+        makeFinding(3, 'HIGH'),
+        makeFinding(4, 'HIGH'),
+        makeFinding(5, 'LOW', null, 'FALSE_POSITIVE'),
+      ])
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+      await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+      const more = wrapper.find('[data-testid="more-findings"]')
+      expect(more.text()).toBe('More (3 remaining)')
+
+      await more.trigger('click')
+      await flushPromises()
+
+      expect(getCriterionFindings).toHaveBeenCalledWith(1, 12, 34, 2)
+      const cards = wrapper.findAllComponents({ name: 'FindingCard' })
+      expect(cards.map((c) => c.props('finding').id)).toEqual([1, 2, 3, 4, 5])
+      expect(wrapper.find('[data-testid="more-findings"]').exists()).toBe(false)
+    })
+
+    it('reloads the pages already shown when the report is refetched', async () => {
+      vi.mocked(getCriterionFindings)
+        .mockResolvedValueOnce([makeFinding(3, 'HIGH')])
+        .mockResolvedValueOnce([{ ...makeFinding(3, 'HIGH'), human_verdict: 'TRUE_POSITIVE' }])
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+      await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+      await wrapper.find('[data-testid="more-findings"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.setProps({ criterion: makeCriterion(firstPage, paged) })
+      await flushPromises()
+
+      expect(getCriterionFindings).toHaveBeenLastCalledWith(1, 12, 34, 2)
+      const reloaded = wrapper
+        .findAllComponents({ name: 'FindingCard' })
+        .map((c) => c.props('finding'))
+        .find((f) => f.id === 3)
+      expect(reloaded?.human_verdict).toBe('TRUE_POSITIVE')
+    })
+
+    it('drops the extra pages without fetching when another scoring run is shown', async () => {
+      vi.mocked(getCriterionFindings).mockResolvedValueOnce([makeFinding(3, 'HIGH')])
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+      await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+      await wrapper.find('[data-testid="more-findings"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.setProps({ criterion: makeCriterion(firstPage, paged), scoringRunId: 35 })
+      await flushPromises()
+
+      expect(getCriterionFindings).toHaveBeenCalledTimes(1)
+      expect(wrapper.findAllComponents({ name: 'FindingCard' })).toHaveLength(2)
+    })
+
+    it('drops the extra pages when reloading them fails, rather than keep stale verdicts', async () => {
+      vi.mocked(getCriterionFindings)
+        .mockResolvedValueOnce([makeFinding(3, 'HIGH')])
+        .mockRejectedValueOnce(new Error('network down'))
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+      await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+      await wrapper.find('[data-testid="more-findings"]').trigger('click')
+      await flushPromises()
+
+      await wrapper.setProps({ criterion: makeCriterion(firstPage, paged) })
+      await flushPromises()
+
+      expect(wrapper.findAllComponents({ name: 'FindingCard' })).toHaveLength(2)
+      expect(wrapper.find('[role="alert"]').text()).toContain('network down')
+      expect(wrapper.find('[data-testid="more-findings"]').text()).toBe('More (3 remaining)')
+    })
+
+    it('shows an error and keeps the link when a page fails to load', async () => {
+      vi.mocked(getCriterionFindings).mockRejectedValueOnce(new Error('network down'))
+      const wrapper = mount(CriterionFindings, { props: propsFor(firstPage, paged) })
+      await wrapper.find('[data-testid="severity-chip"]').trigger('click')
+
+      await wrapper.find('[data-testid="more-findings"]').trigger('click')
+      await flushPromises()
+
+      expect(wrapper.find('[role="alert"]').text()).toContain('network down')
+      expect(wrapper.find('[data-testid="more-findings"]').exists()).toBe(true)
+    })
   })
 })
