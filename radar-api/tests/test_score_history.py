@@ -285,3 +285,26 @@ def test_score_history_marks_categories_with_no_implemented_criterion(client, db
 
     flags = {c["name"]: c["implemented"] for c in body[0]["categories"]}
     assert flags == {"Built": True, "Planned": False}
+
+
+def test_score_history_lists_unimplemented_categories_last(client, db_session):
+    repo = _make_repository(db_session, "repo-history-unimplemented-last")
+    _audit, run = _make_scoring_run(db_session, repo, "e" * 40, "2026-05-01T00:00:00+00:00", 6.0)
+    planned = _make_category(db_session, run.methodology_version_id, "Planned", 1)
+    built = _make_category(db_session, run.methodology_version_id, "Built", 2)
+    for category, implemented in ((planned, False), (built, True)):
+        db_session.add(
+            Criterion(
+                category_id=category.id,
+                name=category.name,
+                description="...",
+                weight=1.0,
+                scoring_model=ScoringModel.FIXED_SCALE,
+                implemented=implemented,
+            )
+        )
+    db_session.commit()
+
+    body = client.get(f"/repositories/{repo.id}/score-history").json()
+
+    assert [c["name"] for c in body[0]["categories"]] == ["Built", "Planned"]
