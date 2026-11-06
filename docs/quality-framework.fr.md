@@ -25,16 +25,16 @@ Les 15 catégories de `system-design.md`§6 sont conservées telles quelles (dé
 8. Documentation
 ```
 
-Trois critères sont déjà gelés depuis la revue Phase 0 et **ne sont pas redéfinis ci-dessous** — voir `system-design.md`§6 pour leur définition complète, cités ici uniquement par référence :
+Trois critères sont déjà gelés depuis la revue Phase 0 et **ne sont pas redéfinis ci-dessous**, voir `system-design.md`§6 pour leur définition complète, cités ici uniquement par référence :
 
-- **D11** — catégorie 7, « Reverse proxy / parité environnement local-prod (Traefik) »
-- **D12** — catégorie 2, « Gate de qualité pre-commit (hooks lint / format / type-check) »
-- **D13** — catégorie 10, « Qualité de design graphique/visuel »
+- **D11** : catégorie 7, « Reverse proxy / parité environnement local-prod (Traefik) »
+- **D12** : catégorie 2, « Gate de qualité pre-commit (hooks lint / format / type-check) »
+- **D13** : catégorie 10, « Qualité de design graphique/visuel »
 
 Signaux de périmètre différé, inchangés, toujours non résolus à ce stade (le défaut D8 s'applique, ce sont les données du pilote Phase 3 qui décident, pas une décision de bureau) :
-- Catégorie 9 (Observabilité) — périmètre restreint pour un profil de développeur solo, voir §4.9 ci-dessous.
-- Catégorie 10 (API/UX/qualité produit) — candidate à la scission (« qualité du contrat API » vs « UX/Visuel/qualité produit » plus étroite), toujours provisoire.
-- Catégorie 13 (Qualité des données) — périmètre restreint pour un profil de développeur solo, voir §4.13 ci-dessous.
+- Catégorie 9 (Observabilité) : périmètre restreint pour un profil de développeur solo, voir §4.9 ci-dessous.
+- Catégorie 10 (API/UX/qualité produit) : candidate à la scission (« qualité du contrat API » vs « UX/Visuel/qualité produit » plus étroite), toujours provisoire.
+- Catégorie 13 (Qualité des données) : périmètre restreint pour un profil de développeur solo, voir §4.13 ci-dessous.
 
 ---
 
@@ -44,9 +44,9 @@ Chaque critère ci-dessous est étiqueté avec l'un des trois archétypes, afin 
 
 | Archétype | Échelle | Quand l'utiliser | Précédent |
 |---|---|---|---|
-| **A — Ancré** | 0/2/4/6/8/10, chaque niveau lié à une condition explicite basée sur des preuves | Critères de type jugement ou à sévérité échelonnée | Règle de base `system-design.md`§7 |
-| **B — Couverture** | `score = (couvert / applicable) × 10`, calculé, pas fixé à la main | Sortie d'outil en pourcentage/ratio (taux de réussite lint, taux de réussite type-check, couverture de tests, couverture de matrice) | Formule `IN_PROGRESS` de D12, généralisée |
-| **C — Adoption** | 4 états `DONE`(10) / `IN_PROGRESS`(calculé ou 5) / `TODO`(0) / `N/A`(exclu) | Critères « cette pratique est-elle en place », pas un gradient de qualité | D11, D12 |
+| **A : Ancré** | 0/2/4/6/8/10, chaque niveau lié à une condition explicite basée sur des preuves | Critères de type jugement ou à sévérité échelonnée | Règle de base `system-design.md`§7 |
+| **B : Couverture** | `score = (couvert / applicable) × 10`, calculé, pas fixé à la main | Sortie d'outil en pourcentage/ratio (taux de réussite lint, taux de réussite type-check, couverture de tests, couverture de matrice) | Formule `IN_PROGRESS` de D12, généralisée |
+| **C : Adoption** | 4 états `DONE`(10) / `IN_PROGRESS`(calculé ou 5) / `TODO`(0) / `N/A`(exclu) | Critères « cette pratique est-elle en place », pas un gradient de qualité | D11, D12 |
 
 Les trois alimentent la même agrégation par moyenne pondérée (§3). Le `N/A` de l'archétype C et les propres conditions N/A des archétypes A/B utilisent tous la règle de gestion N/A identique (§3), pas de mécanisme séparé.
 
@@ -73,8 +73,8 @@ Revues et confirmées telles quelles, le 2026-08-26. Un ensemble défini et vers
 | # | Condition | Preuve | Catégorie plafonnée | Plafond |
 |---|---|---|---|---|
 | P1 | ≥1 secret confirmé trouvé dans l'historique Git suivi | Gitleaks (mode historique git, voir `toolchain.md`§Sécurité) | Sécurité | ≤ 2 |
-| — | **Pré-filtre ajouté lors de la calibration pilote Phase 3 (GeoChallenge-Tracker, 2026-08-26) :** un hit brut Gitleaks `generic-api-key` dans un chemin `tests?/`/`test_*`, sur une variable nommée `fake_*`/`mock_*`/`dummy_*`, est un motif fort de fixture de test (6/6 hits sur ce pilote correspondaient, tous faux positifs sur des lignes comme `fake_token = "eyJ..."`) — un tel hit est maintenu à `PENDING_CONFIRMATION` (selon le gate de confirmation humaine, `system-design.md`§8) plutôt que compté comme « secret confirmé » pour P1 par défaut. Ceci restreint ce qui compte comme « confirmé » pour cette pénalité spécifique ; cela ne change pas les constats propres de Gitleaks ni les preuves brutes du critère 4.2. | — | — |
-| — | **Pré-filtre élargi lors de la seconde calibration pilote (Summit-Stats, 2026-08-27) :** la même classe de faux positifs est réapparue, mais sur un motif de fichier différent, un hit `generic-api-key` sur `.env.prod.example` (un fichier gabarit committé, correspondant à une valeur d'apparence plausible comme `BCRYPT_ROUNDS=12`, pas un vrai secret). Ceci confirme que le motif n'est pas spécifique au nommage de tokens de test. Le pré-filtre couvre désormais aussi un hit dont le chemin de fichier correspond à `.env.*.example`/`.env.*.template`/`.env.*.sample`, maintenu à `PENDING_CONFIRMATION` sur la même base que le motif de fixture de test ci-dessus. | — | — |
+| - | **Pré-filtre ajouté lors de la calibration pilote Phase 3 (GeoChallenge-Tracker, 2026-08-26) :** un hit brut Gitleaks `generic-api-key` dans un chemin `tests?/`/`test_*`, sur une variable nommée `fake_*`/`mock_*`/`dummy_*`, est un motif fort de fixture de test (6/6 hits sur ce pilote correspondaient, tous faux positifs sur des lignes comme `fake_token = "eyJ..."`) : un tel hit est maintenu à `PENDING_CONFIRMATION` (selon le gate de confirmation humaine, `system-design.md`§8) plutôt que compté comme « secret confirmé » pour P1 par défaut. Ceci restreint ce qui compte comme « confirmé » pour cette pénalité spécifique ; cela ne change pas les constats propres de Gitleaks ni les preuves brutes du critère 4.2. | - | - |
+| - | **Pré-filtre élargi lors de la seconde calibration pilote (Summit-Stats, 2026-08-27) :** la même classe de faux positifs est réapparue, mais sur un motif de fichier différent, un hit `generic-api-key` sur `.env.prod.example` (un fichier gabarit committé, correspondant à une valeur d'apparence plausible comme `BCRYPT_ROUNDS=12`, pas un vrai secret). Ceci confirme que le motif n'est pas spécifique au nommage de tokens de test. Le pré-filtre couvre désormais aussi un hit dont le chemin de fichier correspond à `.env.*.example`/`.env.*.template`/`.env.*.sample`, maintenu à `PENDING_CONFIRMATION` sur la même base que le motif de fixture de test ci-dessus. | - | - |
 | P2 | ≥1 CVE de sévérité CRITIQUE avec une version corrective connue disponible et non appliquée | Trivy (fs/image) / pip-audit / `pnpm audit` / `composer audit` | Sécurité | ≤ 4 |
 | P3 | Un workflow CI existe et exécute la suite de tests, mais ce job échoue sur la branche par défaut (pas simplement absent) | actionlint + statut du job de test dérivé de la CI | Tests & fiabilité | ≤ 4 |
 | P4 | Un gate de qualité pre-commit/CI est configuré (D12 `DONE`/`IN_PROGRESS`) mais des erreurs du type exact qu'il est censé bloquer sont présentes, mergées sur la branche par défaut | Constats Ruff / ESLint / PHPStan croisés avec les preuves D12 | Qualité du code | ≤ 5 |
@@ -149,7 +149,7 @@ Par catégorie : objectif, archétype, preuve/outil, note de poids, confiance de
 | 2.1 | Taux de réussite propre du linter | B | Ruff / ESLint / PHPStan, constats vs fichiers scannés | HAUTE | S'exécute avec la propre config du dépôt, voir note `toolchain.md` sur ESLint |
 | 2.2 | Réussite du type-checking | B | mypy / `tsc --noEmit` / PHPStan | HAUTE | |
 | 2.3 | Complexité cyclomatique | A | radon (Python, validé). JS : règle ESLint `complexity`, config détenue par l'audit (candidat). PHP : ruleset PHPMD `codesize` (candidat) | HAUTE (Python) / MOYENNE-en-attente-de-smoke-test (candidats JS, PHP identifiés le 2026-08-26, pas encore validés) | Candidats ajoutés à `toolchain.md`, toujours une lacune jusqu'au smoke-test (§5). Adopté, voir l'amendement du 2026-11-06 (§6). |
-| 2.4 | Gate de qualité pre-commit | C | Voir D11/D12, référencé de façon croisée, pas redéfini | — | |
+| 2.4 | Gate de qualité pre-commit | C | Voir D11/D12, référencé de façon croisée, pas redéfini | - | |
 | 2.5 | Duplication de code | A | jscpd (candidat, outil unique couvrant Python/JS-TS/PHP/Vue, MIT à confirmer, activement développé) | - | Lacune jusqu'au smoke-test (§5). Rejeté : PMD-CPD (nécessite un runtime JVM, aucun avantage sur jscpd ici). Adopté, voir l'amendement du 2026-11-06 (§6). |
 
 ### 4.3 Tests & fiabilité
@@ -171,8 +171,8 @@ Par catégorie : objectif, archétype, preuve/outil, note de poids, confiance de
 | 4.3 | Constats SAST | A | Semgrep, échelonné par sévérité | HAUTE | Taux de FP suivi par règle via la boucle de feedback `human_verdict` de D14 |
 | 4.4 | Vulnérabilités d'image conteneur | A | Scan d'image Trivy, comptage HIGH/CRITICAL | HAUTE | `N/A` si aucune image construite localement (précondition `toolchain.md`) |
 | 4.5 | Durcissement du Dockerfile | B | Densité de constats Hadolint | HAUTE | |
-| 4.6a | Hygiène AuthN/AuthZ | A | Semgrep, rulesets registry authN/authZ (`p/security-audit` + packs spécifiques au framework), candidat, non smoke-testé | — | Couverture probablement inégale entre les stacks FastAPI/Laravel/Vue-Node, à vérifier au smoke-test ; toujours une lacune jusqu'à validation (§5) |
-| 4.6b | En-têtes de sécurité HTTP | A | mdn-http-observatory (candidat, vérification runtime contre un serveur actif, score noté) ; candidat de repli `shcheck` (présence uniquement) | — | Même précondition « nécessite un serveur actif » que Lighthouse/Playwright ; toujours une lacune jusqu'à validation (§5) |
+| 4.6a | Hygiène AuthN/AuthZ | A | Semgrep, rulesets registry authN/authZ (`p/security-audit` + packs spécifiques au framework), candidat, non smoke-testé | - | Couverture probablement inégale entre les stacks FastAPI/Laravel/Vue-Node, à vérifier au smoke-test ; toujours une lacune jusqu'à validation (§5) |
+| 4.6b | En-têtes de sécurité HTTP | A | mdn-http-observatory (candidat, vérification runtime contre un serveur actif, score noté) ; candidat de repli `shcheck` (présence uniquement) | - | Même précondition « nécessite un serveur actif » que Lighthouse/Playwright ; toujours une lacune jusqu'à validation (§5) |
 
 ### 4.5 Maintenabilité
 
@@ -182,13 +182,15 @@ Par catégorie : objectif, archétype, preuve/outil, note de poids, confiance de
 | 5.2 | Code mort / exports inutilisés | A | knip (JS, validé). Python : vulture (candidat, MIT, activement maintenu). PHP : ruleset PHPMD `unusedcode` (candidat) | HAUTE (JS) / MOYENNE-en-attente-de-smoke-test (candidats Python, PHP identifiés le 2026-08-26, pas encore validés) | vulture rapporte une confiance par constat (60-100%) qui vaut la peine d'être remontée telle quelle ; toujours une lacune jusqu'au smoke-test (§5). Adopté, voir l'amendement du 2026-11-06 (§6). |
 | 5.3 | Documentation dans le code (couverture docstring/commentaire) | B | Python : `docvet` (candidat, MIT, 2026) préféré à `interrogate` (plus ancien, maintenance disputée par un outil concurrent). PHP : `php-censor/phpdoc-checker` (candidat, BSD-2-Clause). JS/TS : aucun candidat trouvé, les outils de « couverture » existants y mesurent la couverture de type TS, pas la présence de commentaires | - | Python/PHP : lacune jusqu'au smoke-test (§5). JS/TS : véritable lacune ouverte, aucun outil identifié. Python/PHP adoptés, voir l'amendement du 2026-11-06 (§6). |
 
-### 4.6 Performance — **partiellement résolue, backend/BDD explicitement hors périmètre**
+### 4.6 Performance : **partiellement résolue, backend/BDD explicitement hors périmètre**
 
 Revu le 2026-08-26 : la performance frontend et la performance backend/BDD ne sont pas le même type de problème et sont traitées différemment, pas regroupées dans une seule catégorie différée.
 
 | # | Critère | Archétype | Preuve / outil | Confiance | Notes |
 |---|---|---|---|---|---|
 | 6.1 | Performance frontend | A | Lighthouse, échelonné par score (90-100→10, 70-89→6-8, 50-69→4, <50→2/0) | MOYENNE | `N/A` pour les dépôts sans UI (même population que D13). Outil candidat, **pas encore smoke-testé**, ajouté à `docs/toolchain.md` comme candidat en attente d'une validation façon Phase 1, même statut que Playwright déjà (nécessite un serveur actif, une étape de build, un navigateur headless). Des doutes qui méritent d'être portés, pas glissés sous le tapis : (a) **reproductibilité**, les scores Lighthouse sont connus pour varier d'une exécution à l'autre selon la charge machine/les conditions réseau, ce qui va à l'encontre du principe de stabilité des scores déjà appliqué ailleurs (D7) ; ceci nécessite une mitigation explicite (par exemple moyenner N exécutions, ou un environnement fixe à ressources contraintes) avant que le critère puisse être fiable à confiance HAUTE ; (b) **exhaustivité**, le score de performance de Lighthouse couvre uniquement les métriques de chargement de page (LCP, TBT, CLS, etc.), pas la logique métier ni la performance d'interaction, donc un score élevé est un signal étroit, limité au temps de chargement, pas « ce frontend performe bien » au sens plein. |
+
+**Implémentation de 6.1 reportée, 2026-09-30 : conservée comme objectif actif, pas exclue.** Au moment de l'incrément 2.6, le brainstorming a montré que 6.1 serait le premier critère de tout le système à exiger que le serveur du dépôt audité tourne réellement (build, service et navigateur headless), contrairement à tous les autres critères, qui relèvent de l'analyse statique pure. C'est une vraie question d'architecture (comment radar-audit peut lancer sans risque une étape de build et de service pour des stacks de dépôts hétérogènes et non fiables), qui mérite sa propre séance de conception plutôt qu'une improvisation dans un incrément de catégorie ordinaire. Décision : laisser 6.1 en `not_yet_audited` pour l'instant (c'est littéralement vrai, et ce n'est pas une exclusion déguisée) et y revenir dans un incrément futur, une fois que le mécanisme d'exécution en direct aura sa propre conception. C'est explicitement différent de l'exclusion de la performance backend/BDD ci-dessous, qui est permanente sauf événement déclencheur ; 6.1 reste dans le backlog.
 
 **Performance backend / BDD : aucun critère défini en v1.0, pas `N/A`.** Discuté et décidé le 2026-08-26 : contrairement aux autres lacunes du §5 (où un outil manque simplement mais le critère lui-même est bien défini), la performance backend/BDD n'a pas de *définition* établie pour commencer, il n'existe pas de seuil absolu objectif (« assez rapide ») sans un SLA par projet, et aucun dépôt du périmètre n'en définit un. Le seul mécanisme plausible est un **détecteur de dérive/régression auto-référentiel** (stocker une référence min/max/médiane par dépôt au moment de l'audit, comparer les audits ultérieurs à celle-ci) plutôt qu'un score de qualité absolu 0-10, ceci réutilise l'entité `Snapshot` existante (`system-design.md`§5, déjà prévue pour « l'état au moment de l'audit, pour comparaison de tendance ») mais est architecturalement différent de tous les autres critères de ce framework :
 
@@ -203,7 +205,7 @@ Compte tenu de ces trois limitations structurelles, la performance backend/BDD e
 | # | Critère | Archétype | Preuve / outil | Confiance | Notes |
 |---|---|---|---|---|---|
 | 7.1 | Présence & santé de la CI | A | Workflow GH Actions présent + actionlint propre | HAUTE | |
-| 7.2 | Reverse proxy / parité local-prod | C | Voir D11, référencé de façon croisée, pas redéfini | — | |
+| 7.2 | Reverse proxy / parité local-prod | C | Voir D11, référencé de façon croisée, pas redéfini | - | |
 | 7.3 | Durcissement de la construction de conteneur | A | Partage la preuve avec 4.4/4.5, cadrage DevOps (« le pipeline est-il propre ») vs cadrage Sécurité (« l'image est-elle vulnérable ») | HAUTE | Référence croisée, pas pondéré deux fois |
 | 7.4 | Automatisation du déploiement | C | Présence de `build-push.yml`/`build-deploy.yml`, câblé à une étape de push vers un registre ; `N/A` pour les dépôts sans service de longue durée (même logique N/A que D11) | MOYENNE | Présence seulement, aucune vérification runtime des déploiements réels (l'accès API GitHub de D6 pourrait plus tard vérifier l'historique d'exécution) |
 
@@ -215,7 +217,7 @@ Compte tenu de ces trois limitations structurelles, la performance backend/BDD e
 | 8.2 | Documentation d'architecture | A | Partage la preuve avec 1.2, cadrage Documentation (« présente et lisible ») vs cadrage Architecture (« reflète la structure réelle ») | MOYENNE | Référence croisée, pas pondéré deux fois |
 | 8.3 | Documentation d'API | C | Schéma OpenAPI/Swagger présent & servi (auto-docs FastAPI, Laravel L5-Swagger) ; `N/A` pour les dépôts sans API | MOYENNE | |
 
-### 4.9 Observabilité / opérations — périmètre restreint (selon le signal D8/§1)
+### 4.9 Observabilité / opérations : périmètre restreint (selon le signal D8/§1)
 
 Délibérément cadré pour un profil de développeur solo, pas une stack d'observabilité d'entreprise.
 
@@ -225,31 +227,31 @@ Délibérément cadré pour un profil de développeur solo, pas une stack d'obse
 | 9.2 | Intégration de suivi d'erreurs | C | SDK Sentry (ou équivalent) présent & configuré, exemple réel déjà observé sur Triton (`sentry-sdk` dans ses dépendances) lors du smoke test Phase 1 | MOYENNE | Présence ≠ correctement câblé (par exemple un DSN factice) |
 | 9.3 | Endpoint de health-check | C | Route `/health`/`/healthz` présente ; `N/A` pour les dépôts sans service longue durée (même logique N/A que D11) | MOYENNE | |
 
-### 4.10 API / UX / qualité produit — provisoire (candidate à la scission selon D8)
+### 4.10 API / UX / qualité produit : provisoire (candidate à la scission selon D8)
 
 | # | Critère | Archétype | Preuve / outil | Confiance | Notes |
 |---|---|---|---|---|---|
-| 10.1 | Qualité de design graphique/visuel | A | Voir D13, référencé de façon croisée, pas redéfini | — | |
-| 10.2 | Cohérence du contrat API | A | Spectral, ruleset intégré `spectral:oas` (candidat, Apache 2.0, activement maintenu) | — | Nécessite un fichier de spec OpenAPI exporté (précondition plus légère qu'un serveur actif, même classe que pytest, voir `toolchain.md`) ; lacune jusqu'au smoke-test (§5) |
-| 10.3 | Accessibilité (WCAG) | — | Déjà partie de la couche factuelle de D13 | — | Pas un critère séparé, évite le double comptage |
+| 10.1 | Qualité de design graphique/visuel | A | Voir D13, référencé de façon croisée, pas redéfini | - | |
+| 10.2 | Cohérence du contrat API | A | Spectral, ruleset intégré `spectral:oas` (candidat, Apache 2.0, activement maintenu) | - | Nécessite un fichier de spec OpenAPI exporté (précondition plus légère qu'un serveur actif, même classe que pytest, voir `toolchain.md`) ; lacune jusqu'au smoke-test (§5) |
+| 10.3 | Accessibilité (WCAG) | - | Déjà partie de la couche factuelle de D13 | - | Pas un critère séparé, évite le double comptage |
 
 ### 4.11 Gestion des dépendances
 
 | # | Critère | Archétype | Preuve / outil | Confiance | Notes |
 |---|---|---|---|---|---|
 | 11.1 | Fraîcheur des dépendances | B | `pip list --outdated` / `npm`&`pnpm outdated` / `composer outdated` (D15, `toolchain.md`) | HAUTE | Conditionné par l'opt-in d'accès registre de D15 ; `N/A` quand l'accès n'est pas accordé pour un run (jamais scoré silencieusement), et `N/A` pour les dépôts non pinnés sans fichier de lock selon le constat JobFlow dans `toolchain.md` |
-| 11.2 | Conformité des licences | A | Python : `pip-licenses` (candidat, MIT, activement maintenu). JS : `license-checker-evergreen` (fork maintenu, candidat). PHP : `composer licenses --format=json` (natif, outil déjà validé, aucun nouveau risque) | — | Contrairement à 11.1, aucun appel réseau nécessaire (lit les métadonnées de paquets déjà installés/verrouillés), pas conditionné par D15. Python/JS : lacune jusqu'au smoke-test (§5) ; PHP : effectivement prêt, réutilise une commande déjà validée |
+| 11.2 | Conformité des licences | A | Python : `pip-licenses` (candidat, MIT, activement maintenu). JS : `license-checker-evergreen` (fork maintenu, candidat). PHP : `composer licenses --format=json` (natif, outil déjà validé, aucun nouveau risque) | - | Contrairement à 11.1, aucun appel réseau nécessaire (lit les métadonnées de paquets déjà installés/verrouillés), pas conditionné par D15. Python/JS : lacune jusqu'au smoke-test (§5) ; PHP : effectivement prêt, réutilise une commande déjà validée |
 | 11.3 | Empreinte des dépendances | A | Comptage brut de dépendances relatif à la taille du dépôt | FAIBLE | Aucune référence établie pour l'instant, nécessite des données de calibration Phase 3 sur le portfolio lui-même avant que ce critère soit fiable |
 
 ### 4.12 Gestion de la configuration
 
 | # | Critère | Archétype | Preuve / outil | Confiance | Notes |
 |---|---|---|---|---|---|
-| 12.1 | Secrets jamais codés en dur | — | Partage la preuve avec 4.2, cadrage Gestion de la configuration (« la config est-elle externalisée ») vs cadrage Sécurité (« un secret a-t-il déjà fuité ») | HAUTE | Référence croisée, pas pondéré deux fois |
+| 12.1 | Secrets jamais codés en dur | - | Partage la preuve avec 4.2, cadrage Gestion de la configuration (« la config est-elle externalisée ») vs cadrage Sécurité (« un secret a-t-il déjà fuité ») | HAUTE | Référence croisée, pas pondéré deux fois |
 | 12.2 | Séparation des environnements | A | Heuristique : `.env.example`/`.env.testing`/`.env.prod.example` distincts ou équivalent, exemple réel observé sur Summit-Stats lors de la Phase 1 | MOYENNE | |
 | 12.3 | Validation de la config au démarrage | C | Heuristique : Pydantic Settings (Python) / motif de validation de config Laravel présent | MOYENNE | Aucun outil dédié validé, heuristique de motif de code |
 
-### 4.13 Qualité des données — périmètre restreint (selon le signal D8/§1)
+### 4.13 Qualité des données : périmètre restreint (selon le signal D8/§1)
 
 Délibérément cadré pour un profil de développeur solo, pas des critères de gouvernance de données d'entreprise.
 
@@ -281,15 +283,15 @@ Délibérément cadré pour un profil de développeur solo, pas des critères de
 
 Un dépôt ne doit jamais être pénalisé pour une lacune qui est la faute du système d'audit, pas la sienne. Les critères sans outil validé sont scorés `N/A` (pas 0, pas silencieusement ignorés) jusqu'à ce qu'une future passe d'outillage comble la lacune :
 
-- **2.3 / 5.1 / 15.2** — détection de complexité cyclomatique et de code mort pour JS et PHP, plus code mort pour Python. Candidats identifiés le 2026-08-26 (règle ESLint `complexity` en config détenue par l'audit pour la complexité JS, PHPMD `codesize`/`unusedcode` pour la complexité+code mort PHP, vulture pour le code mort Python, tous ajoutés à `toolchain.md`), mais aucun smoke-testé pour l'instant, donc toujours compté comme une lacune jusqu'à validation.
-- **2.5** — détection de duplication de code. Candidat identifié le 2026-08-26 : jscpd (outil unique, Python/JS-TS/PHP/Vue), ajouté à `toolchain.md`, pas smoke-testé.
-- **4.6a / 4.6b** — hygiène authN/authZ et en-têtes de sécurité HTTP. Candidats identifiés le 2026-08-26 (rulesets registry Semgrep pour 4.6a, mdn-http-observatory pour 4.6b, `shcheck` comme repli plus léger), ajoutés à `toolchain.md`, mais aucun smoke-testé pour l'instant.
-- **5.3** — couverture docstring/commentaire. Python (`docvet`, candidat) et PHP (`php-censor/phpdoc-checker`, candidat) identifiés le 2026-08-26, ajoutés à `toolchain.md`, pas smoke-testés. JS/TS n'a aucun candidat du tout, les outils de « couverture » existants y mesurent la couverture de type TS, une métrique différente, pas un substitut.
-- **10.2** — linting de contrat API (OpenAPI). Candidat identifié le 2026-08-26 : Spectral (ruleset `spectral:oas`), ajouté à `toolchain.md`, pas smoke-testé.
-- **11.2** — conformité des licences. Candidats identifiés le 2026-08-26 : `pip-licenses` (Python), `license-checker-evergreen` (JS), `composer licenses --format=json` (PHP, natif, déjà validé), ajoutés à `toolchain.md`. Python/JS pas smoke-testés ; PHP effectivement prêt (aucun nouvel outil impliqué).
-- **6.1 (Performance frontend)** — Lighthouse est candidat, pas encore smoke-testé (nécessite une validation façon Phase 1 : installation éphémère, licence, exécution contre un dépôt du périmètre) ; porte aussi des doutes ouverts de reproductibilité/exhaustivité, voir §4.6.
+- **2.3 / 5.1 / 15.2** : détection de complexité cyclomatique et de code mort pour JS et PHP, plus code mort pour Python. Candidats identifiés le 2026-08-26 (règle ESLint `complexity` en config détenue par l'audit pour la complexité JS, PHPMD `codesize`/`unusedcode` pour la complexité+code mort PHP, vulture pour le code mort Python, tous ajoutés à `toolchain.md`), mais aucun smoke-testé pour l'instant, donc toujours compté comme une lacune jusqu'à validation.
+- **2.5** : détection de duplication de code. Candidat identifié le 2026-08-26 : jscpd (outil unique, Python/JS-TS/PHP/Vue), ajouté à `toolchain.md`, pas smoke-testé.
+- **4.6a / 4.6b** : hygiène authN/authZ et en-têtes de sécurité HTTP. Candidats identifiés le 2026-08-26 (rulesets registry Semgrep pour 4.6a, mdn-http-observatory pour 4.6b, `shcheck` comme repli plus léger), ajoutés à `toolchain.md`, mais aucun smoke-testé pour l'instant.
+- **5.3** : couverture docstring/commentaire. Python (`docvet`, candidat) et PHP (`php-censor/phpdoc-checker`, candidat) identifiés le 2026-08-26, ajoutés à `toolchain.md`, pas smoke-testés. JS/TS n'a aucun candidat du tout, les outils de « couverture » existants y mesurent la couverture de type TS, une métrique différente, pas un substitut.
+- **10.2** : linting de contrat API (OpenAPI). Candidat identifié le 2026-08-26 : Spectral (ruleset `spectral:oas`), ajouté à `toolchain.md`, pas smoke-testé.
+- **11.2** : conformité des licences. Candidats identifiés le 2026-08-26 : `pip-licenses` (Python), `license-checker-evergreen` (JS), `composer licenses --format=json` (PHP, natif, déjà validé), ajoutés à `toolchain.md`. Python/JS pas smoke-testés ; PHP effectivement prêt (aucun nouvel outil impliqué).
+- **6.1 (Performance frontend)** : Lighthouse est candidat, pas encore smoke-testé (nécessite une validation façon Phase 1 : installation éphémère, licence, exécution contre un dépôt du périmètre) ; porte aussi des doutes ouverts de reproductibilité/exhaustivité, voir §4.6.
 
-**La performance backend/BDD n'est pas dans cette liste** — revue le 2026-08-26 et délibérément exclue de la v1.0 plutôt que traitée comme une lacune d'outillage, voir §4.6 pour la raison (aucune définition objective n'existe sans un SLA par projet qui n'est défini nulle part dans ce portfolio).
+**La performance backend/BDD n'est pas dans cette liste** : revue le 2026-08-26 et délibérément exclue de la v1.0 plutôt que traitée comme une lacune d'outillage, voir §4.6 pour la raison (aucune définition objective n'existe sans un SLA par projet qui n'est défini nulle part dans ce portfolio).
 
 Ces lacunes, plus la liste des pénalités critiques (§3.2) et le schéma de pondération égale par défaut (§3.1), sont les parties de ce framework les plus susceptibles de bouger en premier une fois les données du pilote Phase 3 disponibles.
 

@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver 11 real `ToolRunner`s and 5 normalizers covering Quality Framework category 2 ("Code quality"): Linter clean pass rate, Type-checking pass, Cyclomatic complexity, Pre-commit quality gate, Code duplication — across Python, JavaScript/TypeScript, and PHP.
+**Goal:** Deliver 11 real `ToolRunner`s and 5 normalizers covering Quality Framework category 2 ("Code quality"): Linter clean pass rate, Type-checking pass, Cyclomatic complexity, Pre-commit quality gate, Code duplication: across Python, JavaScript/TypeScript, and PHP.
 
-**Architecture:** Same shape as increment 2.1: each criterion gets one or more `ToolRunner` classes (one class per underlying tool, not per stack) producing a `RawToolOutput`, and one normalizer function that reads `ToolResult` rows for the relevant `tool_name`s and writes `Score`/`Finding` rows via the existing `get_or_create_scoring_run`/`get_criterion` helpers. No `ToolRunner` protocol changes, no orchestrator changes, no new Alembic migration — all infrastructure needed already exists from 2.0/2.1.
+**Architecture:** Same shape as increment 2.1: each criterion gets one or more `ToolRunner` classes (one class per underlying tool, not per stack) producing a `RawToolOutput`, and one normalizer function that reads `ToolResult` rows for the relevant `tool_name`s and writes `Score`/`Finding` rows via the existing `get_or_create_scoring_run`/`get_criterion` helpers. No `ToolRunner` protocol changes, no orchestrator changes, no new Alembic migration: all infrastructure needed already exists from 2.0/2.1.
 
 **Tech Stack:** Python 3.12, SQLModel, pytest, uv/uvx (Ruff, mypy, radon), npx (ESLint, TypeScript, jscpd), Composer (Pint, PHPStan/Larastan, PHPMD).
 
@@ -13,16 +13,16 @@
 ## Global Constraints
 
 - No `ToolRunner` protocol changes, no orchestrator changes, no new Alembic migration (spec §12).
-- Every npm-ecosystem tool invocation is `npx --package=<exact> -- <bin>`, never a bare `npx <bin>` (dependency-confusion precedent, `docs/toolchain.md`) — this applies to `EslintLintRunner`, `TypeScriptRunner`, and `EslintComplexityRunner` alike, all of which run an audit-system-controlled, ephemeral copy of the tool against the target's own config files (`package.json`'s `scripts.lint`, `tsconfig.json`) rather than the target's own installed binary. PHP tools that ARE the target repo's own pinned devDependency (Pint via `vendor/bin/pint`) are invoked by their resolved local path instead, per `docs/toolchain.md`'s native-vs-ephemeral distinction (§4/Task 3) — that is not an npx call and carries no confusion risk.
-- Linter/type-checker exit codes are NOT a pass/fail signal for usability: for Ruff, ESLint, mypy, tsc, PHPStan, Pint, and PHPMD, `exit_code == 0` means "ran clean, zero findings" and `exit_code == 1` (or `2` for PHPMD) means "ran successfully AND found violations" — both are usable results. Only exit codes signaling a tool/config crash (anything outside the tool's own documented pass/fail codes) mark a result unusable. Every normalizer in this plan filters on the tool's own documented usable-exit-code set, never on `exit_code == 0` alone (unlike 1.1/1.3's normalizers, which filter `exit_code == 0` because their tools use 0 for "ran, and here is the data" regardless of findings).
+- Every npm-ecosystem tool invocation is `npx --package=<exact> -- <bin>`, never a bare `npx <bin>` (dependency-confusion precedent, `docs/toolchain.md`): this applies to `EslintLintRunner`, `TypeScriptRunner`, and `EslintComplexityRunner` alike, all of which run an audit-system-controlled, ephemeral copy of the tool against the target's own config files (`package.json`'s `scripts.lint`, `tsconfig.json`) rather than the target's own installed binary. PHP tools that ARE the target repo's own pinned devDependency (Pint via `vendor/bin/pint`) are invoked by their resolved local path instead, per `docs/toolchain.md`'s native-vs-ephemeral distinction (§4/Task 3); that is not an npx call and carries no confusion risk.
+- Linter/type-checker exit codes are NOT a pass/fail signal for usability: for Ruff, ESLint, mypy, tsc, PHPStan, Pint, and PHPMD, `exit_code == 0` means "ran clean, zero findings" and `exit_code == 1` (or `2` for PHPMD) means "ran successfully AND found violations": both are usable results. Only exit codes signaling a tool/config crash (anything outside the tool's own documented pass/fail codes) mark a result unusable. Every normalizer in this plan filters on the tool's own documented usable-exit-code set, never on `exit_code == 0` alone (unlike 1.1/1.3's normalizers, which filter `exit_code == 0` because their tools use 0 for "ran, and here is the data" regardless of findings).
 - PHP tool split: Pint = criterion 2.1 (lint), PHPStan = criterion 2.2 (type-check). Larastan's target-`composer.json`-mutation-and-revert workaround (`docs/toolchain.md`) applies only when the target is a Laravel project (detected via `laravel/framework` in `composer.json`'s `require`); non-Laravel PHP targets run bare PHPStan.
 - Code duplication bands (jscpd, criterion 2.5): ≤3%→10, 3-5%→6, 5-10%→4, >10%→2.
 - Cyclomatic complexity bands (criterion 2.3), applied to the single worst function/method per sub-project: ≤10→10, 11-20→6, 21-30→4, >30→2. All three language runners (radon, ESLint `complexity`, PHPMD `codesize`) must extract the actual numeric complexity per function, not just pass/fail against one threshold.
-- Archetype B (2.1, 2.2) aggregation: summed-ratio across all relevant `ToolResult`s — `covered`/`applicable` counters summed before computing `score = (covered / applicable) * 10` (matches `module_size.py`'s pattern).
-- Archetype A (2.3) aggregation: worst-band across sub-projects (matches `dependency_circularity.py`'s `worst_value` pattern). Criterion 2.5 (`jscpd`) is repo-scope, so it never has more than one relevant `ToolResult` — no cross-subproject aggregation needed.
-- Repo-scope criteria (2.4, 2.5) never produce more than one `ToolResult` per audit — same convention as 1.2's `DesignDocRunner`.
-- Missing-data / N/A is represented by not creating a `Score` row for that criterion in that `ScoringRun` (return `None`), consistent with every existing normalizer — `Score.na_reason` stays unused, matching current precedent.
-- A real end-to-end audit run against an actual portfolio repo (not just this plan's synthetic fixtures) is required before the increment is considered done — Task 17.
+- Archetype B (2.1, 2.2) aggregation: summed-ratio across all relevant `ToolResult`s: `covered`/`applicable` counters summed before computing `score = (covered / applicable) * 10` (matches `module_size.py`'s pattern).
+- Archetype A (2.3) aggregation: worst-band across sub-projects (matches `dependency_circularity.py`'s `worst_value` pattern). Criterion 2.5 (`jscpd`) is repo-scope, so it never has more than one relevant `ToolResult`: no cross-subproject aggregation needed.
+- Repo-scope criteria (2.4, 2.5) never produce more than one `ToolResult` per audit: same convention as 1.2's `DesignDocRunner`.
+- Missing-data / N/A is represented by not creating a `Score` row for that criterion in that `ScoringRun` (return `None`), consistent with every existing normalizer: `Score.na_reason` stays unused, matching current precedent.
+- A real end-to-end audit run against an actual portfolio repo (not just this plan's synthetic fixtures) is required before the increment is considered done: Task 17.
 
 ---
 
@@ -196,7 +196,7 @@ git commit -m "feat(radar-audit): add RuffRunner for criterion 2.1"
 
 **Interfaces:**
 - Consumes: `RawToolOutput`.
-- Produces: `EslintLintRunner` (`tool_name="eslint"`, `tool_version="1.0.0"`, `supported_stacks=frozenset({"javascript"})`, `scope="subproject"`, `timeout_s=60`). Invocation per spec §4: `npx --package=eslint -- eslint <lint-script-scope> --format json`, run with `cwd=target_path` so the target's own config/plugins resolve normally (ephemeral ESLint binary, target-owned config — never a bare `.` scan, which would pick up unrelated generated artifacts per `docs/toolchain.md`'s ESLint scope caveat). `<lint-script-scope>` is derived from the sub-project's own `package.json`'s `scripts.lint` value: split on whitespace, drop tokens starting with `-` and the literal token `eslint`, resolve each remaining token relative to `target_path`, keep only tokens that resolve to an existing path, and fall back to `target_path` itself if none remain (e.g. no `package.json`, no `scripts.lint`, or no token resolves). `raw_output` shape: `{"results": [<ESLint JSON per-file entries>]}` (ESLint's native `--format=json`: list of `{"filePath": str, "messages": [{"ruleId": str|None, "message": str, "line": int, "column": int, "severity": int}], "errorCount": int, "warningCount": int}`). Consumed by Task 4.
+- Produces: `EslintLintRunner` (`tool_name="eslint"`, `tool_version="1.0.0"`, `supported_stacks=frozenset({"javascript"})`, `scope="subproject"`, `timeout_s=60`). Invocation per spec §4: `npx --package=eslint -- eslint <lint-script-scope> --format json`, run with `cwd=target_path` so the target's own config/plugins resolve normally (ephemeral ESLint binary, target-owned config: never a bare `.` scan, which would pick up unrelated generated artifacts per `docs/toolchain.md`'s ESLint scope caveat). `<lint-script-scope>` is derived from the sub-project's own `package.json`'s `scripts.lint` value: split on whitespace, drop tokens starting with `-` and the literal token `eslint`, resolve each remaining token relative to `target_path`, keep only tokens that resolve to an existing path, and fall back to `target_path` itself if none remain (e.g. no `package.json`, no `scripts.lint`, or no token resolves). `raw_output` shape: `{"results": [<ESLint JSON per-file entries>]}` (ESLint's native `--format=json`: list of `{"filePath": str, "messages": [{"ruleId": str|None, "message": str, "line": int, "column": int, "severity": int}], "errorCount": int, "warningCount": int}`). Consumed by Task 4.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -365,7 +365,7 @@ git commit -m "feat(radar-audit): add EslintLintRunner for criterion 2.1"
 
 **Interfaces:**
 - Consumes: `RawToolOutput`.
-- Produces: `PintRunner` (`tool_name="pint"`, `tool_version="1.0.0"`, `supported_stacks=frozenset({"php"})`, `scope="subproject"`, `timeout_s=60`). Invokes the target's own `vendor/bin/pint --test --format=json` (native, matches the project's existing "native, repo-installed toolchain" pattern). `raw_output` shape: `{"result": "pass"}` when clean (confirmed shape from `docs/toolchain.md`'s smoke test), or `{"result": "fail", "files": [<per-file entries with at least a "file" key>]}` when violations exist — the fail-case shape is Pint's own JSON and must be confirmed against real output in Step 2 below; if it differs, adjust the parsing in `_extract_files` before moving to Step 4. Consumed by Task 4.
+- Produces: `PintRunner` (`tool_name="pint"`, `tool_version="1.0.0"`, `supported_stacks=frozenset({"php"})`, `scope="subproject"`, `timeout_s=60`). Invokes the target's own `vendor/bin/pint --test --format=json` (native, matches the project's existing "native, repo-installed toolchain" pattern). `raw_output` shape: `{"result": "pass"}` when clean (confirmed shape from `docs/toolchain.md`'s smoke test), or `{"result": "fail", "files": [<per-file entries with at least a "file" key>]}` when violations exist: the fail-case shape is Pint's own JSON and must be confirmed against real output in Step 2 below; if it differs, adjust the parsing in `_extract_files` before moving to Step 4. Consumed by Task 4.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -438,7 +438,7 @@ def test_reports_tool_identity():
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_pint_runner.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.pint_runner'`. When you write Step 3's implementation, run `vendor/bin/pint --test --format=json` by hand against the `test_reports_fail_on_badly_formatted_php` fixture first and inspect the real JSON — confirm or correct the `_extract_files` parsing below against that real output before relying on it.
+Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.pint_runner'`. When you write Step 3's implementation, run `vendor/bin/pint --test --format=json` by hand against the `test_reports_fail_on_badly_formatted_php` fixture first and inspect the real JSON: confirm or correct the `_extract_files` parsing below against that real output before relying on it.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -1105,9 +1105,9 @@ git commit -m "feat(radar-audit): add TypeScriptRunner for criterion 2.2"
 
 **Interfaces:**
 - Consumes: `RawToolOutput`.
-- Produces: `PhpstanRunner` (`tool_name="phpstan"`, `tool_version="1.0.0"`, `supported_stacks=frozenset({"php"})`, `scope="subproject"`, `timeout_s=120`). `raw_output` shape: PHPStan's native `--error-format=json`: `{"totals": {"errors": int, "file_errors": int}, "files": {"<path>": {"errors": int, "messages": [{"message": str, "line": int}]}}, "errors": []}`. Mutates the target's own `composer.json`/`composer.lock` to `require --dev phpstan/phpstan`, runs the analysis, then reverts both files to their original bytes and re-runs `composer install` — this exact byte-identical-revert behavior must be tested. Consumed by Task 8.
+- Produces: `PhpstanRunner` (`tool_name="phpstan"`, `tool_version="1.0.0"`, `supported_stacks=frozenset({"php"})`, `scope="subproject"`, `timeout_s=120`). `raw_output` shape: PHPStan's native `--error-format=json`: `{"totals": {"errors": int, "file_errors": int}, "files": {"<path>": {"errors": int, "messages": [{"message": str, "line": int}]}}, "errors": []}`. Mutates the target's own `composer.json`/`composer.lock` to `require --dev phpstan/phpstan`, runs the analysis, then reverts both files to their original bytes and re-runs `composer install`: this exact byte-identical-revert behavior must be tested. Consumed by Task 8.
 
-**Ruling — refines spec §5's literal wording:** spec §5 reads "`composer require --dev phpstan/phpstan larastan/larastan`" unconditionally. `docs/toolchain.md`'s own Larastan section documents that Larastan's `extension.neon` resolves the target's Laravel version at config-parse time and fails before any file is even selected — a target with no `laravel/framework` dependency has no such version to resolve. Installing `larastan/larastan` unconditionally would therefore crash `PhpstanRunner` outright on any non-Laravel PHP target. This task installs `larastan/larastan` only when the target's own `composer.json` declares `laravel/framework` in its `require` section, keeping spec §5's documented Laravel behavior intact while avoiding a guaranteed crash on plain PHP targets. Cost if wrong: a non-Laravel-but-Laravel-like target that needs Larastan's stubs without declaring `laravel/framework` directly would fall back to plain PHPStan and show elevated false positives — acceptable, since no in-scope repo matches that shape today (Global Constraints, §12).
+**Ruling (refines spec §5's literal wording):** spec §5 reads "`composer require --dev phpstan/phpstan larastan/larastan`" unconditionally. `docs/toolchain.md`'s own Larastan section documents that Larastan's `extension.neon` resolves the target's Laravel version at config-parse time and fails before any file is even selected: a target with no `laravel/framework` dependency has no such version to resolve. Installing `larastan/larastan` unconditionally would therefore crash `PhpstanRunner` outright on any non-Laravel PHP target. This task installs `larastan/larastan` only when the target's own `composer.json` declares `laravel/framework` in its `require` section, keeping spec §5's documented Laravel behavior intact while avoiding a guaranteed crash on plain PHP targets. Cost if wrong: a non-Laravel-but-Laravel-like target that needs Larastan's stubs without declaring `laravel/framework` directly would fall back to plain PHPStan and show elevated false positives, acceptable, since no in-scope repo matches that shape today (Global Constraints, §12).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1683,7 +1683,7 @@ def test_reports_tool_identity():
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_eslint_complexity_runner.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.eslint_complexity_runner'`. When writing Step 3, run the audit-owned config by hand against `_COMPLEX_FUNCTION` first and confirm the installed ESLint major version's flat-config `-c` handling matches what's coded below — ESLint 9's flat-config mode resolves `-c` differently from ESLint 8's `.eslintrc`-based mode; adjust before Step 4 if it differs.
+Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.eslint_complexity_runner'`. When writing Step 3, run the audit-owned config by hand against `_COMPLEX_FUNCTION` first and confirm the installed ESLint major version's flat-config `-c` handling matches what's coded below: ESLint 9's flat-config mode resolves `-c` differently from ESLint 8's `.eslintrc`-based mode; adjust before Step 4 if it differs.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -1844,7 +1844,7 @@ def test_reports_tool_identity():
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_phpmd_complexity_runner.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.phpmd_complexity_runner'`. When writing Step 3, run the scratch-project PHPMD invocation by hand against `_COMPLEX_METHOD` first and confirm PHPMD's exit code (0/1/2 convention) and the exact `Cyclomatic Complexity of N` wording — adjust `_USABLE_EXIT_CODES`-equivalent handling and the regex in Task 12's normalizer if they differ.
+Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.phpmd_complexity_runner'`. When writing Step 3, run the scratch-project PHPMD invocation by hand against `_COMPLEX_METHOD` first and confirm PHPMD's exit code (0/1/2 convention) and the exact `Cyclomatic Complexity of N` wording: adjust `_USABLE_EXIT_CODES`-equivalent handling and the regex in Task 12's normalizer if they differ.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -2713,7 +2713,7 @@ def test_reports_tool_identity():
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_jscpd_runner.py -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.jscpd_runner'`. When writing Step 3, run jscpd by hand against the duplicate fixture first and confirm the JSON report's exact key names (`statistics.total.percentage`, `duplicates[].firstFile.name`) — jscpd's report shape can vary by version; adjust the parsing before Step 4 if it differs.
+Expected: FAIL with `ModuleNotFoundError: No module named 'radar_audit.runners.jscpd_runner'`. When writing Step 3, run jscpd by hand against the duplicate fixture first and confirm the JSON report's exact key names (`statistics.total.percentage`, `duplicates[].firstFile.name`): jscpd's report shape can vary by version; adjust the parsing before Step 4 if it differs.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -2803,7 +2803,7 @@ git commit -m "feat(radar-audit): add JscpdRunner for criterion 2.5"
 
 **Interfaces:**
 - Consumes: `RawToolOutput` shape from Task 15 (`jscpd`).
-- Produces: `normalize_code_duplication(session, scoring_run, criterion, tool_results) -> Score | None`. Bands per Global Constraints: ≤3%→10, 3-5%→6, 5-10%→4, >10%→2. Repo-scope, so at most one relevant `ToolResult` — no cross-subproject aggregation.
+- Produces: `normalize_code_duplication(session, scoring_run, criterion, tool_results) -> Score | None`. Bands per Global Constraints: ≤3%→10, 3-5%→6, 5-10%→4, >10%→2. Repo-scope, so at most one relevant `ToolResult`: no cross-subproject aggregation.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2978,8 +2978,8 @@ git commit -m "feat(radar-audit): add normalize_code_duplication for criterion 2
 ### Task 17: Real-world validation against a portfolio repository
 
 **Files:**
-- Modify: none expected — this task's job is to run the whole category-2 pipeline against a real portfolio repository and fix whatever it surfaces, mirroring the three-bug fix wave that followed 2.1's own merge (see `project_radar_audit_phase4.md` memory).
-- Test: none new — existing suites must stay green.
+- Modify: none expected: this task's job is to run the whole category-2 pipeline against a real portfolio repository and fix whatever it surfaces, mirroring the three-bug fix wave that followed 2.1's own merge (see `project_radar_audit_phase4.md` memory).
+- Test: none new: existing suites must stay green.
 
 **Interfaces:**
 - Consumes: every runner and normalizer from Tasks 1-16, the existing `radar-audit run` CLI, and `radar_audit.orchestrator`'s discovery/dispatch machinery (unchanged).
@@ -2996,7 +2996,7 @@ Expected: PASS, all tests from Tasks 1-16 plus every pre-existing 2.0/2.1 test g
 
 - [ ] **Step 3: Run a real audit against a portfolio repository**
 
-Pick a real portfolio repo already used for 2.1's own validation (Summit-Stats — PHP/Laravel + Vue — or GeoChallenge-Tracker — Python/FastAPI + Vue). Run:
+Pick a real portfolio repo already used for 2.1's own validation (Summit-Stats, PHP/Laravel + Vue, or GeoChallenge-Tracker, Python/FastAPI + Vue). Run:
 
 ```bash
 cd radar-audit && uv run radar-audit run <repo-name>

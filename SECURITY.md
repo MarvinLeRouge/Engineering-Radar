@@ -20,4 +20,4 @@ This project is maintained by a single developer, so response times are best-eff
 
 In scope: the `radar-core` and `radar-audit` packages, their dependency manifests, and the CI configuration in this repository.
 
-Out of scope: the target repositories that `radar-audit` reads and analyzes when run against a local portfolio checkout — vulnerabilities in those repositories should be reported to their own maintainers, not here.
+Out of scope: the target repositories that `radar-audit` reads and analyzes when run against a local portfolio checkout. Vulnerabilities in those repositories should be reported to their own maintainers, not here.

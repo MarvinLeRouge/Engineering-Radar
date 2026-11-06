@@ -33,7 +33,7 @@ Pydantic projection. A single static API key (`X-API-Key` header) gates the 3 wr
 1. A write request with a syntactically valid JSON body but a value outside the target enum (e.g. `{"status": "CLOSED"}`) must return `422`, not `500` or a silent no-op.
 2. A write request repeating the resource's current value (e.g. `status` already `RESOLVED`) must be rejected with `400`, not silently accepted as if a transition happened.
 3. A badge request for a repository whose `ScoringRun` exists but whose `global_score` is `None` must not crash formatting a `None` float; it must fall back to the "not yet audited" shape.
-4. `GET .../findings` and `GET .../roadmap` must return `404` when the repository id itself doesn't exist, but `200` with an empty array when the repository exists with nothing to list — these two "nothing here" cases must stay distinguishable.
+4. `GET .../findings` and `GET .../roadmap` must return `404` when the repository id itself doesn't exist, but `200` with an empty array when the repository exists with nothing to list: these two "nothing here" cases must stay distinguishable.
 5. `require_api_key` must reject a missing (`None`) header the same way it rejects a wrong string, without raising an unhandled `TypeError` from `secrets.compare_digest` (which requires two strings).
 
 ---
@@ -46,7 +46,7 @@ Pydantic projection. A single static API key (`X-API-Key` header) gates the 3 wr
 - Create: `radar-api/src/radar_api/config.py`
 - Modify: `pyproject.toml:2` (root workspace members list)
 - Test: `radar-api/tests/test_config.py`
-- Test: `radar-api/tests/__init__.py` (not needed — pytest discovers by path, no package init required for the tests dir)
+- Test: `radar-api/tests/__init__.py` (not needed: pytest discovers by path, no package init required for the tests dir)
 
 **Interfaces:**
 - Produces: `radar_api.config.get_database_url() -> str`, `radar_api.config.get_api_key() -> str`, `radar_api.config.MissingDatabaseUrlError`, `radar_api.config.MissingApiKeyError`
@@ -141,7 +141,7 @@ def test_get_api_key_returns_value_when_set(monkeypatch):
 - [ ] **Step 5: Run it, confirm it fails**
 
 Run: `cd radar-api && uv run pytest tests/test_config.py -v`
-Expected: FAIL (collection error — `radar_api.config` does not exist yet)
+Expected: FAIL (collection error: `radar_api.config` does not exist yet)
 
 - [ ] **Step 6: Implement `config.py`**
 
@@ -349,7 +349,7 @@ def test_unknown_route_returns_404(client):
 
 Run: `cd radar-api && uv run pytest tests/test_main.py -v`
 Expected: FAIL (`ModuleNotFoundError` for `alembic`/`fastapi` extras not yet synced, or the fixture
-chain erroring) — re-run `uv sync` first if the failure is a missing dependency rather than an
+chain erroring): re-run `uv sync` first if the failure is a missing dependency rather than an
 assertion failure.
 
 - [ ] **Step 9: Run again after `uv sync`, confirm it passes**
@@ -379,7 +379,7 @@ git commit -m "feat(radar-api): wire FastAPI app, DB session dependency, and tes
 
 **Interfaces:**
 - Consumes: `radar_api.config.get_api_key` (Task 1)
-- Produces: `radar_api.auth.require_api_key(x_api_key: str | None) -> None` (raises `fastapi.HTTPException`) — used as a route `dependencies=[Depends(require_api_key)]` entry by every write endpoint from Task 8 onward
+- Produces: `radar_api.auth.require_api_key(x_api_key: str | None) -> None` (raises `fastapi.HTTPException`): used as a route `dependencies=[Depends(require_api_key)]` entry by every write endpoint from Task 8 onward
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -456,7 +456,7 @@ git commit -m "feat(radar-api): add static API-key authentication dependency"
 
 ---
 
-### Task 4: Repositories router — list and detail
+### Task 4: Repositories router: list and detail
 
 **Files:**
 - Create: `radar-api/src/radar_api/schemas/repositories.py`
@@ -653,7 +653,7 @@ git commit -m "feat(radar-api): add GET /repositories and GET /repositories/{id}
 
 ---
 
-### Task 5: Repositories router — full report
+### Task 5: Repositories router: full report
 
 **Files:**
 - Create: `radar-api/src/radar_api/schemas/report.py`
@@ -940,7 +940,7 @@ git commit -m "feat(radar-api): add GET /repositories/{id}/report"
 
 ---
 
-### Task 6: Repositories router — badge
+### Task 6: Repositories router: badge
 
 **Files:**
 - Create: `radar-api/src/radar_api/schemas/badge.py`
@@ -1076,7 +1076,7 @@ git commit -m "feat(radar-api): add GET /repositories/{id}/badge"
 
 ---
 
-### Task 7: Findings router — list
+### Task 7: Findings router: list
 
 **Files:**
 - Create: `radar-api/src/radar_api/schemas/findings.py`
@@ -1087,7 +1087,7 @@ git commit -m "feat(radar-api): add GET /repositories/{id}/badge"
 **Interfaces:**
 - Consumes: `radar_api.dependencies.get_db_session` (Task 2), `_latest_scoring_run` pattern (same
   join logic as Task 4, duplicated locally since it is repository->audit->scoring_run scoped
-  differently here — filtered by repository, not returning a single latest run)
+  differently here: filtered by repository, not returning a single latest run)
 - Produces: `radar_api.schemas.findings.FindingRead`, `radar_api.routers.findings.router` (later
   Tasks 8-9 add write routes onto this same router), `radar_api.routers.findings._to_finding_read`
   (reused by Tasks 8-9)
@@ -1360,7 +1360,7 @@ git commit -m "feat(radar-api): add GET /repositories/{id}/findings"
 
 ---
 
-### Task 8: Findings router — update human verdict
+### Task 8: Findings router: update human verdict
 
 **Files:**
 - Modify: `radar-api/src/radar_api/schemas/findings.py` (already has `FindingVerdictUpdate` from Task 7, no change needed)
@@ -1504,7 +1504,7 @@ git commit -m "feat(radar-api): add PATCH /findings/{id}/verdict"
 
 ---
 
-### Task 9: Findings router — update status
+### Task 9: Findings router: update status
 
 **Files:**
 - Modify: `radar-api/src/radar_api/routers/findings.py`
@@ -1615,7 +1615,7 @@ git commit -m "feat(radar-api): add PATCH /findings/{id}/status"
 
 ---
 
-### Task 10: Roadmap router — list
+### Task 10: Roadmap router: list
 
 **Files:**
 - Create: `radar-api/src/radar_api/schemas/roadmap.py`
@@ -1873,7 +1873,7 @@ git commit -m "feat(radar-api): add GET /repositories/{id}/roadmap"
 
 ---
 
-### Task 11: Roadmap router — update status
+### Task 11: Roadmap router: update status
 
 **Files:**
 - Modify: `radar-api/src/radar_api/routers/roadmap.py`
@@ -2194,7 +2194,7 @@ git commit -m "feat(radar-api): add Docker deployment for radar-api and radar-au
 - [ ] **Step 1: Run the full `radar-api` test suite**
 
 Run: `cd radar-api && uv run pytest -v`
-Expected: PASS (all tests from Tasks 1-11: 4 + 2 + 3 + 4 + 7 + 11 + 5 + 10 + 13 + 3 + 10 = 72 tests — exact count may drift slightly if a task's step count changed during implementation; the important bar is zero failures)
+Expected: PASS (all tests from Tasks 1-11: 4 + 2 + 3 + 4 + 7 + 11 + 5 + 10 + 13 + 3 + 10 = 72 tests: exact count may drift slightly if a task's step count changed during implementation; the important bar is zero failures)
 
 - [ ] **Step 2: Run `ruff` and `mypy` on `radar-api`**
 
@@ -2213,4 +2213,4 @@ git add -u
 git commit -m "chore(radar-api): apply ruff formatting"
 ```
 
-(Skip this step entirely if Step 2 made no changes — no empty commits.)
+(Skip this step entirely if Step 2 made no changes: no empty commits.)

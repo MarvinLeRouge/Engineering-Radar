@@ -1,11 +1,11 @@
-# radar-dashboard — Vue 3 + Vite SPA — Design
+# radar-dashboard: Vue 3 + Vite SPA: Design
 
 Status: draft, pending review.
 
 Context: Phase 4, "Reporting and publication pipeline" (see
 `docs/work-in-progress/reporting-pipeline-notes.md`), item E / increment
 3.5. Depends on increment 3.3 (`radar-api`, merged main via PR #64) and
-loosely on increment 3.4 (quality badge, merged main via PR #65/#66) —
+loosely on increment 3.4 (quality badge, merged main via PR #65/#66),
 not a hard technical dependency, but the dashboard and the badge should
 present consistent numbers. Reference: `docs/system-design.md` originally
 proposed a local dashboard at Phase 0; this is that proposal's first real
@@ -20,13 +20,13 @@ did not exist before, consuming `radar-api` as its only data source.
 Build `radar-dashboard`: a read-focused SPA over `radar-api`'s data
 (repository list, per-repository report, roadmap), plus the three
 human-confirmed write actions `radar-api` already exposes (finding
-verdict, finding status, roadmap item status). No new business logic —
+verdict, finding status, roadmap item status). No new business logic:
 every write goes straight to an existing `radar-api` `PATCH` endpoint.
 
 Two visual requirements are already frozen by
 `reporting-pipeline-notes.md` and drive section 4 below:
 - Score gauges render as discrete flat-color bands, not a continuous
-  gradient — this is meant to read as professional tooling, not a toy.
+  gradient: this is meant to read as professional tooling, not a toy.
 - `not_applicable` and `not_yet_audited` criteria are visually distinct
   (two different grays) with the reason available on demand, never just
   a silently missing number.
@@ -34,13 +34,13 @@ Two visual requirements are already frozen by
 This increment also makes two narrow, confirmed additions to `radar-api`
 (sections 3 and 5), discovered while designing the roadmap screen and the
 "mark as done" flow:
-- `GET /roadmap-items/{id}/evidence-candidates` — a new read endpoint.
+- `GET /roadmap-items/{id}/evidence-candidates`: a new read endpoint.
 - `RoadmapItemRead` gains `title` and `description` (from the linked
-  `ImprovementTask`) — an additive change to an existing endpoint, no new
+  `ImprovementTask`): an additive change to an existing endpoint, no new
   endpoint.
 
 Both stay within `radar-api`'s existing "narrow, read-heavy, no broad
-CRUD" posture (section 1 of the `radar-api` spec) — they are read-only
+CRUD" posture (section 1 of the `radar-api` spec): they are read-only
 projections of data the write endpoints already validate against, not new
 write surface.
 
@@ -48,12 +48,12 @@ Explicitly out of scope for this increment:
 - Charting library. Confirmed unnecessary: bands are discrete/flat, not
   continuous gradients or trend lines, so plain SVG/CSS renders them
   directly. Revisit only at Phase 7, when score-stability trend lines
-  across re-audits are actually scoped — `docs/toolchain.md` records this
+  across re-audits are actually scoped: `docs/toolchain.md` records this
   as an explicit deferral, not an oversight.
 - E2E tests (same posture as `radar-api`: `pytest`/`vitest` unit and
   component tests are sufficient for this increment; Docker Compose
   wiring is verified manually).
-- A backend-side account/session system for the API key — see section 5.
+- A backend-side account/session system for the API key: see section 5.
 - Multi-repository comparison views, portfolio-wide rollups (Phase 5/6
   concerns, not this SPA).
 
@@ -96,7 +96,7 @@ radar-dashboard/
 runtime dependencies; Vite, TypeScript, ESLint (`eslint-plugin-vue`,
 `eslint-plugin-oxlint`, `eslint-config-prettier`), Prettier, Vitest,
 `@vue/test-utils`, `jsdom` as dev dependencies. `vue-router` is added on
-top of Triton's exact dependency set — Triton is single-view and has no
+top of Triton's exact dependency set: Triton is single-view and has no
 router; this SPA needs one for the repository-list / repository-detail /
 settings navigation.
 
@@ -106,7 +106,7 @@ shapes: one function per endpoint (`listRepositories`,
 `getRoadmapItemEvidenceCandidates`, `updateFindingVerdict`,
 `updateFindingStatus`, `updateRoadmapItemStatus`), each typed against a
 TypeScript interface matching the corresponding `radar-api` Pydantic
-schema. No generated client, no OpenAPI codegen — the endpoint surface is
+schema. No generated client, no OpenAPI codegen: the endpoint surface is
 small and stable enough that hand-written types are simpler to read and
 maintain than adding a codegen step.
 
@@ -117,7 +117,7 @@ call actions on mount, components render store state via props.
 
 ## 3. Screens and data flow
 
-### Communication with the API — same-origin, no CORS
+### Communication with the API: same-origin, no CORS
 
 Rather than call `radar-api.marvinlerouge.dev` cross-origin (which would
 require configuring CORS on `radar-api`), this reuses the pattern already
@@ -143,7 +143,7 @@ Each view's `onMounted` hook triggers a store action, which calls
 `api/client.ts`, which issues a relative-path `fetch`. Responses populate
 the store; the view renders loading/error/data states directly from
 store getters. No client-side caching layer beyond what the Pinia store
-already holds in memory for the current session — traffic volume and
+already holds in memory for the current session: traffic volume and
 data freshness needs don't justify one, consistent with `radar-api`'s own
 "no caching" stance.
 
@@ -155,7 +155,7 @@ brightgreen, `>=6` green, `>=4` yellow, `>=2` orange, else red), so the
 badge (item D) and the dashboard always agree on what a given score
 means. `ScoreGauge.vue` takes a `value: number | null` and a `status:
 "scored" | "not_applicable" | "not_yet_audited"` prop (matching
-`CriterionReport`/`CategoryReport`'s `status` field verbatim — category
+`CriterionReport`/`CategoryReport`'s `status` field verbatim: category
 reports only ever use `"scored"`/`"not_yet_audited"`, criterion reports
 use all three) and picks the band from `value` when `status === "scored"`.
 
@@ -168,11 +168,11 @@ reachable on touch devices, not just with a mouse.
 
 Findings render with a severity badge using `FindingSeverity`'s existing
 5-tier vocabulary (CRITICAL/HIGH/MEDIUM/LOW/INFO) and a fixed color per
-tier — a separate, smaller palette from the 0-10 score bands above (the
+tier: a separate, smaller palette from the 0-10 score bands above (the
 two encode different things: a finding's severity is not a score). No
 new severity vocabulary, per `reporting-pipeline-notes.md`.
 
-No charting library (see section 1) — `ScoreGauge.vue` and the severity
+No charting library (see section 1): `ScoreGauge.vue` and the severity
 badges are plain SVG/CSS: a fixed set of colored segments/labels, not a
 generated chart.
 
@@ -182,7 +182,7 @@ generated chart.
 
 `radar-api`'s three write endpoints require a static `X-API-Key` header
 (see the `radar-api` spec, section 4). The dashboard has no backend of
-its own and no account system — the `/settings` view lets the operator
+its own and no account system: the `/settings` view lets the operator
 paste the key, held in `sessionStorage` only (cleared when the tab
 closes, never persisted to `localStorage`, never sent anywhere except as
 the `X-API-Key` header on the three `PATCH` calls, never committed to
@@ -191,14 +191,14 @@ source). `stores/apiKey.ts` wraps this: a getter/setter pair over
 requests. Read requests never send the header.
 
 If a write request returns `401` (missing/invalid key), the UI surfaces
-an inline error directing the operator back to `/settings` — no retry
+an inline error directing the operator back to `/settings`: no retry
 loop, no silent failure.
 
 ### Finding verdict and status
 
 `FindingCard.vue` exposes simple controls (a verdict selector, a status
 selector) that call `updateFindingVerdict`/`updateFindingStatus`
-directly — thin wrappers around the existing `PATCH` endpoints, no new
+directly: thin wrappers around the existing `PATCH` endpoints, no new
 business logic on the frontend.
 
 ### Roadmap item status, and the `DONE` evidence requirement
@@ -209,13 +209,13 @@ business logic on the frontend.
 which `Evidence` rows are valid for a given roadmap item, which would
 have forced the operator to know an internal database ID by hand.
 
-**New `radar-api` endpoint:** `GET /roadmap-items/{id}/evidence-candidates`
-— returns exactly the `Evidence` rows the existing `PATCH` already
+**New `radar-api` endpoint:** `GET /roadmap-items/{id}/evidence-candidates`:
+returns exactly the `Evidence` rows the existing `PATCH` already
 accepts for that roadmap item: rows whose `finding_id` belongs to a
 `Finding` linked (via `FindingImprovementTaskLink`) to the roadmap item's
 `improvement_task_id`. Same linking query the router
 (`update_roadmap_item_status`) already runs server-side to validate
-`done_evidence_id` — this endpoint exposes it as a read, rather than
+`done_evidence_id`: this endpoint exposes it as a read, rather than
 duplicating or loosening that check.
 
 ```python
@@ -236,7 +236,7 @@ Other status transitions (`TODO`, `IN_PROGRESS`, `WONT_FIX`) skip the
 picker and call the same endpoint with `done_evidence_id` omitted.
 
 **`RoadmapItemRead` extension:** the schema currently exposes only
-`improvement_task_id`, not the task's `title`/`description` — without
+`improvement_task_id`, not the task's `title`/`description`: without
 them, the roadmap tab would show bare numeric IDs. This adds two
 required fields, sourced from the already-joined `ImprovementTask` row:
 
@@ -255,7 +255,7 @@ class RoadmapItemRead(BaseModel):
 ```
 
 Purely additive to an existing endpoint (`GET
-/repositories/{id}/roadmap`) — no new endpoint, no breaking change to the
+/repositories/{id}/roadmap`): no new endpoint, no breaking change to the
 existing shape.
 
 ## 6. Testing strategy
@@ -266,7 +266,7 @@ with the code they cover (`stores/__tests__/`, `components/__tests__/`,
 `views/__tests__/`), matching Triton's layout.
 
 - `api/client.ts` is stubbed manually in store and component tests (a
-  hand-written fake implementing the same function signatures) — no new
+  hand-written fake implementing the same function signatures): no new
   dependency such as `msw`, consistent with keeping the dependency set as
   small as `radar-api`'s own test setup.
 - Store tests (`stores/__tests__/repositories.spec.ts`, etc.): actions
@@ -296,14 +296,14 @@ update to the existing `RoadmapItemRead` tests to assert `title`/
 ## 7. Deployment
 
 `radar-dashboard/Dockerfile`: multi-stage, Node build -> static `nginx`
-image, copying `dist/` into `nginx:alpine` — identical shape to
+image, copying `dist/` into `nginx:alpine`: identical shape to
 `Triton/frontend/Dockerfile`. `nginx.conf` is the same SPA-fallback
 config as Triton's (`try_files $uri $uri/ /index.html`), with gzip
 enabled for the usual static asset types.
 
 `docker-compose.yml` at the repo root (existing file, extended): the
 commented-out `radar-dashboard` placeholder is filled in, and `radar-api`
-gains a second Traefik router for the `/api` prefix — same pattern as
+gains a second Traefik router for the `/api` prefix, same pattern as
 Triton's backend (`PathPrefix` + `stripprefix` middleware):
 
 ```yaml
@@ -341,7 +341,7 @@ services:
 `radar-api` keeps its existing direct host
 (`radar-api.marvinlerouge.local`) for the badge (item D) and any direct
 API access, and gains the `/api`-prefixed router scoped to the
-dashboard's host — both routers point at the same underlying service, so
+dashboard's host: both routers point at the same underlying service, so
 no duplicate container is needed. The production routers
 (`radar.marvinlerouge.dev`, `websecure`/`letsencrypt`) are not wired in
 this increment, matching `radar-api`'s own current state (no production
@@ -353,7 +353,7 @@ compose file yet).
   score-stability trend lines.
 - No account/session system for the API key (section 5); the
   `sessionStorage` approach is appropriate for a single-operator tool and
-  should be revisited only if multi-user access is ever needed — same
+  should be revisited only if multi-user access is ever needed, same
   posture `radar-api`'s own spec already takes on this question.
 - Production Traefik routers (`.dev` host, `websecure`) are deferred
   until a production compose file exists for the project as a whole, not

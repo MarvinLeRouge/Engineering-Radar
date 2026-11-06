@@ -13,22 +13,22 @@
 ## Global Constraints
 
 - No `ToolRunner` protocol changes, no orchestrator changes, no new Alembic migration.
-- Docker-based tools (Gitleaks, Trivy image scan, Hadolint) are always invoked via `docker run --rm ...` through the shared `run_docker_command` helper in `radar_audit/runners/docker_support.py` — not a protocol change, an internal implementation detail.
-- Gitleaks always runs in git-history mode (the default `gitleaks git` subcommand) — never `--no-git`.
-- `TrivyImageRunner` never builds an image as a side effect of scanning — `N/A` (`image_found: False`) if none is found locally already.
-- Every `Score` row this increment writes is at `ScoreLevel.CRITERION` only — no `CATEGORY`/`GLOBAL` row is created here.
-- The numeric severity bands (§3.1/§3.2/§3.3 of the spec) are resolved-but-provisional, pending Phase 5 portfolio-wide calibration — mark this in a code comment next to each band table, same discipline as every prior increment's thresholds.
-- Tests use real subprocess/Docker invocations against `tmp_path` git fixtures — no mocking of subprocess or tool output (normalizer tests build synthetic `ToolResult.raw_output` dicts directly, matching the existing pattern in e.g. `test_normalize_dependency_circularity.py` — this is not a mock of the tool, it is testing the normalizer's own logic against a fixed input).
-- Criteria 4.6a and 4.6b are explicitly **out of scope** for this increment — deferred to a later increment, same treatment as 1.4/3.5.
+- Docker-based tools (Gitleaks, Trivy image scan, Hadolint) are always invoked via `docker run --rm ...` through the shared `run_docker_command` helper in `radar_audit/runners/docker_support.py`: not a protocol change, an internal implementation detail.
+- Gitleaks always runs in git-history mode (the default `gitleaks git` subcommand): never `--no-git`.
+- `TrivyImageRunner` never builds an image as a side effect of scanning: `N/A` (`image_found: False`) if none is found locally already.
+- Every `Score` row this increment writes is at `ScoreLevel.CRITERION` only: no `CATEGORY`/`GLOBAL` row is created here.
+- The numeric severity bands (§3.1/§3.2/§3.3 of the spec) are resolved-but-provisional, pending Phase 5 portfolio-wide calibration: mark this in a code comment next to each band table, same discipline as every prior increment's thresholds.
+- Tests use real subprocess/Docker invocations against `tmp_path` git fixtures: no mocking of subprocess or tool output (normalizer tests build synthetic `ToolResult.raw_output` dicts directly, matching the existing pattern in e.g. `test_normalize_dependency_circularity.py`; this is not a mock of the tool, it is testing the normalizer's own logic against a fixed input).
+- Criteria 4.6a and 4.6b are explicitly **out of scope** for this increment: deferred to a later increment, same treatment as 1.4/3.5.
 - Before this increment is marked done, a real `radar-audit run` must be performed against a real portfolio repo (GeoChallenge-Tracker, which already has documented Hadolint/Trivy smoke-test results in `toolchain.md`) and the resulting `Score`/`Finding` rows inspected for plausibility (Task 15).
 
 ## Review Focus
 
-- Docker daemon unavailable when a Docker-based runner (Gitleaks/Trivy/Hadolint) executes — `subprocess.run` raises normally in that case (no daemon socket to connect to) and propagates up to the orchestrator's existing per-runner crash isolation (built and tested in increment 2.0); no new code or test is needed here, but no task in this plan may swallow that exception into a false-clean result.
-- No dependency manifest present for a subproject (4.1, pip-audit/pnpm-audit/composer-audit) — must resolve to `N/A` for that stack's contribution, not a crash or a false 10.
-- A repo with zero Dockerfiles anywhere (4.5) — must resolve to `N/A`, not a false-clean 10.
-- No locally built Docker image matching the repo (4.4, expected to be the common case across most of the portfolio) — must resolve to `N/A`, and must never trigger a build as a side effect.
-- `composer audit`'s `advisories` field switches JSON type between an object (vulnerabilities present, keyed by package name) and an empty array (clean, no packages have advisories) — confirmed empirically; must not crash when iterating either shape.
+- Docker daemon unavailable when a Docker-based runner (Gitleaks/Trivy/Hadolint) executes: `subprocess.run` raises normally in that case (no daemon socket to connect to) and propagates up to the orchestrator's existing per-runner crash isolation (built and tested in increment 2.0); no new code or test is needed here, but no task in this plan may swallow that exception into a false-clean result.
+- No dependency manifest present for a subproject (4.1, pip-audit/pnpm-audit/composer-audit): must resolve to `N/A` for that stack's contribution, not a crash or a false 10.
+- A repo with zero Dockerfiles anywhere (4.5): must resolve to `N/A`, not a false-clean 10.
+- No locally built Docker image matching the repo (4.4, expected to be the common case across most of the portfolio): must resolve to `N/A`, and must never trigger a build as a side effect.
+- `composer audit`'s `advisories` field switches JSON type between an object (vulnerabilities present, keyed by package name) and an empty array (clean, no packages have advisories): confirmed empirically; must not crash when iterating either shape.
 
 ---
 
@@ -273,7 +273,7 @@ class PipAuditRunner:
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd radar-audit && uv run pytest tests/test_pip_audit_runner.py -v`
-Expected: PASS (the vulnerable-pin test needs network access to PyPI's advisory data — same precondition class as any other pip-audit invocation)
+Expected: PASS (the vulnerable-pin test needs network access to PyPI's advisory data: same precondition class as any other pip-audit invocation)
 
 - [ ] **Step 5: Commit**
 
@@ -2580,7 +2580,7 @@ def test_registry_has_exactly_the_seventeen_tooled_criteria():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_normalizer_registry.py -v`
-Expected: FAIL — `assert 12 == 17`
+Expected: FAIL: `assert 12 == 17`
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -2648,7 +2648,7 @@ git commit -m "feat(radar-audit): register category 4 runners and normalizers"
 
 ### Task 15: Real-repo validation
 
-**Files:** None created or modified — this task is a manual validation pass, per this project's standing convention of always validating a new increment against a real portfolio repo before considering it done.
+**Files:** None created or modified: this task is a manual validation pass, per this project's standing convention of always validating a new increment against a real portfolio repo before considering it done.
 
 **Interfaces:** None.
 
@@ -2674,7 +2674,7 @@ Open the generated report (path printed by the `report` command) and confirm:
 - The Security category now shows real scores for criteria 4.1-4.5 instead of "Not yet audited".
 - 4.4 (Container image vulnerabilities) is `N/A` unless GeoChallenge-Tracker's backend image has already been built locally (per `toolchain.md`'s documented precondition), matching what actually happened in this run.
 - 4.5 (Dockerfile hardening) reflects the previously smoke-tested `backend/Dockerfile` findings (3 plausible low-noise findings per `toolchain.md`), not zero and not wildly more.
-- No criterion silently crashed the whole audit — check the `run` command's own output for any per-runner failure and confirm it did not abort other runners (existing per-runner crash isolation).
+- No criterion silently crashed the whole audit: check the `run` command's own output for any per-runner failure and confirm it did not abort other runners (existing per-runner crash isolation).
 
 - [ ] **Step 4: Fix any plausibility issues found**
 
@@ -2691,4 +2691,4 @@ git commit -m "fix(radar-audit): <describe the real-world case fixed>"
 rm -f /tmp/radar-audit-category-4-validation.db
 ```
 
-No commit for this step — it only removes a local scratch file, not a tracked one.
+No commit for this step: it only removes a local scratch file, not a tracked one.

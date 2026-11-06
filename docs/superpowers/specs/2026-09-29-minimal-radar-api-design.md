@@ -1,4 +1,4 @@
-# radar-api — Minimal FastAPI service — Design
+# radar-api: Minimal FastAPI service: Design
 
 Status: draft, pending review.
 
@@ -31,7 +31,7 @@ Explicitly out of scope for this increment:
   (whoever controls the audited repos). Revisit if/when multi-user access
   is actually needed.
 - The badge image rendering itself (item D) and the dashboard UI (item
-  E) — this increment only needs to expose the data those will consume.
+  E): this increment only needs to expose the data those will consume.
 - Any endpoint outside the read/write list in section 3.
 
 ## 2. Project structure and components
@@ -69,11 +69,11 @@ Docker).
 business logic. Each router maps to one group of endpoints from section 3
 (`repositories`, `findings`, `roadmap`), not a generic passthrough CRUD
 router. `Score` and `Recommendation` data have no standalone endpoints of
-their own — they are nested inside `GET /repositories/{id}/report`.
+their own: they are nested inside `GET /repositories/{id}/report`.
 
 `config.py` mirrors `radar_audit.cli._database_url()`'s convention:
 `RADAR_DATABASE_URL` is required, with an explicit error raised at
-startup if unset — `radar-api` never assumes a default DB path, same as
+startup if unset: `radar-api` never assumes a default DB path, same as
 `radar-audit`. `RADAR_API_KEY` follows the same convention.
 
 The DB session is opened and closed per request through a FastAPI
@@ -90,7 +90,7 @@ dependency (`Depends(get_db_session)`) built on
 | `GET /repositories/{id}` | repository detail |
 | `GET /repositories/{id}/report` | latest full report: scores per category/criterion (three-state model: scored / N/A with reason / not yet audited), findings, and their recommendations |
 | `GET /repositories/{id}/findings` | list of findings, filterable by `status` and `severity` query params |
-| `GET /repositories/{id}/badge` | JSON payload in shields.io endpoint-badge shape (`label`/`message`/`color`), derived from the latest global score — feeds item D |
+| `GET /repositories/{id}/badge` | JSON payload in shields.io endpoint-badge shape (`label`/`message`/`color`), derived from the latest global score: feeds item D |
 | `GET /repositories/{id}/roadmap` | list of `RoadmapItem` rows and their status |
 
 ### Write endpoints (3, confirmed; require the API key; never transition automatically)
@@ -152,11 +152,11 @@ access is actually needed later).
   Bad Request` with the rejected transition in the detail. The existing
   `radar_core.enums` definitions are the source of truth for valid
   values; the API checks the target value is a defined enum member and
-  differs from the current value — it does not reimplement a state
+  differs from the current value: it does not reimplement a state
   machine.
 - **Unhandled errors** (internal bug, DB unavailable): left to propagate
   as FastAPI's default `500`, no generic catch-all handler that would
-  mask the underlying error — consistent with the rest of the monorepo's
+  mask the underlying error: consistent with the rest of the monorepo's
   error-handling posture.
 
 ## 6. Deployment

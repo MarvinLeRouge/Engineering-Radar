@@ -6,7 +6,7 @@
 
 **Goal:** add `radar-audit` support for category 7 (DevOps/CI-CD)'s 4 criteria: CI presence &
 health (7.1), Traefik local/prod parity (7.2), container build hardening (7.3), and deployment
-automation (7.4) — one new `ToolRunner`, three normalizer-only additions (one reusing an existing
+automation (7.4): one new `ToolRunner`, three normalizer-only additions (one reusing an existing
 runner's output, two reading the repository's own files directly with no runner at all), all
 registered into the existing `DEFAULT_RUNNERS`/`CRITERION_NORMALIZERS` tables.
 
@@ -27,10 +27,10 @@ pytest.
 - Exact taxonomy criterion names (already seeded in `quality_framework_v1_0.yaml`, category
   `"DevOps / CI-CD"`): `"CI presence & health"`, `"Reverse proxy / local-prod environment parity
   (Traefik)"`, `"Container build hardening"`, `"Deployment automation"`.
-- 7.3 reuses `HadolintRunner`'s existing `ToolResult` rows (`tool_name == "hadolint"`) — no new
+- 7.3 reuses `HadolintRunner`'s existing `ToolResult` rows (`tool_name == "hadolint"`): no new
   runner for 7.3, and its score must be computed independently from 4.5's (a distinct
   finding-count-banded formula, not the same value under a second heading).
-- 7.2 and 7.4 have no `ToolRunner` at all — they read the repository's own files directly via the
+- 7.2 and 7.4 have no `ToolRunner` at all: they read the repository's own files directly via the
   new `get_repository_path(session, scoring_run)` helper, not via `tool_results`.
 - Prod compose filename candidates, tried in this exact order, first match wins:
   `docker-compose.prod.yml`, `docker-compose.production.yml`, `compose.prod.yml`,
@@ -41,7 +41,7 @@ pytest.
   `deploy.yml`, `release.yml`. Wired to a registry push = a step whose `uses` starts with
   `docker/build-push-action` and `with.push is True`, OR a `run` step containing the literal
   substring `docker push`.
-- `actionlint` usable exit codes are `{0, 1}` only — **empirically confirmed during planning**:
+- `actionlint` usable exit codes are `{0, 1}` only: **empirically confirmed during planning**:
   exit code `3` ("no project was found...") is what actionlint returns both when
   `.github/workflows/` does not exist and when the target isn't a git repository at all; this
   must be treated as "no data" (`None`), never as a false "clean" (10.0) result. This corrects an
@@ -53,17 +53,17 @@ pytest.
 ## Review Focus
 
 1. A repository with no `.github/workflows/` directory at all (or a target that isn't a git repo)
-   must score 7.1 as "no data" (`None`), not as a false 10.0 "clean" result — `actionlint`'s real
+   must score 7.1 as "no data" (`None`), not as a false 10.0 "clean" result: `actionlint`'s real
    exit code for this case is `3`, not `0`. Pinned in Task 2.
 2. A malformed/unparsable `docker-compose.yml` or workflow YAML file must not crash the whole
-   `score` run — it must be treated the same as "file absent" for that step. Pinned in Tasks 3 and
+   `score` run: it must be treated the same as "file absent" for that step. Pinned in Tasks 3 and
    5.
 3. A repository where a service has Traefik labels in the local compose file but not the prod one
    (or vice versa) must generate a `Finding` naming the service and the missing side, and score
-   strictly between 0 and 10 — not silently treated as either fully compliant or fully absent.
+   strictly between 0 and 10: not silently treated as either fully compliant or fully absent.
    Pinned in Task 3.
 4. 7.3's normalizer must not create a second `Finding` row for a `hadolint` finding 4.5's
-   normalizer already turned into a `Finding` against the same `ToolResult` — only `Score` differs
+   normalizer already turned into a `Finding` against the same `ToolResult`: only `Score` differs
    between the two criteria, not the finding ledger. Pinned in Task 4.
 5. A repository with zero Dockerfiles at all (hadolint never produced a `ToolResult` for it) must
    score 7.3 as "no data" (`None`), not crash, and not silently score a perfect 10.0 as if build
@@ -83,14 +83,14 @@ pytest.
   `tool_name="actionlint"`), consumed by Task 2's normalizer via `tool_results` filtered on
   `tool_name == "actionlint"`.
 
-**Design note — empirically confirmed during planning (real `docker run` invocations, not
+**Design note, empirically confirmed during planning (real `docker run` invocations, not
 assumed):** `rhysd/actionlint:latest -format '{{json .}}'` against a real git repo with a clean
 workflow prints `[]` and exits `0`. Against one shellcheck-style issue (`run: echo $FOO`,
 unquoted) it exits `1` and prints a JSON array of finding objects (`message`, `filepath`, `line`,
 `column`, `kind`, `snippet`). Against a repo with **no** `.github/workflows/` directory at all
 (even if the repo has other tracked files), or a target that isn't a git repository, it exits `3`
 and prints a plain-text error (`"no project was found in any parent directories of "/repo"...`),
-**not valid JSON** — this must be captured as an `"error"` payload, not parsed as a findings list.
+**not valid JSON**: this must be captured as an `"error"` payload, not parsed as a findings list.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -257,7 +257,7 @@ Add to the `DEFAULT_RUNNERS` list (anywhere in the list; append at the end, afte
 - [ ] **Step 5: Run tests, confirm they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_actionlint_runner.py -v`
-Expected: PASS (4 tests). Requires Docker to be running locally — same precondition every
+Expected: PASS (4 tests). Requires Docker to be running locally: same precondition every
 existing Gitleaks/Trivy/Hadolint test already has.
 
 - [ ] **Step 6: Commit**
@@ -286,7 +286,7 @@ git commit -m "feat(radar-audit): add ActionlintRunner for criterion 7.1"
 **Design note:** the merged spec did not specify a banding table for 7.1 (only the runner's
 behavior). Resolved here, reusing 5.2's/7.3's established finding-count-banded shape for
 consistency rather than inventing a new scale: `0 -> 10.0`, `1-3 -> 8.0`, `4-8 -> 6.0`,
-`9-15 -> 4.0`, `>15 -> 2.0`. Usable exit codes are `{0, 1}` only (see Global Constraints) — exit
+`9-15 -> 4.0`, `>15 -> 2.0`. Usable exit codes are `{0, 1}` only (see Global Constraints): exit
 code `3` (or any other) means "no data", `None`, same treatment as every other tool's unusable
 exit code elsewhere in this codebase.
 
@@ -521,10 +521,10 @@ git commit -m "feat(radar-audit): add normalize_ci_health for criterion 7.1"
   `radar_audit.normalizers.traefik_parity.normalize_traefik_parity`, registered under
   `("DevOps / CI-CD", "Reverse proxy / local-prod environment parity (Traefik)")`.
 
-**Design note:** this is the first normalizer with no `ToolRunner`/`ToolResult` at all — it reads
+**Design note:** this is the first normalizer with no `ToolRunner`/`ToolResult` at all: it reads
 `docker-compose.yml` and a candidate prod compose file directly from the repository's own path,
 resolved via the new `get_repository_path` helper (`ScoringRun.audit_id` -> `Audit.repository_id`
--> `Repository.path`, no new field or migration needed — `Repository.path` already exists).
+-> `Repository.path`, no new field or migration needed: `Repository.path` already exists).
 
 - [ ] **Step 1: Write the failing test for `get_repository_path`**
 
@@ -890,7 +890,7 @@ git commit -m "feat(radar-audit): add get_repository_path and normalize_traefik_
 
 **Interfaces:**
 - Consumes: `HadolintRunner`'s existing `ToolResult` rows (`tool_name == "hadolint"`, already
-  produced for criterion 4.5 — no new runner), `has_success_payload`
+  produced for criterion 4.5: no new runner), `has_success_payload`
   (`radar_audit.normalizers.shared`, already exists).
 - Produces: `radar_audit.normalizers.container_build_hardening.normalize_container_build_hardening`,
   registered under `("DevOps / CI-CD", "Container build hardening")`.
@@ -900,7 +900,7 @@ git commit -m "feat(radar-audit): add get_repository_path and normalize_traefik_
 the **total** number of hadolint findings across every Dockerfile and bands the count (same shape
 as 5.2's dead-code banding), so the two criteria produce genuinely different numbers from the same
 raw evidence rather than duplicating one score under two headings. **No `Finding` rows are created
-here** — 4.5's normalizer already created one `Finding` per hadolint finding against the exact
+here**: 4.5's normalizer already created one `Finding` per hadolint finding against the exact
 same `ToolResult`; this task must not create a second set against the same evidence (Review Focus
 #4).
 
@@ -1419,7 +1419,7 @@ during brainstorming) predicted.
 - [ ] **Step 1: Run the full `radar-audit` test suite**
 
 Run: `cd radar-audit && uv run pytest -v`
-Expected: PASS, zero failures (includes every test from Tasks 1-5, plus the full existing suite —
+Expected: PASS, zero failures (includes every test from Tasks 1-5, plus the full existing suite:
 confirms no regression)
 
 - [ ] **Step 2: Run `ruff` and `mypy` on `radar-audit`**
@@ -1454,7 +1454,7 @@ Expected: no crashes; each `report` output now shows real scores for category 7'
 spec's empirical predictions: 7.2 (Traefik parity) scores 10.0/10 for all three repos; 7.4
 (deployment automation) scores 10.0/10 for all three repos (all three have a wired
 `build-push.yml`/`build-deploy.yml`); 7.1 and 7.3's exact values depend on each repo's real
-`actionlint`/`hadolint` output, not predicted in advance — record whatever they actually come out
+`actionlint`/`hadolint` output, not predicted in advance: record whatever they actually come out
 to, investigate only if a value looks structurally wrong (e.g. `None`/no-data where a workflow or
 Dockerfile clearly exists).
 
@@ -1465,4 +1465,4 @@ git add -u
 git commit -m "chore(radar-audit): apply ruff formatting"
 ```
 
-(Skip this step entirely if Steps 1-4 made no changes — no empty commits.)
+(Skip this step entirely if Steps 1-4 made no changes: no empty commits.)

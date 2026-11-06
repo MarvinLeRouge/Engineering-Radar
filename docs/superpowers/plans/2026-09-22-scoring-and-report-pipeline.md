@@ -6,7 +6,7 @@
 
 **Architecture:** Three independent, idempotent CLI commands (`run` → `score` → `report`), each operating purely against the DB (no repo checkout needed for `score`/`report`). A new criterion→normalizer registry in `normalizers/__init__.py` drives both the scoring step and the report's "not yet tooled" detection. No `ToolRunner`/schema/migration changes.
 
-**Tech Stack:** Python 3.12, SQLModel, Typer, pytest — same stack as every prior increment, no new dependency.
+**Tech Stack:** Python 3.12, SQLModel, Typer, pytest: same stack as every prior increment, no new dependency.
 
 **Spec:** `docs/superpowers/specs/2026-09-22-scoring-and-report-pipeline-design.md`
 
@@ -14,11 +14,11 @@
 
 - No `ToolRunner` protocol changes, no `Score`/`ScoringRun`/`Criterion`/`Category` schema changes, no new Alembic migration.
 - `score` and `report` are new Typer commands in `radar-audit/src/radar_audit/cli.py`, following the same `_database_url()`/session-open-close-dispose pattern as the existing `run` command, and adding their new error types to the `_EXPECTED_ERRORS` tuple so failures print a clean one-line error, never a traceback.
-- `score`/`report` never require the target repo to be checked out on disk — both resolve the `Repository` row by name directly from the DB and operate purely against already-persisted rows.
-- Category-level weight redistribution is a simple renormalization over scored criteria only (`weighted_sum / total_weight` computed just over the criteria that got a `Score` this run) — no distinction between "structurally not tooled" (1.4, 3.5) and "tooled but returned `N/A` this run" is made anywhere in this plan.
+- `score`/`report` never require the target repo to be checked out on disk: both resolve the `Repository` row by name directly from the DB and operate purely against already-persisted rows.
+- Category-level weight redistribution is a simple renormalization over scored criteria only (`weighted_sum / total_weight` computed just over the criteria that got a `Score` this run): no distinction between "structurally not tooled" (1.4, 3.5) and "tooled but returned `N/A` this run" is made anywhere in this plan.
 - Re-running `score` against the same `Audit` must not duplicate `Score` rows: delete every existing `Score` row for the reused `ScoringRun` before regenerating, the same delete-then-recreate idempotency pattern `orchestrator.execute_audit` already uses for `ToolResult`.
-- Report output directory defaults to `radar-audit/reports/` (`Path(__file__).resolve().parents[2] / "reports"` in `cli.py` — the exact same anchor `DEFAULT_PORTFOLIO_YAML` already uses), gitignored, never hand-edited or committed.
-- Tests use real SQLite fixtures via the existing `db_session` fixture (`tests/conftest.py`) — no mocking of DB state, same "zero mock" discipline as every prior increment.
+- Report output directory defaults to `radar-audit/reports/` (`Path(__file__).resolve().parents[2] / "reports"` in `cli.py`: the exact same anchor `DEFAULT_PORTFOLIO_YAML` already uses), gitignored, never hand-edited or committed.
+- Tests use real SQLite fixtures via the existing `db_session` fixture (`tests/conftest.py`): no mocking of DB state, same "zero mock" discipline as every prior increment.
 - Confidence ranking for the "lowest of contributors" rule: `HIGH` < `MEDIUM` < `LOW` in severity (i.e. `LOW` is the worst/lowest confidence and wins when present among a category's contributing criteria).
 
 ---
@@ -127,14 +127,14 @@ git commit -m "feat(radar-audit): add criterion-to-normalizer registry for categ
 
 ---
 
-### Task 2: `score_repository` — criterion + category scoring
+### Task 2: `score_repository`: criterion + category scoring
 
 **Files:**
 - Create: `radar-audit/src/radar_audit/scoring.py`
 - Test: `radar-audit/tests/test_scoring.py`
 
 **Interfaces:**
-- Consumes: `CRITERION_NORMALIZERS` (Task 1). `get_criterion`, `get_or_create_scoring_run` (`radar_audit.normalizers.shared`, existing). `seed_taxonomy` (`radar_audit.taxonomy.seed`, existing). `Repository` (`radar_core.models.repository`), `Audit`, `ToolResult` (`radar_core.models.audit`), `Category`, `Criterion` (`radar_core.models.methodology`), `Score`, `ScoringRun` (`radar_core.models.scoring`), `ScoreLevel`, `Confidence` (`radar_core.enums`) — all existing.
+- Consumes: `CRITERION_NORMALIZERS` (Task 1). `get_criterion`, `get_or_create_scoring_run` (`radar_audit.normalizers.shared`, existing). `seed_taxonomy` (`radar_audit.taxonomy.seed`, existing). `Repository` (`radar_core.models.repository`), `Audit`, `ToolResult` (`radar_core.models.audit`), `Category`, `Criterion` (`radar_core.models.methodology`), `Score`, `ScoringRun` (`radar_core.models.scoring`), `ScoreLevel`, `Confidence` (`radar_core.enums`): all existing.
 - Produces: `score_repository(session: Session, repo_name: str) -> ScoringRun`, `RepositoryNotFoundError(ValueError)`, `NoAuditFoundError(ValueError)`, `get_repository_by_name(session: Session, repo_name: str) -> Repository`. Task 3 (`report.py`) and Task 4 (CLI) consume all four names from `radar_audit.scoring`.
 
 - [x] **Step 1: Write the failing tests**
@@ -400,7 +400,7 @@ git commit -m "feat(radar-audit): add score_repository with category-level weigh
 - Test: `radar-audit/tests/test_report.py`
 
 **Interfaces:**
-- Consumes: `get_repository_by_name`, `RepositoryNotFoundError` (Task 2, `radar_audit.scoring`). `Audit` (`radar_core.models.audit`), `Category`, `Criterion` (`radar_core.models.methodology`), `Score`, `ScoringRun` (`radar_core.models.scoring`), `ScoreLevel` (`radar_core.enums`) — all existing.
+- Consumes: `get_repository_by_name`, `RepositoryNotFoundError` (Task 2, `radar_audit.scoring`). `Audit` (`radar_core.models.audit`), `Category`, `Criterion` (`radar_core.models.methodology`), `Score`, `ScoringRun` (`radar_core.models.scoring`), `ScoreLevel` (`radar_core.enums`): all existing.
 - Produces: `render_report(session: Session, repo_name: str) -> str`, `write_report(markdown: str, repo_name: str, output_dir: Path) -> Path`, `NoScoringRunFoundError(ValueError)`. Task 5 (CLI) consumes all three from `radar_audit.report`.
 
 - [x] **Step 1: Write the failing tests**
@@ -783,7 +783,7 @@ def test_report_command_writes_markdown_to_output_dir(tmp_path, monkeypatch):
 - [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli_score_report.py -v`
-Expected: FAIL — `No such command 'report'`
+Expected: FAIL: `No such command 'report'`
 
 - [x] **Step 3: Write the implementation**
 
@@ -858,7 +858,7 @@ git commit -m "feat(radar-audit): add 'radar-audit report' CLI command, gitignor
 
 ### Task 6: Full test suite, lint/type gates, and real-repo validation
 
-**Files:** none created — validation only, per this project's established discipline of confirming plausibility against a real portfolio repo before an increment is considered done.
+**Files:** none created: validation only, per this project's established discipline of confirming plausibility against a real portfolio repo before an increment is considered done.
 
 - [x] **Step 1: Run the full radar-audit test suite**
 

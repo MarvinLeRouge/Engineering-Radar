@@ -12,15 +12,15 @@
 
 **Deviation from spec, verified empirically before writing this plan:** §6 of the spec says `PydepsRunner` invokes `uvx pydeps <target_path> --show-cycles --no-output`. Live testing (this session) showed `--show-cycles` produces **no stdout output at all**, even against a fixture with a genuine import cycle. This plan instead uses `uvx pydeps <target_path> --show-deps --no-output --max-bacon=0`, confirmed to reliably return a structured JSON import graph (`{"module.name": {"imports": [...], "imported_by": [...], ...}}`). Cycle detection runs in the normalizer (Task 10) as a DFS over each module's `imports` adjacency list, not via any tool-reported "cycle" text.
 
-**Known limitation, not solved by this increment (documented, not a placeholder):** `PydepsRunner`'s cycle detection is only accurate when the `target_path` handed to it by the orchestrator (a discovered sub-project root) is itself an importable Python package root (contains `__init__.py`, and its own directory name matches the import style used by the code inside it, e.g. `from app import b` requires `target_path` to literally be the `app/` directory). Real repos where the manifest (`pyproject.toml`) lives one level above the actual package will get a `ToolResult` with a valid but internally-disconnected import graph (pydeps can't resolve the package's own absolute imports), which under-reports cycles rather than crashing. Same class of accepted imprecision as 1.3's "LOC is a weak modularity proxy" — not addressed here, no package-root auto-detection is in scope.
+**Known limitation, not solved by this increment (documented, not a placeholder):** `PydepsRunner`'s cycle detection is only accurate when the `target_path` handed to it by the orchestrator (a discovered sub-project root) is itself an importable Python package root (contains `__init__.py`, and its own directory name matches the import style used by the code inside it, e.g. `from app import b` requires `target_path` to literally be the `app/` directory). Real repos where the manifest (`pyproject.toml`) lives one level above the actual package will get a `ToolResult` with a valid but internally-disconnected import graph (pydeps can't resolve the package's own absolute imports), which under-reports cycles rather than crashing. Same class of accepted imprecision as 1.3's "LOC is a weak modularity proxy": not addressed here, no package-root auto-detection is in scope.
 
 ## Global Constraints
 
 - New Alembic migration for `ToolResult.subproject_path`, chained after `555ffc592f67` (current head).
 - `ToolRunner` protocol changes (`supported_stacks`, `scope`, `timeout_s`) are binding for all five new runners; no runner keeps the old two-field-only shape.
-- Every `npx` invocation pins its package explicitly (`--package=<exact-name> --`), per the dependency-confusion near-miss in `toolchain.md` — never a bare binary name.
-- Tests use real `npx`/`uvx`/`radon` invocations against `tmp_path` git fixtures (`init_git_repo`) — no mocking of subprocess or tool output.
-- `Score` rows this increment writes are `ScoreLevel.CRITERION` only — no `CATEGORY`/`GLOBAL` row is ever created here.
+- Every `npx` invocation pins its package explicitly (`--package=<exact-name> --`), per the dependency-confusion near-miss in `toolchain.md`: never a bare binary name.
+- Tests use real `npx`/`uvx`/`radon` invocations against `tmp_path` git fixtures (`init_git_repo`): no mocking of subprocess or tool output.
+- `Score` rows this increment writes are `ScoreLevel.CRITERION` only: no `CATEGORY`/`GLOBAL` row is ever created here.
 - Provisional numeric thresholds (1.2's 30-line minimum, 1.3's 400-LOC "covered" cutoff) are marked provisional in code comments, not presented as calibrated values.
 - Missing-data handling: a `ToolResult` with a non-zero/`-1` `exit_code` produces no `Finding` and no `Score` for that criterion/sub-project.
 - Multi-sub-project aggregation: worst-band-wins for criterion 1.1 (Archetype A), summed-ratio for criterion 1.3 (Archetype B).
@@ -36,7 +36,7 @@
 
 **Interfaces:**
 - Consumes: nothing new.
-- Produces: `ToolResult.subproject_path: str` — every later task that constructs a `ToolResult` (Task 3's orchestrator, any test fixture) must supply it.
+- Produces: `ToolResult.subproject_path: str`: every later task that constructs a `ToolResult` (Task 3's orchestrator, any test fixture) must supply it.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -140,7 +140,7 @@ def downgrade() -> None:
         batch_op.drop_column("subproject_path")
 ```
 
-Note: no rows exist in any real database yet (increment 2.0 only ran the throwaway example against test fixtures), so `nullable=False` with no default is safe here — no backfill step needed.
+Note: no rows exist in any real database yet (increment 2.0 only ran the throwaway example against test fixtures), so `nullable=False` with no default is safe here: no backfill step needed.
 
 - [ ] **Step 5: Run test to verify it passes**
 
@@ -379,7 +379,7 @@ def test_execute_audit_skips_runner_for_unsupported_stack(db_session, tmp_path):
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_orchestrator.py -v`
-Expected: FAIL — `test_execute_audit_sets_subproject_path_relative_to_repo_root` and the two new tests fail (`TypeError: 'subproject_path' is an invalid keyword argument` from `execute_audit`'s current `ToolResult(...)` call, and the skip/dedup tests fail their assertions since current code has no scope/stack filtering).
+Expected: FAIL: `test_execute_audit_sets_subproject_path_relative_to_repo_root` and the two new tests fail (`TypeError: 'subproject_path' is an invalid keyword argument` from `execute_audit`'s current `ToolResult(...)` call, and the skip/dedup tests fail their assertions since current code has no scope/stack filtering).
 
 - [ ] **Step 3: Implement the orchestrator changes**
 
@@ -478,7 +478,7 @@ git commit -m "feat(radar-audit): filter runners by scope/stack, persist subproj
 
 **Interfaces:**
 - Consumes: `ToolRunner` protocol (Task 2), `RawToolOutput` (existing).
-- Produces: `DesignDocRunner` (`tool_name="design-doc-presence"`, `scope="repo"`, `supported_stacks=frozenset()`), `raw_output` shape `{"found_path": str | None, "non_blank_lines": int}` — Task 11's normalizer reads exactly these two keys.
+- Produces: `DesignDocRunner` (`tool_name="design-doc-presence"`, `scope="repo"`, `supported_stacks=frozenset()`), `raw_output` shape `{"found_path": str | None, "non_blank_lines": int}`: Task 11's normalizer reads exactly these two keys.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -663,7 +663,7 @@ git commit -m "feat(radar-audit): add DesignDocRunner for criterion 1.2"
 
 **Interfaces:**
 - Consumes: `ToolRunner` protocol (Task 2).
-- Produces: `StaticLocRunner` (`tool_name="static-loc-count"`, `scope="subproject"`, `supported_stacks={"javascript", "php"}`), `raw_output` shape `{"files": {"<absolute path>": <non_blank_line_count>}}` — Task 12's normalizer reads the `"files"` key.
+- Produces: `StaticLocRunner` (`tool_name="static-loc-count"`, `scope="subproject"`, `supported_stacks={"javascript", "php"}`), `raw_output` shape `{"files": {"<absolute path>": <non_blank_line_count>}}`: Task 12's normalizer reads the `"files"` key.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -807,7 +807,7 @@ git commit -m "feat(radar-audit): add StaticLocRunner for criterion 1.3"
 
 **Interfaces:**
 - Consumes: `ToolRunner` protocol (Task 2).
-- Produces: `RadonModuleSizeRunner` (`tool_name="radon-raw"`, `scope="subproject"`, `supported_stacks={"python"}`), `raw_output` shape `{"<file path>": {"loc": int, "sloc": int, ...}, ...}` (radon's native `raw --json` schema) — Task 12's normalizer reads each entry's `"sloc"` key.
+- Produces: `RadonModuleSizeRunner` (`tool_name="radon-raw"`, `scope="subproject"`, `supported_stacks={"python"}`), `raw_output` shape `{"<file path>": {"loc": int, "sloc": int, ...}, ...}` (radon's native `raw --json` schema): Task 12's normalizer reads each entry's `"sloc"` key.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -920,12 +920,12 @@ class RadonModuleSizeRunner:
         )
 ```
 
-Note: the `-e` exclude glob patterns are built as **absolute** paths (`f"{target_path}{suffix}"` / `f"{excluded}/*"`) because radon's own exclude matching operates on whatever path form (absolute, since the orchestrator always passes a resolved `target_path`) it was invoked with — confirmed empirically; a relative glob does not match when `radon` is given an absolute target path.
+Note: the `-e` exclude glob patterns are built as **absolute** paths (`f"{target_path}{suffix}"` / `f"{excluded}/*"`) because radon's own exclude matching operates on whatever path form (absolute, since the orchestrator always passes a resolved `target_path`) it was invoked with: confirmed empirically; a relative glob does not match when `radon` is given an absolute target path.
 
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_radon_module_size_runner.py -v`
-Expected: PASS (all 3 tests). Note: this test's first run in a fresh environment needs network access to fetch `radon` into the `uv` tool cache (D7 — not a new risk, see spec §8).
+Expected: PASS (all 3 tests). Note: this test's first run in a fresh environment needs network access to fetch `radon` into the `uv` tool cache (D7: not a new risk, see spec §8).
 
 - [ ] **Step 5: Commit**
 
@@ -945,7 +945,7 @@ git commit -m "feat(radar-audit): add RadonModuleSizeRunner for criterion 1.3"
 
 **Interfaces:**
 - Consumes: `ToolRunner` protocol (Task 2).
-- Produces: `DependencyCruiserRunner` (`tool_name="dependency-cruiser"`, `scope="subproject"`, `supported_stacks={"javascript"}`), `raw_output` shape `{"modules": [{"source": str, "dependencies": [{"resolved": str, "circular": bool, ...}], ...}], ...}` (dependency-cruiser's native JSON schema) — Task 10's normalizer reads `modules[].source` and `modules[].dependencies[].circular`/`.resolved`.
+- Produces: `DependencyCruiserRunner` (`tool_name="dependency-cruiser"`, `scope="subproject"`, `supported_stacks={"javascript"}`), `raw_output` shape `{"modules": [{"source": str, "dependencies": [{"resolved": str, "circular": bool, ...}], ...}], ...}` (dependency-cruiser's native JSON schema): Task 10's normalizer reads `modules[].source` and `modules[].dependencies[].circular`/`.resolved`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1078,7 +1078,7 @@ class DependencyCruiserRunner:
         return "|".join(relative_patterns) if relative_patterns else None
 ```
 
-Note: dependency-cruiser reports module `source`/`resolved` paths **relative to the cruised directory**, regardless of whether `target_path` was given as an absolute or relative path — confirmed empirically. `-x` therefore needs a pattern built relative to `target_path`, not an absolute-path regex (which never matches).
+Note: dependency-cruiser reports module `source`/`resolved` paths **relative to the cruised directory**, regardless of whether `target_path` was given as an absolute or relative path: confirmed empirically. `-x` therefore needs a pattern built relative to `target_path`, not an absolute-path regex (which never matches).
 
 - [ ] **Step 4: Run tests to verify they pass**
 
@@ -1103,7 +1103,7 @@ git commit -m "feat(radar-audit): add DependencyCruiserRunner for criterion 1.1"
 
 **Interfaces:**
 - Consumes: `ToolRunner` protocol (Task 2).
-- Produces: `PydepsRunner` (`tool_name="pydeps"`, `scope="subproject"`, `supported_stacks={"python"}`), `raw_output` shape `{"module.name": {"imports": [str, ...] (may be absent), "imported_by": [str, ...], "bacon": int, "name": str, "path": str | None}, ...}` — Task 10's normalizer reads every entry's `"imports"` key (defaulting to `[]` if absent).
+- Produces: `PydepsRunner` (`tool_name="pydeps"`, `scope="subproject"`, `supported_stacks={"python"}`), `raw_output` shape `{"module.name": {"imports": [str, ...] (may be absent), "imported_by": [str, ...], "bacon": int, "name": str, "path": str | None}, ...}`: Task 10's normalizer reads every entry's `"imports"` key (defaulting to `[]` if absent).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1247,7 +1247,7 @@ git commit -m "feat(radar-audit): add PydepsRunner for criterion 1.1"
 
 **Interfaces:**
 - Consumes: `radar_core.models.audit.Audit`, `radar_core.models.methodology.{Category, Criterion, MethodologyVersion}`, `radar_core.models.scoring.ScoringRun`, `radar_audit.taxonomy.seed.seed_taxonomy` (all existing).
-- Produces: `get_or_create_scoring_run(session, audit, methodology_version) -> ScoringRun`, `get_criterion(session, methodology_version_id, category_name, criterion_name) -> Criterion`, `CriterionNotFoundError(ValueError)` — Tasks 10-12 call both functions.
+- Produces: `get_or_create_scoring_run(session, audit, methodology_version) -> ScoringRun`, `get_criterion(session, methodology_version_id, category_name, criterion_name) -> Criterion`, `CriterionNotFoundError(ValueError)`: Tasks 10-12 call both functions.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -2283,7 +2283,7 @@ def test_full_pipeline_from_audit_to_criterion_scores(db_session, tmp_path):
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli.py tests/test_category_1_end_to_end.py -v`
-Expected: FAIL — `test_dry_run_...` and `test_real_run_...` fail their new assertions (CLI still uses `ExampleGitLogRunner`); `test_category_1_end_to_end.py` fails with `ImportError` since `DEFAULT_RUNNERS` still only contains the example runner and doesn't exercise the real ones.
+Expected: FAIL: `test_dry_run_...` and `test_real_run_...` fail their new assertions (CLI still uses `ExampleGitLogRunner`); `test_category_1_end_to_end.py` fails with `ImportError` since `DEFAULT_RUNNERS` still only contains the example runner and doesn't exercise the real ones.
 
 - [ ] **Step 3: Wire the real runners and delete the example runner**
 
