@@ -4,7 +4,8 @@
 
 # Developer guide
 
-Practical guide for working on the `radar-core` / `radar-audit` codebase.
+Practical guide for working on the `radar-core`, `radar-audit`, `radar-api`
+and `radar-dashboard` codebase.
 For the contribution workflow (branches, commits, pull requests), see
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md). For the overall system design,
 see [`docs/system-design.md`](../system-design.md) and the per-component
@@ -15,19 +16,23 @@ architecture docs in [`docs/architecture/`](../architecture/).
 - Python 3.12+
 - [`uv`](https://docs.astral.sh/uv/) (manages the workspace, dependencies, and virtual environment)
 - A database reachable via a `RADAR_DATABASE_URL` connection string (SQLite is enough for local development)
+- For the dashboard: Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (the `engines` field of `radar-dashboard/package.json`; CI uses 24) and npm, then `npm ci` in `radar-dashboard/` (the pre-commit dashboard hooks need it too)
 
 ## Workspace layout
 
-This repository is a `uv` workspace with two packages:
+This repository is a `uv` workspace with three Python packages:
 
 - `radar-core`: the shared data model (SQLModel) and Alembic migrations
 - `radar-audit`: the tool orchestration and normalization engine, exposed as the `radar-audit` CLI
+- `radar-api`: the FastAPI service the dashboard reads from (see [`radar-api/README.md`](../../radar-api/README.md))
 
 ```bash
 uv sync
 ```
 
-installs both packages and their dependency groups into a single workspace virtual environment.
+installs the three packages and their dependency groups into a single workspace virtual environment.
+
+`radar-dashboard` (Vue 3 + Vite + Pinia) sits next to them as a separate npm project, outside the `uv` workspace.
 
 ## Database and migrations
 
@@ -78,6 +83,16 @@ uv run radar-audit run --all
 
 By default the CLI reads `radar-audit/portfolio.yaml`; pass `--config` to point elsewhere.
 
+`run` only stores the raw tool results. Scoring is a separate step:
+
+```bash
+# normalize the latest audit into scores, findings, recommendations and roadmap items:
+uv run radar-audit score some-repo
+# render the latest scoring run as Markdown, in radar-audit/reports/some-repo/latest.md (git-ignored)
+# by default, or under --output-dir:
+uv run radar-audit report some-repo
+```
+
 An audit runs each repository's own test suite with its dependencies installed (from `uv.lock` for a uv project, in a scratch environment that leaves the repository untouched; otherwise from `requirements*.txt`). Plan for the suite's real duration: pytest may run up to 15 minutes per subproject (Engineering-Radar's own radar-audit suite takes about 10).
 
 ## Tests
@@ -110,7 +125,14 @@ npm run test:e2e
 
 ## Code quality gates
 
-`ruff` (lint + format) and `mypy --strict` run on `radar-core` and `radar-audit` via pre-commit hooks (`.pre-commit-config.yaml`); CI does not duplicate these checks. Install and run the hooks locally before opening a pull request:
+Pre-commit hooks (`.pre-commit-config.yaml`) run on every commit:
+
+- `ruff` (with `--fix`) and `ruff-format` on `radar-core`, `radar-audit` and `radar-api`
+- `mypy` (strict mode, set in the root `pyproject.toml`), one hook per Python package
+- dashboard: `eslint` + `oxlint` (`npm run lint`), `prettier` (`npm run format`) and `vue-tsc` (`npm run type-check`)
+- `changelog`, a `post-commit` hook that regenerates `CHANGELOG.md` with git-cliff
+
+CI repeats the dashboard's lint, format check (`prettier --check`) and `vue-tsc`, but not `ruff` or `mypy`: the Python lint and type checks run only in pre-commit. Install and run the hooks locally before opening a pull request:
 
 ```bash
 uv run pre-commit install
@@ -121,7 +143,12 @@ uv run pre-commit run --all-files
 
 Each normalization increment (one per Quality Framework category, see [`docs/quality-framework.md`](../quality-framework.md)) follows the same shape:
 
-1. Implement a `ToolRunner` in `radar-audit/src/radar_audit/runners/`, invoking the external tool and returning its raw output
-2. Add a normalizer that maps the raw output to a criterion score
-3. Register the runner in `DEFAULT_RUNNERS` in `radar-audit/src/radar_audit/cli.py`
-4. Cover both with tests mirroring the source layout under `radar-audit/tests/`
+1. Implement a `ToolRunner` in `radar-audit/src/radar_audit/runners/`, invoking the external tool and returning its raw output. If the criterion judges application code only, set `excluded_zones` (see `radar-audit/src/radar_audit/scope.py`) so the tool never analyzes tests and migrations
+2. Add a normalizer in `radar-audit/src/radar_audit/normalizers/` that maps the raw output to a criterion score
+3. Register the normalizer in `CRITERION_NORMALIZERS` (`radar-audit/src/radar_audit/normalizers/__init__.py`), keyed by category and criterion name: this is what marks the criterion implemented (`Criterion.implemented` flips on the next `score`)
+4. Register the runner in `DEFAULT_RUNNERS` in `radar-audit/src/radar_audit/cli.py`
+5. Cover both with tests mirroring the source layout under `radar-audit/tests/`
+
+## Dashboard work
+
+For the dashboard's scripts, structure and local dev server, see [`radar-dashboard/README.md`](../../radar-dashboard/README.md).

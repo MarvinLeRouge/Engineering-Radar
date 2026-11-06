@@ -213,7 +213,7 @@ docker compose ps
 - Alloy's own UI (graph of components, errors): `docker compose port alloy 12345` is not published by default; add `ports: ["12345:12345"]` to the alloy service to open http://localhost:12345.
 - Grafana: http://grafana.marvinlerouge.local, then **Explore** with the Loki data source.
 
-Generate some lines: open the dashboard, or run an audit in Docker (`docker compose --profile cli run --rm radar-audit run some-repo` from the Engineering-Radar folder). Logs are only collected from **containers**: an audit run with `uv run radar-audit` in a terminal writes to that terminal, not to Docker, so Loki never sees it.
+Generate some lines by opening the dashboard or calling the API: each request logs a `request_handled` line. Logs are only collected from **containers**: an audit run with `uv run radar-audit` in a terminal writes to that terminal, not to Docker, so Loki never sees it.
 
 ## 4. LogQL queries to try
 

@@ -7,12 +7,54 @@
 Référence opérationnelle minimale. C'est un système local, mono-utilisateur,
 offline-first : il n'y a pas encore de déploiement hébergé.
 
-## Lancer le moteur d'audit
+## Lancer les services
 
-`radar-audit` s'invoque manuellement via une commande CLI ; ce n'est pas
-un service tournant en continu. Voir le
-[guide développeur](guides/developer_guide.fr.md) pour l'installation et
-l'usage.
+`radar-api` et `radar-dashboard` sont des services permanents démarrés
+avec Docker Compose, depuis la racine du dépôt, une fois le `.env` rempli
+à partir de `.env.example` :
+
+```bash
+docker compose up -d
+```
+
+- **Traefik** : les deux services rejoignent le réseau externe
+  `traefik-public`, qui doit exister avant le premier démarrage (il
+  appartient à l'installation Traefik locale, pas à ce projet). Le
+  dashboard répond sur `radar.marvinlerouge.local`, qui route aussi `/api`
+  vers `radar-api` ; l'API répond sur `radar-api.marvinlerouge.local` et
+  sur le port 8000 de l'hôte.
+- **Base partagée** : le volume `radar-data` est un bind mount de
+  `RADAR_PROJECT_PATH` (le dossier du projet sur l'hôte) sur `/data` : les
+  conteneurs lisent et écrivent donc le même `radar.db` qu'un `uv run`
+  local.
+- **Permissions** : les images Python tournent sous l'uid 1000. Le dossier
+  hôte derrière `RADAR_PROJECT_PATH`, et `radar.db` lui-même, doivent être
+  accessibles en écriture à l'uid 1000, sinon toute écriture (verdicts,
+  statuts, notes) échoue.
+- **Clé d'API** : les endpoints PATCH exigent `RADAR_API_KEY` dans
+  l'en-tête `X-API-Key` ; la saisir dans la page Settings du dashboard
+  (conservée pour la session du navigateur).
+
+## Lancer l'audit
+
+`radar-audit` est une CLI lancée à la demande, pas un service permanent.
+La façon supportée de la lancer est en local, avec `uv`, sur le portfolio
+de `~/projets` (`repos_root` dans `radar-audit/portfolio.yaml`) :
+
+```bash
+uv run radar-audit run some-repo   # lance les outils, stocke leurs résultats bruts
+uv run radar-audit score some-repo # transforme le dernier audit en notes, constats et éléments de roadmap
+```
+
+Voir le [guide développeur](guides/developer_guide.fr.md) pour
+l'installation, `--all`, `--dry-run` et la commande `report` (rapport
+Markdown).
+
+L'image Docker du profil `cli` (`docker compose --profile cli run --rm radar-audit`) ne peut
+pas lancer un audit complet aujourd'hui : c'est une image Python slim sans
+les outils externes appelés par de nombreux runners (Node/npx, Composer,
+PHP, Docker...), et `~/projets` y désigne `/home/appuser/projets` alors que
+le portfolio est monté sur `/portfolio`. Utiliser le lancement local.
 
 ## Données
 
@@ -28,7 +70,19 @@ produit.
 
 Il n'y a pas encore d'automatisation de sauvegarde : sauvegarder
 manuellement le fichier de base de données si son contenu compte pour
-vous (par exemple avant d'exécuter une migration destructrice).
+vous, et toujours avant d'appliquer des migrations.
+
+Merger une pull request qui ajoute une migration Alembic ne l'applique pas
+à votre `radar.db`. L'appliquer depuis la racine du dépôt, après une
+sauvegarde :
+
+```bash
+cp radar.db "radar.db.bak-$(date +%Y%m%d%H%M%S)"
+set -a && source .env && set +a
+uv run --package radar-core alembic -c radar-core/alembic.ini upgrade head
+```
+
+Les services ne migrent pas la base au démarrage.
 
 ## Reconstruire les images
 
@@ -60,6 +114,12 @@ Sentry est optionnel et désactivé tant qu'aucun DSN n'est défini (voir
 les erreurs gérées par la CLI ne sont jamais envoyés. Aucune donnée
 utilisateur, en-tête, corps de requête, query string ni variable de pile
 n'est collectée.
+
+Dans Docker, Compose transmet `SENTRY_BACKEND_DSN` à `radar-api` et
+`radar-audit` sous le nom `SENTRY_DSN`, la variable que lit le code. Un
+`uv run radar-audit` local ne remonte vers Sentry que si `SENTRY_DSN`
+lui-même est exporté dans le shell : sourcer le `.env` définit
+`SENTRY_BACKEND_DSN`, pas `SENTRY_DSN`.
 
 ## Logs
 
@@ -97,7 +157,8 @@ RADAR_LOG_FORMAT=json uv run radar-audit run some-repo 2>&1 >/dev/null \
 
 - `CHANGELOG.md` est régénéré principalement par un hook local `post-commit` intégré au framework `pre-commit` (`scripts/changelog-post-commit.sh`, exécute git-cliff et intègre le résultat dans le même commit), si bien que les PR de fonctionnalité contiennent déjà leur propre entrée de changelog
 - En secours, [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml) régénère toujours `CHANGELOG.md` à chaque push sur `main` et ouvre une pull request (ne pousse jamais directement sur `main`), au cas où un commit atterrirait sans passer par le hook local
-- Il n'y a pas encore de pipeline CI exécutant les tests ou les gates `ruff`/`mypy` à distance ; ils s'exécutent localement via des hooks pre-commit (voir [`CONTRIBUTING.md`](i18n/fr/CONTRIBUTING.fr.md)). Suivi dans [`docs/roadmap.md`](roadmap.fr.md)
+- Les hooks pre-commit tournent en local à chaque commit : `ruff`, `ruff-format` et `mypy` par package Python, et les vérifications de lint, de format et de types du dashboard
+- La CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) s'exécute à chaque push et pull request vers `main` : les tests de chaque package avec un seuil de couverture de 80 %, les vérifications de lint, de format et de types du dashboard, et ses tests end-to-end Playwright. Le lint et la vérification de types Python ne tournent que dans pre-commit. Détails dans le [guide développeur](guides/developer_guide.fr.md#pipeline-ci) et [`CONTRIBUTING.md`](i18n/fr/CONTRIBUTING.fr.md)
 
 ## Secrets
 

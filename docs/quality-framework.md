@@ -148,9 +148,9 @@ Per category: objective, archetype, evidence/tool, weight note, confidence basel
 |---|---|---|---|---|---|
 | 2.1 | Linter clean pass rate | B | Ruff / ESLint / PHPStan, findings vs. files scanned | HIGH | Runs against the repo's own config, per `toolchain.md` note on ESLint |
 | 2.2 | Type-checking pass | B | mypy / `tsc --noEmit` / PHPStan | HIGH | |
-| 2.3 | Cyclomatic complexity | A | radon (Python, validated). JS: ESLint `complexity` rule, audit-owned config (candidate). PHP: PHPMD `codesize` ruleset (candidate) | HIGH (Python) / MEDIUM-pending-smoke-test (JS, PHP candidates identified 2026-08-26, not yet validated) | Candidates added to `toolchain.md`, still gap until smoke-tested (§5) |
+| 2.3 | Cyclomatic complexity | A | radon (Python, validated). JS: ESLint `complexity` rule, audit-owned config (candidate). PHP: PHPMD `codesize` ruleset (candidate) | HIGH (Python) / MEDIUM-pending-smoke-test (JS, PHP candidates identified 2026-08-26, not yet validated) | Candidates added to `toolchain.md`, still gap until smoke-tested (§5). Adopted, see the 2026-11-06 amendment (§6). |
 | 2.4 | Pre-commit quality gate | C | See D11/D12 — cross-referenced, not redefined | — | |
-| 2.5 | Code duplication | A | jscpd (candidate, single tool covering Python/JS-TS/PHP/Vue, MIT to confirm, actively developed) | — | Gap until smoke-tested (§5). Rejected: PMD-CPD (needs a JVM runtime, no advantage over jscpd here) |
+| 2.5 | Code duplication | A | jscpd (candidate, single tool covering Python/JS-TS/PHP/Vue, MIT to confirm, actively developed) | - | Gap until smoke-tested (§5). Rejected: PMD-CPD (needs a JVM runtime, no advantage over jscpd here). Adopted, see the 2026-11-06 amendment (§6). |
 
 ### 4.3 Testing & reliability
 
@@ -178,9 +178,9 @@ Per category: objective, archetype, evidence/tool, weight note, confidence basel
 
 | # | Criterion | Archetype | Evidence / tool | Confidence | Notes |
 |---|---|---|---|---|---|
-| 5.1 | Complexity hotspots | A | Shares evidence with 2.3, distinct framing: flags outlier files rather than the repo-wide average | HIGH (Python) / MEDIUM-pending-smoke-test (JS, PHP candidates) | Cross-ref 2.3, not double-weighted separately |
-| 5.2 | Dead code / unused exports | A | knip (JS, validated). Python: vulture (candidate, MIT, actively maintained). PHP: PHPMD `unusedcode` ruleset (candidate) | HIGH (JS) / MEDIUM-pending-smoke-test (Python, PHP candidates identified 2026-08-26, not yet validated) | vulture reports a per-finding confidence (60-100%) worth surfacing as-is; still gap until smoke-tested (§5) |
-| 5.3 | Documentation-in-code (docstring/comment coverage) | B | Python: `docvet` (candidate, MIT, 2026) preferred over `interrogate` (older, maintenance disputed by a competing tool). PHP: `php-censor/phpdoc-checker` (candidate, BSD-2-Clause). JS/TS: no candidate found — existing "coverage" tools there measure TS type coverage, not comment presence | — | Python/PHP: gap until smoke-tested (§5). JS/TS: genuine open gap, no tool identified |
+| 5.1 | Complexity hotspots | A | Shares evidence with 2.3, distinct framing: flags outlier files rather than the repo-wide average | HIGH (Python) / MEDIUM-pending-smoke-test (JS, PHP candidates) | Cross-ref 2.3, not double-weighted separately. Adopted, see the 2026-11-06 amendment (§6). |
+| 5.2 | Dead code / unused exports | A | knip (JS, validated). Python: vulture (candidate, MIT, actively maintained). PHP: PHPMD `unusedcode` ruleset (candidate) | HIGH (JS) / MEDIUM-pending-smoke-test (Python, PHP candidates identified 2026-08-26, not yet validated) | vulture reports a per-finding confidence (60-100%) worth surfacing as-is; still gap until smoke-tested (§5). Adopted, see the 2026-11-06 amendment (§6). |
+| 5.3 | Documentation-in-code (docstring/comment coverage) | B | Python: `docvet` (candidate, MIT, 2026) preferred over `interrogate` (older, maintenance disputed by a competing tool). PHP: `php-censor/phpdoc-checker` (candidate, BSD-2-Clause). JS/TS: no candidate found, existing "coverage" tools there measure TS type coverage, not comment presence | - | Python/PHP: gap until smoke-tested (§5). JS/TS: genuine open gap, no tool identified. Python/PHP adopted, see the 2026-11-06 amendment (§6). |
 
 ### 4.6 Performance — **partially resolved, backend/DB explicitly out of scope**
 
@@ -302,3 +302,11 @@ These gaps, plus the critical-penalty list (§3.2) and the default equal-weighti
 Identifier: **Quality Framework v1.0**, frozen 2026-08-26, per the format and bump rules in `system-design.md`§9. This is the first `MethodologyVersion` record. Any change after this point (weight rebalancing, gap closure once a candidate tool is smoke-tested, taxonomy merge/split) is a version bump per those rules, not a silent edit of this document.
 
 **Amendment 2026-11-04 (FEAT-030)**: §3.6 (audit scope: tests and migrations) was added without bumping the `MethodologyVersion` record. A new version creates new criterion rows, and a finding's fingerprint includes its criterion id, so a bump would silently drop every human verdict (won't fix, false positive) on the next scoring run. The amendment date in §3.6 marks the change instead, until methodology versioning can carry verdicts across versions.
+
+**Amendment 2026-11-06 (adopted candidates)**: the candidate tools for 2.3, 2.5, 5.1, 5.2 and 5.3 are now wired and scored: ESLint `complexity` (audit-owned config) and PHPMD `codesize` for 2.3 and 5.1, jscpd for 2.5, vulture and PHPMD `unusedcode` for 5.2, docvet and phpdoc-checker for 5.3 (see the matching amendment in `toolchain.md`). The §4 rows and §5 gap entries above keep their freeze-time wording. 15.2 is still not scored, and JS/TS docstring coverage is still an open gap.
+
+**Amendment 2026-11-05 (FIX-031)**: every git-ignored path is excluded from every runner, so from every criterion. Generated files, installed dependencies and caches are not the repository's code (phpdoc-checker had analysed PHPStan's cache and `node_modules` on Summit-Stats). Scores can step up on the first run after this change, for the same reason as §3.6.
+
+**Amendment 2026-11-03 (FIX-023)**: a finding a human marks false positive is left out of every score; it is still recorded so the verdict stays visible and reversible (see [ADR 0011](adr/0011-human-verdict-false-positive-feedback.md)). Reverting the verdict makes the finding count again. "Won't fix" findings still count.
+
+**Amendment 2026-11-05 (FEAT-034)**: a criterion with no normalizer in radar-audit is flagged `implemented = false` on each scoring run and reported as "not implemented yet" instead of a score. It enters no category or global average (weights are redistributed among scored criteria, as in §3.3), and it is not treated as missing data (§3.4). A category is implemented when at least one of its criteria is.

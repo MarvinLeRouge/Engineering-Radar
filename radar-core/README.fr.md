@@ -15,6 +15,20 @@ méthodologie encodée par ces tables, et
 [`docs/architecture/radar-core_architecture.md`](../docs/architecture/radar-core_architecture.md)
 pour la conception du schéma.
 
+Ajouts récents à connaître :
+
+- `Criterion.implemented` : synchronisé par `radar-audit` à chaque scoring à
+  partir de son registre de normalizers.
+- `Finding.fingerprint` (reporte le verdict humain, le statut et la note d'un
+  audit à l'autre), `Finding.magnitude`, `Finding.verdict_note`
+  (200 caractères au plus).
+- `ImprovementTask` et `RoadmapItem` : remplis par le scoring de
+  `radar-audit`, qui promeut les findings en tâches.
+- `observability.py` : `configure_logging` (structlog, `RADAR_LOG_LEVEL`,
+  `RADAR_LOG_FORMAT`) et `init_error_tracking` (Sentry, `SENTRY_DSN`,
+  `SENTRY_ENVIRONMENT`), partagés par `radar-api` et `radar-audit`.
+- `Snapshot` existe mais rien ne l'alimente encore.
+
 ## Prérequis
 
 La base de données est SQLite par défaut, adressée via `RADAR_DATABASE_URL`.

@@ -8,8 +8,8 @@
 utilisés par tous les autres composants du système. Il ne contient
 aucune logique d'orchestration propre : il définit les entités SQLModel,
 les helpers de session de base de données, et l'historique des
-migrations Alembic sur lesquels `radar-audit` (et plus tard l'API du
-dashboard) lisent et écrivent.
+migrations Alembic sur lesquels `radar-audit` et `radar-api` lisent et
+écrivent.
 
 ## Responsabilités
 
@@ -17,6 +17,7 @@ dashboard) lisent et écrivent.
 - Posséder l'historique des migrations Alembic (`radar-core/alembic/`)
 - Fournir les helpers `get_engine` / `get_session` (`radar_core.db`), incluant l'application des contraintes de clé étrangère sous SQLite puisque SQLite les désactive par défaut
 - Fournir les enums partagés et le type de colonne `UTCDateTime` (`radar_core.enums`, `radar_core.types`) garantissant des timestamps conscients du fuseau horaire sur toutes les tables
+- Fournir les helpers utiles à la fois en écriture et en lecture : fingerprints des findings, tri des findings par priorité, clés de regroupement des tâches d'amélioration, configuration des logs et de Sentry
 
 `radar-core` ne communique jamais avec des outils externes ni avec le
 système de fichiers d'un dépôt audité ; cette frontière appartient
@@ -44,7 +45,7 @@ ImprovementTask
     └─ RoadmapItem (un-à-un, suit le statut/la preuve de complétion)
     └─ lié à Finding via FindingImprovementTaskLink (plusieurs-à-plusieurs)
 
-Snapshot (état agrégé à un instant donné, table indépendante)
+Snapshot (état agrégé à un instant donné, table indépendante, encore écrite par aucun composant)
 ```
 
 ## Organisation des modules
@@ -54,6 +55,10 @@ radar-core/src/radar_core/
     db.py            helpers engine/session, pragma FK SQLite
     enums.py         types enum partagés
     types.py         type de colonne UTCDateTime
+    observability.py configure_logging (structlog), init_error_tracking (Sentry)
+    finding_fingerprint.py       compute_fingerprint : identité stable d'un finding
+    finding_ordering.py          sort_findings_by_priority et son jumeau SQL PRIORITY_ORDER_BY
+    improvement_task_grouping.py compute_task_group_key
     models/
         repository.py    Repository
         audit.py         Audit, ToolResult
@@ -79,6 +84,20 @@ radar-core/src/radar_core/
   référence la `MethodologyVersion` par rapport à laquelle il a été
   scoré, afin que les poids ou définitions de critères puissent évoluer
   dans le temps sans invalider les scores historiques.
+- **`Criterion.implemented` indique ce que radar-audit sait scorer.** Il
+  est synchronisé à chaque `radar-audit score` depuis le registre des
+  normalizers, pour distinguer "non implémenté" de "score 0".
+- **Les findings ont une identité stable.** `Finding.fingerprint`
+  identifie le même finding d'un ré-audit à l'autre et y reporte son
+  verdict humain, son statut et sa `verdict_note` (200 caractères
+  maximum). `Finding.magnitude` est une taille numérique optionnelle
+  (par exemple une complexité cyclomatique) utilisée dans le tri par
+  priorité.
+- **Les tâches d'amélioration sont mises à jour, pas recréées.** Chaque
+  `ImprovementTask` appartient à un critère et a un `group_key` unique
+  (un hash du critère et du fichier, ou le fingerprint du finding pour
+  les critères à une tâche par finding), si bien qu'un `RoadmapItem`
+  modifié à la main survit à un ré-audit.
 - **Les timestamps sont toujours conscients du fuseau horaire.** Le type
   `UTCDateTime` est utilisé sur chaque colonne datetime et est couvert
   par un test dédié vérifiant le round-trip UTC, pour éviter les bugs

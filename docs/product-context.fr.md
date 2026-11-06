@@ -14,8 +14,10 @@ Engineering Radar est un système d'audit local, offline-first,
 pour un portfolio personnel de dépôts logiciels. Il exécute un ensemble
 fixe de vérifications d'analyse statique et d'outillage sur chaque dépôt,
 normalise les résultats bruts en constats scorés par rapport au Quality
-Framework, et est destiné à alimenter un dashboard et une roadmap
-d'amélioration vivante.
+Framework, et alimente un dashboard local et une roadmap d'amélioration
+vivante. Les constats sont promus automatiquement en éléments de roadmap,
+et les verdicts humains sur les constats (faux positif, won't fix, avec
+une note optionnelle) sont conservés d'un ré-audit à l'autre.
 
 ## Pour qui
 
@@ -37,4 +39,4 @@ ce soit à eux-mêmes.
 
 - Modèle de données (`radar-core`) : stable
 - Moteur d'audit (`radar-audit`) : opérationnel, 8 des 15 catégories du Quality Framework couvertes, voir [`docs/roadmap.md`](roadmap.fr.md)
-- Reporting, API et dashboard : en place, le dashboard est encore en cours d'amélioration
+- Reporting, API et dashboard (onglets rapport, roadmap et tendances) : en place

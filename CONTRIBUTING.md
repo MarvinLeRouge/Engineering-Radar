@@ -10,6 +10,7 @@ This is primarily a personal project. External contributions (bug reports, fixes
 
 - Python 3.12+
 - [`uv`](https://docs.astral.sh/uv/) for dependency management
+- Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (the `engines` field of `radar-dashboard/package.json`; CI uses 24) and npm, for the dashboard
 
 ## Local setup
 
@@ -17,6 +18,7 @@ This is primarily a personal project. External contributions (bug reports, fixes
 git clone https://github.com/MarvinLeRouge/Engineering-Radar.git
 cd Engineering-Radar
 uv sync
+npm ci --prefix radar-dashboard
 uv run pre-commit install
 ```
 
@@ -25,6 +27,10 @@ uv run pre-commit install
 ```bash
 uv run --package radar-core pytest
 uv run --package radar-audit pytest
+uv run --package radar-api pytest
+cd radar-dashboard
+npm run test:coverage   # Vitest unit tests with coverage
+npm run test:e2e        # Playwright end-to-end tests (run `npx playwright install chromium` once first)
 ```
 
 ## Workflow
