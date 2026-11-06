@@ -67,7 +67,7 @@ def is_dirty(repo_path: Path) -> bool:
 def get_or_create_audit(session: Session, repository: Repository) -> Audit:
     """Create an Audit for the repo's current HEAD, reusing an existing one for the same
     clean commit (the DB enforces at most one clean-commit Audit per repo via a unique
-    index — see radar_core/src/radar_core/models/audit.py). Every dirty-checkout run gets
+    index, see radar_core/src/radar_core/models/audit.py). Every dirty-checkout run gets
     its own new Audit row, since dirty state isn't reproducible/comparable across runs.
     """
     repo_path = Path(repository.path)

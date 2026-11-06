@@ -16,7 +16,7 @@ _SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache
 
 class StaticLocRunner:
     """Counts non-blank lines per JS/TS/Vue/PHP source file via a plain filesystem walk
-    (criterion 1.3 — no dedicated LOC tool validated for these stacks, see toolchain.md).
+    (criterion 1.3: no dedicated LOC tool validated for these stacks, see toolchain.md).
     """
 
     tool_name = "static-loc-count"
