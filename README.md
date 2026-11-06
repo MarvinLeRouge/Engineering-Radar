@@ -75,26 +75,29 @@ Repositories are available locally. The system should prioritize local analysis 
 
 An improvement is not considered complete merely because code was changed. The system should be able to re-audit the affected criteria and provide evidence that the expected improvement actually occurred.
 
-## Planned capabilities
+## Capabilities
+
+### Available
 
 - Multi-repository analysis
-- Common engineering quality framework
-- Versioned scoring methodology
+- Versioned quality framework and scoring methodology
 - Evidence-based findings
 - Static analysis and security tooling integration
-- Architecture and maintainability assessment
-- Testing and reliability assessment
-- Security assessment
-- CI/CD and developer-experience assessment
-- Technical debt tracking
-- Cross-project analysis
-- Prioritized improvement backlog
-- Living roadmap
-- Historical quality snapshots
-- Portfolio quality trends
+- Assessment of architecture, code quality, maintainability, testing, security, CI/CD, documentation and observability
+- Prioritized improvement backlog, promoted automatically from findings
+- Living roadmap tab: item status, done evidence and Markdown export
+- Per-repository score and weighted risk history
 - Local dashboard
-- Human verdicts on findings (false positives, won't fix)
-- Self-auditing of Engineering Radar itself
+- Human verdicts on findings (false positive, won't fix), with a short note, kept across re-audits
+- Self-audit of Engineering Radar itself
+
+### Planned
+
+- Performance category (category 6, deferred: it needs the audited repository's own running server)
+- Categories 10 to 15: API / UX / product quality, dependency management, configuration management, data quality, developer experience, technical debt
+- Cross-project analysis
+- Portfolio-level trends and historical snapshots
+- Detection of resolved, new and regressed findings between audits
 
 ## Target environment
 
@@ -128,22 +131,27 @@ The methodology must be established before the first full portfolio assessment.
 
 ## Status
 
-**Phase 4: system implementation, in progress.**
+**System implementation in progress** (roadmap Section 5), with parts of Sections 7 (backlog and roadmap) and 8 (continuous tracking) already delivered.
 
 The data model (`radar-core`) is stable and the audit engine (`radar-audit`) is operational. It currently covers 8 of the 15 Quality Framework categories: 1 (Architecture & design), 2 (Code quality), 3 (Testing & reliability), 4 (Security), 5 (Maintainability), 7 (DevOps / CI-CD), 8 (Documentation) and 9 (Observability / operations). Category 6 (Performance) is deferred, since its only criterion requires the audited repository's own running server; categories 10 to 15 are still to come.
 
-The reporting pipeline is in place: per-criterion results with an explicit scored / not applicable / not yet audited state, prioritized findings, stored recommendations, a minimal API (`radar-api`), a quality-assessment badge, and a local dashboard (`radar-dashboard`), still being refined. Next steps are the full portfolio audit, then the prioritized improvement roadmap and continuous re-audits. See `docs/roadmap.md` for the detailed, up-to-date status.
+It implements 30 criteria across these categories. Each scoring run produces per-criterion results with an explicit scored / not applicable / not yet audited state, prioritized findings, recommendations and roadmap items. A minimal API (`radar-api`) serves them, with a quality-assessment badge, and the local dashboard (`radar-dashboard`) shows the report, the roadmap and the score and risk trends of each repository.
+
+Next steps: the full portfolio audit, ROI indicators for the roadmap, and detection of resolved, new and regressed findings across re-audits. See [`docs/roadmap.md`](docs/roadmap.md) for the detailed, up-to-date status.
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — overview, plus per-component detail (`radar-core`, `radar-audit`)
-- [Quality Framework](docs/quality-framework.md) — versioned methodology: taxonomy, scoring, confidence model
-- [Toolchain](docs/toolchain.md) — analysis tools evaluated and selected per domain
-- [Roadmap](docs/roadmap.md) — phase-by-phase progress
-- [Architecture Decision Records](docs/adr/) — individually recorded decisions
-- [Developer guide](docs/guides/developer_guide.md) — local setup, tests, pre-commit
-- [Product context](docs/product-context.md) — problem framing and intended use
-- [Operations](docs/operations.md) — running the system locally
+- [Architecture](docs/architecture.md): overview, plus per-component detail (`radar-core`, `radar-audit`)
+- [Quality Framework](docs/quality-framework.md): versioned methodology (taxonomy, scoring, confidence model)
+- [Toolchain](docs/toolchain.md): analysis tools evaluated and selected per domain
+- [Roadmap](docs/roadmap.md): section-by-section progress
+- [Architecture Decision Records](docs/adr/): individually recorded decisions
+- [Developer guide](docs/guides/developer_guide.md): local setup, tests, pre-commit, CI
+- [Product context](docs/product-context.md): problem framing and intended use
+- [Operations](docs/operations.md): running the services and the audit, data, logging, error tracking
+- [Log aggregation guide](docs/guides/log-aggregation.md): optional Loki and Grafana setup for the structured logs
+- [Contributing](CONTRIBUTING.md): workflow, branch and commit conventions, code style
+- Package READMEs: [`radar-core`](radar-core/README.md), [`radar-audit`](radar-audit/README.md), [`radar-api`](radar-api/README.md), [`radar-dashboard`](radar-dashboard/README.md)
 
 ## Language
 

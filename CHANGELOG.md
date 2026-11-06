@@ -411,6 +411,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(roadmap)* Add two open questions to discuss for the next session
 - *(toolchain)* Attach the Spectral row to its table (DOCS-008)
 - Note explanatory verdict note as a potential feature (DOCS-009)
+- Refresh the documentation after a month of changes (DOCS-010)
 
 ### 🎨 Styling
 

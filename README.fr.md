@@ -75,26 +75,29 @@ Les repositories étant disponibles localement, le système doit privilégier l'
 
 Une amélioration n'est pas considérée comme terminée simplement parce que du code a été modifié. Le système doit pouvoir réévaluer les critères concernés et fournir des preuves que l'amélioration attendue a effectivement été obtenue.
 
-## Fonctionnalités prévues
+## Fonctionnalités
+
+### Disponibles
 
 - Analyse de plusieurs repositories
-- Référentiel commun de qualité d'ingénierie
-- Méthodologie de notation versionnée
+- Référentiel de qualité et méthodologie de notation versionnés
 - Findings fondés sur des preuves
 - Intégration d'outils d'analyse statique et de sécurité
-- Évaluation de l'architecture et de la maintenabilité
-- Évaluation des tests et de la fiabilité
-- Évaluation de la sécurité
-- Évaluation de la CI/CD et de la developer experience
-- Suivi de la dette technique
-- Analyse transversale des projets
-- Backlog d'améliorations priorisé
-- Roadmap vivante
-- Snapshots historiques de qualité
-- Évolution des indicateurs du portfolio
+- Évaluation de l'architecture, de la qualité du code, de la maintenabilité, des tests, de la sécurité, de la CI/CD, de la documentation et de l'observabilité
+- Backlog d'améliorations priorisé, alimenté automatiquement par les findings
+- Onglet de roadmap vivante : statut des éléments, preuves de réalisation et export Markdown
+- Historique du score et du risque pondéré par repository
 - Dashboard local
-- Verdicts humains sur les findings (faux positifs, won't fix)
+- Verdicts humains sur les findings (faux positif, won't fix), avec une courte note, conservés d'un ré-audit à l'autre
 - Auto-évaluation de Engineering Radar
+
+### Prévues
+
+- Catégorie Performance (catégorie 6, différée : elle nécessite que le dépôt audité soit lancé)
+- Catégories 10 à 15 : qualité API / UX / produit, gestion des dépendances, gestion de la configuration, qualité des données, developer experience, dette technique
+- Analyse transversale des projets
+- Tendances et snapshots historiques à l'échelle du portfolio
+- Détection des findings résolus, nouveaux et en régression entre deux audits
 
 ## Environnement cible
 
@@ -128,22 +131,27 @@ La méthodologie doit être établie avant le premier audit complet du portfolio
 
 ## État du projet
 
-**Phase 4 : implémentation du système, en cours.**
+**Implémentation du système en cours** (Section 5 de la roadmap), avec une partie des Sections 7 (backlog et roadmap) et 8 (suivi continu) déjà livrée.
 
 Le modèle de données (`radar-core`) est stable et le moteur d'audit (`radar-audit`) est opérationnel. Il couvre actuellement 8 des 15 catégories du Quality Framework : 1 (Architecture & conception), 2 (Qualité du code), 3 (Tests & fiabilité), 4 (Sécurité), 5 (Maintenabilité), 7 (DevOps / CI-CD), 8 (Documentation) et 9 (Observabilité / opérations). La catégorie 6 (Performance) est différée, son unique critère nécessitant que le dépôt audité soit lancé ; les catégories 10 à 15 restent à faire.
 
-Le pipeline de reporting est en place : résultats par critère avec un état explicite (noté / non applicable / pas encore audité), findings priorisés, recommandations stockées, API minimale (`radar-api`), badge d'évaluation qualité et dashboard local (`radar-dashboard`), encore en cours d'amélioration. Prochaines étapes : l'audit complet du portfolio, puis la roadmap d'amélioration priorisée et les ré-audits continus. Voir `docs/roadmap.md` pour l'état détaillé et à jour.
+Il implémente 30 critères répartis dans ces catégories. Chaque scoring produit des résultats par critère avec un état explicite (noté / non applicable / pas encore audité), des findings priorisés, des recommandations et des éléments de roadmap. Une API minimale (`radar-api`) les expose, avec un badge d'évaluation qualité, et le dashboard local (`radar-dashboard`) affiche le rapport, la roadmap et l'évolution du score et du risque de chaque repository.
+
+Prochaines étapes : l'audit complet du portfolio, des indicateurs de ROI pour la roadmap, et la détection des findings résolus, nouveaux et en régression d'un ré-audit à l'autre. Voir [`docs/roadmap.fr.md`](docs/roadmap.fr.md) pour l'état détaillé et à jour.
 
 ## Documentation
 
-- [Architecture](docs/architecture.fr.md) — vue d'ensemble, puis détail par composant (`radar-core`, `radar-audit`)
-- [Quality Framework](docs/quality-framework.md) — méthodologie versionnée : taxonomie, notation, modèle de confiance
-- [Toolchain](docs/toolchain.md) — outils d'analyse évalués et sélectionnés par domaine
-- [Roadmap](docs/roadmap.md) — avancement phase par phase
-- [Architecture Decision Records](docs/adr/) — décisions enregistrées individuellement
-- [Guide développeur](docs/guides/developer_guide.md) — installation locale, tests, pre-commit
-- [Contexte produit](docs/product-context.md) — cadrage du problème et usage visé
-- [Opérations](docs/operations.md) — faire tourner le système en local
+- [Architecture](docs/architecture.fr.md) : vue d'ensemble, puis détail par composant (`radar-core`, `radar-audit`)
+- [Quality Framework](docs/quality-framework.fr.md) : méthodologie versionnée (taxonomie, notation, modèle de confiance)
+- [Toolchain](docs/toolchain.fr.md) : outils d'analyse évalués et sélectionnés par domaine
+- [Roadmap](docs/roadmap.fr.md) : avancement section par section
+- [Architecture Decision Records](docs/adr/) : décisions enregistrées individuellement
+- [Guide développeur](docs/guides/developer_guide.fr.md) : installation locale, tests, pre-commit, CI
+- [Contexte produit](docs/product-context.fr.md) : cadrage du problème et usage visé
+- [Opérations](docs/operations.fr.md) : lancer les services et l'audit, données, logs, suivi des erreurs
+- [Guide d'agrégation des logs](docs/guides/log-aggregation.fr.md) : installation optionnelle de Loki et Grafana pour les logs structurés
+- [Contribuer](docs/i18n/fr/CONTRIBUTING.fr.md) : workflow, conventions de branches et de commits, style de code
+- README des packages : [`radar-core`](radar-core/README.fr.md), [`radar-audit`](radar-audit/README.fr.md), [`radar-api`](radar-api/README.fr.md), [`radar-dashboard`](radar-dashboard/README.fr.md)
 
 ## Langues
 

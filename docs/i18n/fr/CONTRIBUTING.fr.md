@@ -10,6 +10,7 @@ Il s'agit principalement d'un projet personnel. Les contributions externes (sign
 
 - Python 3.12+
 - [`uv`](https://docs.astral.sh/uv/) pour la gestion des dépendances
+- Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (le champ `engines` de `radar-dashboard/package.json` ; la CI utilise la 24) et npm, pour le dashboard
 
 ## Installation locale
 
@@ -17,6 +18,7 @@ Il s'agit principalement d'un projet personnel. Les contributions externes (sign
 git clone https://github.com/MarvinLeRouge/Engineering-Radar.git
 cd Engineering-Radar
 uv sync
+npm ci --prefix radar-dashboard
 uv run pre-commit install
 ```
 
@@ -25,6 +27,10 @@ uv run pre-commit install
 ```bash
 uv run --package radar-core pytest
 uv run --package radar-audit pytest
+uv run --package radar-api pytest
+cd radar-dashboard
+npm run test:coverage   # tests unitaires Vitest avec couverture
+npm run test:e2e        # tests end-to-end Playwright (lancer `npx playwright install chromium` une fois avant)
 ```
 
 ## Workflow
@@ -64,7 +70,14 @@ Types : `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `perf`, `ci
 
 ## Style de code
 
-`ruff` (lint + format) et `mypy --strict` tournent sur `radar-core` et `radar-audit` via des hooks pre-commit (`.pre-commit-config.yaml`). Il n'y a pas encore de pipeline CI qui les impose à distance (voir [`docs/roadmap.md`](docs/roadmap.fr.md)) — lancez `uv run pre-commit run --all-files` localement avant d'ouvrir une pull request.
+Les hooks pre-commit (`.pre-commit-config.yaml`) vérifient chaque commit :
+
+- Python (`radar-core`, `radar-audit`, `radar-api`) : `ruff` (lint, avec corrections), `ruff-format` et `mypy --strict` par package.
+- Dashboard (`radar-dashboard`) : `oxlint` et `eslint` (avec corrections), `prettier` et `vue-tsc`, via ses scripts npm. Ils nécessitent d'avoir lancé `npm ci` dans `radar-dashboard/`.
+
+Un hook qui corrige ou reformate des fichiers fait échouer le commit : relire les modifications et commiter à nouveau. Lancer `uv run pre-commit run --all-files` pour tout vérifier d'un coup.
+
+La CI (`.github/workflows/ci.yml`) lance les tests de chaque package avec un seuil de couverture de 80 %, les vérifications de lint, de format et de types du dashboard, et ses tests end-to-end Playwright. Le lint et la vérification de types Python ne tournent que dans les hooks pre-commit.
 
 ## Code de conduite
 
@@ -72,4 +85,4 @@ Ce projet suit un [Code de conduite](CODE_OF_CONDUCT.fr.md). En participant, vou
 
 ## Licence
 
-En contribuant, vous acceptez que vos contributions soient distribuées sous la licence du projet (voir [LICENSE](LICENSE)).
+En contribuant, vous acceptez que vos contributions soient distribuées sous la licence du projet (voir [LICENSE](../../../LICENSE)).

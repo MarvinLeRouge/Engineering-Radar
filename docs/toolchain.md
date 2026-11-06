@@ -4,7 +4,7 @@
 
 # Toolchain — Phase 1
 
-> Status: in progress. Each domain is smoke-tested (ephemeral install, quick run against an in-scope repo, license check) and validated before moving to the next, per the master prompt §9-10.
+> Status: Phase 1 evaluation closed (DOCS-002). The domain sections keep the evaluation as recorded at the time; later changes are dated sections and amendments, see [Adopted candidates](#adopted-candidates-amendment-2026-11-06). Each domain is smoke-tested (ephemeral install, quick run against an in-scope repo, license check) and validated before moving to the next, per the master prompt §9-10.
 > Install strategy: ephemeral only (`uvx`, `npx`/`pnpm dlx`, native `npm`/`pnpm`/`composer` subcommands, or Docker for Go-only binaries with no package-manager wrapper) — see [`docs/adr/0004-toolchain-installation-strategy.md`](adr/0004-toolchain-installation-strategy.md).
 > **npx safety rule (found 2026-08-26, see Architecture/dependencies below):** npm lets a package publish a CLI binary under any name, independent of the package name — `npx <bin-name>` resolves by *bin name*, which is a dependency-confusion vector if an unrelated (or malicious) package happens to claim that same bin name in the registry. Always invoke as `npx --package=<exact-npm-package-name> -- <bin-name>`, never bare `npx <bin-name>`, for every ephemeral npx-based tool in this document, including ones already validated above before this rule was found (`tsc`, whose package is `typescript`, not `tsc`).
 
@@ -64,8 +64,8 @@ Distinct from the Security domain's CVE-based audits above: these tools flag dep
 | pytest | `uvx --with-requirements requirements.txt pytest ...` — works, correctly collects/runs the target repo's own tests | MIT | **Keep**, with a noted distinction below |
 | coverage | `uvx coverage` — works directly | Apache 2.0 | **Keep** |
 | radon (complexity) | `uvx radon cc --json` — works directly, structured cyclomatic-complexity output with rank | MIT | **Keep** |
-| vulture (dead code) | Not evaluated yet — likely `uvx vulture <path>`, same ephemeral pattern as radon | MIT | **Keep as candidate**, not smoke-tested; actively maintained (2026 releases), reports a per-finding confidence (60-100%) worth surfacing as-is rather than smoothed away, per its own documented static-analysis limitation (may miss implicitly-called code) |
-| docvet (docstring coverage, category 5.3 gap) | Not evaluated yet — likely `uvx docvet <path>`, same ephemeral pattern | MIT | **Keep as candidate**, not smoke-tested. Preferred over `interrogate` (older, more established, but a competing 2026 tool explicitly claims it's unmaintained — to verify directly against `econchick/interrogate`'s recent commit activity before trusting either). docvet is newer/less proven but actively released in 2026 and covers presence + staleness (git-diff/blame) rather than presence alone |
+| vulture (dead code) | Not evaluated yet: likely `uvx vulture <path>`, same ephemeral pattern as radon | MIT | **Keep as candidate**, not smoke-tested; actively maintained (2026 releases), reports a per-finding confidence (60-100%) worth surfacing as-is rather than smoothed away, per its own documented static-analysis limitation (may miss implicitly-called code). **Adopted, see the 2026-11-06 amendment.** |
+| docvet (docstring coverage, category 5.3 gap) | Not evaluated yet: likely `uvx docvet <path>`, same ephemeral pattern | MIT | **Keep as candidate**, not smoke-tested. Preferred over `interrogate` (older, more established, but a competing 2026 tool explicitly claims it's unmaintained, to verify directly against `econchick/interrogate`'s recent commit activity before trusting either). docvet is newer/less proven but actively released in 2026 and covers presence + staleness (git-diff/blame) rather than presence alone. **Adopted, see the 2026-11-06 amendment.** |
 
 **Noted distinction:** unlike Ruff/mypy (pure static analysis, need only the target's source), pytest/coverage need the target repo's **own runtime dependencies installed** to actually execute its test suite — that's unavoidable, not a D7 violation. D7 only pins the *audit tool's own* version; the target's dependency versions for running its tests come from its own lockfile/`requirements.txt`, exactly as intended. Ephemeral install of those deps works via `uvx --with-requirements <file> pytest ...`.
 
@@ -89,7 +89,7 @@ Smoke-tested on GeoChallenge-Tracker (Vue 3 + TS, `node_modules` already install
 
 | Tool | Availability | License | Verdict |
 |---|---|---|---|
-| ESLint `complexity` rule, audit-owned config (cyclomatic complexity, category 2.3/5.1/15.2 gap) | Not evaluated yet — same ESLint binary already validated above, invoked with an **audit-authored** config (`--no-eslintrc -c <audit-config>`) enabling only the `complexity` rule, independent of the repo's own `.eslintrc` | MIT (ESLint) | **Keep as candidate**, not smoke-tested. Deliberately not the target's own config here (unlike 2.1/2.2 above) — same "audit-owned, config-independent" logic already applied to radon for Python, so a repo can't inflate its complexity score just by not configuring the rule. Rejected alternative: dedicated npm packages (e.g. `cyclomatic-complexity`) are newer, less established, license not confirmed — reusing the already-validated ESLint binary is lower-risk |
+| ESLint `complexity` rule, audit-owned config (cyclomatic complexity, category 2.3/5.1/15.2 gap) | Not evaluated yet: same ESLint binary already validated above, invoked with an **audit-authored** config (`--no-eslintrc -c <audit-config>`) enabling only the `complexity` rule, independent of the repo's own `.eslintrc` | MIT (ESLint) | **Keep as candidate**, not smoke-tested. Deliberately not the target's own config here (unlike 2.1/2.2 above), same "audit-owned, config-independent" logic already applied to radon for Python, so a repo can't inflate its complexity score just by not configuring the rule. Rejected alternative: dedicated npm packages (e.g. `cyclomatic-complexity`) are newer, less established, license not confirmed, reusing the already-validated ESLint binary is lower-risk. **Adopted, see the 2026-11-06 amendment.** |
 | Spectral (OpenAPI contract linting, category 10.2 gap) | Not evaluated yet — `npx --package=@stoplight/spectral-cli -- spectral lint <spec-file> --format json`, built-in `spectral:oas` ruleset covers OpenAPI v2/v3 | Apache 2.0 | **Keep as candidate**, not smoke-tested. Precondition is lighter than Lighthouse/mdn-http-observatory: needs an already-exported OpenAPI spec file (FastAPI: call `app.openapi()`, needs the target's own runtime deps installed, same precondition class as pytest; Laravel: an artisan generation command via L5-Swagger), not a running server |
 
 **Docstring coverage (category 5.3 gap): no candidate found for JS/TS.** Existing "coverage" tools in this ecosystem (`type-coverage`, `typescript-coverage-report`) measure TypeScript *type* coverage, not JSDoc *comment presence* — a different metric, not a substitute. Stays an open gap, not a pending-smoke-test candidate.
@@ -106,7 +106,7 @@ Smoke-tested on Summit-Stats (Laravel + Pint + Pest, the portfolio's only in-sco
 | Laravel Pint | Native (already a Summit-Stats devDependency) — `vendor/bin/pint --test --format=json` → clean `{"result":"pass"}` | MIT | **Keep** |
 | Pest (built on PHPUnit) | Native (already a Summit-Stats devDependency) — `vendor/bin/pest --testsuite=Unit --log-junit=<file>` → 71/71 passed, standard JUnit XML (no native JSON reporter, same text/XML-parsing situation as `tsc`) | MIT (Pest) / BSD-3-Clause (PHPUnit) | **Keep** |
 | PHPMD (complexity + dead code, category 2.3/5.1/15.2 gap) | Smoke-tested on Summit-Stats (second pilot, 2026-08-27), ephemeral isolated Composer install (own scratch project, see caution below), `vendor/bin/phpmd <path> xml codesize,unusedcode` (the `json` reporter doesn't exist — PHPMD only supports `xml`/`text`/`html`) → 3 real findings: 1 method exactly at the cyclomatic-complexity-10 threshold, 1 class at complexity 54 vs. a 50 threshold, 1 unused local variable. Signal-to-noise was good, no false positives found | BSD | **Keep**, validated |
-| php-censor/phpdoc-checker (docblock coverage, category 5.3 gap) | Not evaluated yet — likely ephemeral isolated Composer install (same pattern as PHPStan), `vendor/bin/phpdoc-checker` with JSON output | BSD-2-Clause | **Keep as candidate**, not smoke-tested. Fork of the original `dancryer/php-docblock-checker`, checks classes/methods for docblock presence |
+| php-censor/phpdoc-checker (docblock coverage, category 5.3 gap) | Not evaluated yet: likely ephemeral isolated Composer install (same pattern as PHPStan), `vendor/bin/phpdoc-checker` with JSON output | BSD-2-Clause | **Keep as candidate**, not smoke-tested. Fork of the original `dancryer/php-docblock-checker`, checks classes/methods for docblock presence. **Adopted, see the 2026-11-06 amendment.** |
 
 **Config decision resolved (Summit-Stats, second pilot, 2026-08-27):** PHPStan at default level 5 with no Laravel-aware extension raised 87 findings on Summit-Stats' `app/`, the bulk being false positives on Eloquent magic properties/methods and Laravel global helpers (`Function config not found`, `Access to an undefined property App\Models\Activity::$id`) that PHPStan can't resolve without Laravel's dynamic model metadata and helper stubs. The fix is `larastan/larastan`, but it **cannot** be installed the same way as plain PHPStan (D7's fully-isolated ephemeral scratch project): doing so fails outright with `Undefined constant "Larastan\Larastan\LARAVEL_VERSION"`, because Larastan resolves the target's Laravel version and loads its stub set by introspecting the app's *own* installed `vendor/`/`composer.lock` — an unrelated scratch Composer project has no such context to introspect, no matter what path is passed to `--paths`.
 
@@ -124,7 +124,7 @@ Unlike the complexity/dead-code gaps above (separate tool per language), a singl
 
 | Tool | Availability | License | Verdict |
 |---|---|---|---|
-| jscpd | Not evaluated yet — likely `npx --package=jscpd -- jscpd <path> --reporters json` (v4, Node-based) or a prebuilt v5 Rust binary (no Node runtime needed) | MIT (to confirm at smoke-test) | **Keep as candidate**, not smoke-tested. Single tool for Python/JS-TS/PHP/Vue (223+ languages via Prism grammars), widely adopted (Microsoft, Salesforce, bundled in super-linter/Codacy), actively developed in 2026 (v5 Rust rewrite, 24-37x faster than v4). Rejected alternative: PMD-CPD also covers Python/PHP/JS, but needs a JVM runtime — an extra dependency class no other tool in this toolchain requires (uvx/npx/composer/Docker only), with no clear advantage over jscpd for this portfolio's languages |
+| jscpd | Not evaluated yet: likely `npx --package=jscpd -- jscpd <path> --reporters json` (v4, Node-based) or a prebuilt v5 Rust binary (no Node runtime needed) | MIT (to confirm at smoke-test) | **Keep as candidate**, not smoke-tested. Single tool for Python/JS-TS/PHP/Vue (223+ languages via Prism grammars), widely adopted (Microsoft, Salesforce, bundled in super-linter/Codacy), actively developed in 2026 (v5 Rust rewrite, 24-37x faster than v4). Rejected alternative: PMD-CPD also covers Python/PHP/JS, but needs a JVM runtime, an extra dependency class no other tool in this toolchain requires (uvx/npx/composer/Docker only), with no clear advantage over jscpd for this portfolio's languages. **Adopted, see the 2026-11-06 amendment.** |
 
 ---
 
@@ -185,6 +185,20 @@ Rule and rationale: `docs/quality-framework.md` §3.6. Each runner declares the 
 | Pint | none | no command-line exclusion; known limit |
 
 Vulture and knip keep analyzing tests so that test-only usage still counts as usage; the dead-code normalizer drops the findings located inside test files. Security tools (gitleaks, Semgrep, dependency audits, Trivy, Hadolint) see the whole repository.
+
+## Adopted candidates (amendment 2026-11-06)
+
+Five tools evaluated above as candidates are now wired runners of radar-audit (`DEFAULT_RUNNERS` in `radar-audit/src/radar_audit/cli.py`, one module per tool in `radar-audit/src/radar_audit/runners/`) and feed scored criteria. Their evaluation rows above are kept as written, with a short "adopted" mark.
+
+| Tool | Runner | Criteria fed |
+|---|---|---|
+| vulture | `vulture_runner.py` | 5.2 dead code (Python) |
+| docvet | `docvet_runner.py` | 5.3 documentation-in-code (Python) |
+| ESLint `complexity`, audit-owned config | `eslint_complexity_runner.py` | 2.3 cyclomatic complexity, 5.1 complexity hotspots (JS/TS) |
+| php-censor/phpdoc-checker | `phpdoc_checker_runner.py` | 5.3 documentation-in-code (PHP) |
+| jscpd | `jscpd_runner.py` | 2.5 code duplication |
+
+PHPMD (validated above) runs its `codesize` and `unusedcode` rulesets in one pass (`phpmd_complexity_runner.py`) and feeds 2.3, 5.1 and 5.2 for PHP. Criterion 15.2 is not scored yet (category 15 not started).
 
 ## Performance (frontend only — category 6, see `docs/quality-framework.md`§4.6)
 
