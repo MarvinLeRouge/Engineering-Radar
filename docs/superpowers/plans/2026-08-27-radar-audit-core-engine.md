@@ -1093,7 +1093,7 @@ categories:
     weight: 6.15
     criteria:
       - name: "Dependency direction / circularity"
-        description: "dependency-cruiser (JS/TS), pydeps (Python) — cycle count. 0 cycles=10, 1-2=6, 3-5=4, >5=2"
+        description: "dependency-cruiser (JS/TS), pydeps (Python): cycle count. 0 cycles=10, 1-2=6, 3-5=4, >5=2"
         weight: 25.0
         scoring_model: FIXED_SCALE
       - name: "Architectural documentation present"
@@ -1221,7 +1221,7 @@ categories:
         weight: 25.0
         scoring_model: FIXED_SCALE
       - name: "Reverse proxy / local-prod environment parity (Traefik)"
-        description: "See docs/system-design.md D11 — reverse proxy / local-prod parity presence"
+        description: "See docs/system-design.md D11: reverse proxy / local-prod parity presence"
         weight: 25.0
         scoring_model: STATUS_4STATE
       - name: "Container build hardening"
@@ -1269,7 +1269,7 @@ categories:
     weight: 6.15
     criteria:
       - name: "Graphic/visual design quality"
-        description: "See docs/system-design.md D13 — narrow LLM-judgment layer on visual design. Also covers accessibility/WCAG as part of its factual layer (docs/quality-framework.md 4.10, criterion 10.3 is not separately scored)."
+        description: "See docs/system-design.md D13: narrow LLM-judgment layer on visual design. Also covers accessibility/WCAG as part of its factual layer (docs/quality-framework.md 4.10, criterion 10.3 is not separately scored)."
         weight: 50.0
         scoring_model: FIXED_SCALE
       - name: "API contract consistency"
@@ -1297,7 +1297,7 @@ categories:
     weight: 6.15
     criteria:
       - name: "Environment separation"
-        description: "Heuristic: distinct .env.example/.env.testing/.env.prod.example or equivalent. Also covers 'secrets never hardcoded' as part of its evidence (docs/quality-framework.md 4.12, criterion 12.1 is not separately scored — cross-referenced from 4.2)."
+        description: "Heuristic: distinct .env.example/.env.testing/.env.prod.example or equivalent. Also covers 'secrets never hardcoded' as part of its evidence (docs/quality-framework.md 4.12, criterion 12.1 is not separately scored, cross-referenced from 4.2)."
         weight: 50.0
         scoring_model: FIXED_SCALE
       - name: "Config validation at startup"
@@ -1584,7 +1584,7 @@ def is_dirty(repo_path: Path) -> bool:
 def get_or_create_audit(session: Session, repository: Repository) -> Audit:
     """Create an Audit for the repo's current HEAD, reusing an existing one for the same
     clean commit (the DB enforces at most one clean-commit Audit per repo via a unique
-    index — see radar_core/src/radar_core/models/audit.py). Every dirty-checkout run gets
+    index, see radar_core/src/radar_core/models/audit.py). Every dirty-checkout run gets
     its own new Audit row, since dirty state isn't reproducible/comparable across runs.
     """
     repo_path = Path(repository.path)

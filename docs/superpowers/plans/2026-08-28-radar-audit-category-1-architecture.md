@@ -746,7 +746,7 @@ _SKIP_DIRNAMES = {"node_modules", "vendor", ".venv", "dist", "build", "__pycache
 
 class StaticLocRunner:
     """Counts non-blank lines per JS/TS/Vue/PHP source file via a plain filesystem walk
-    (criterion 1.3 — no dedicated LOC tool validated for these stacks, see toolchain.md).
+    (criterion 1.3: no dedicated LOC tool validated for these stacks, see toolchain.md).
     """
 
     tool_name = "static-loc-count"
@@ -1192,7 +1192,7 @@ class PydepsRunner:
     runs in the normalizer (a DFS over each module's `imports` adjacency list), not here.
 
     Accuracy depends on `target_path` being an actual importable package root (contains
-    `__init__.py`, its directory name matching the import style used inside it) — see the
+    `__init__.py`, its directory name matching the import style used inside it); see the
     plan's "Known limitation" note.
     """
 

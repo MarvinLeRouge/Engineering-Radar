@@ -2,7 +2,7 @@ import os
 from logging.config import fileConfig
 
 from alembic import context
-from radar_core.models import *  # noqa: F401,F403 — registers all tables on SQLModel.metadata
+from radar_core.models import *  # noqa: F401,F403 - registers all tables on SQLModel.metadata
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 

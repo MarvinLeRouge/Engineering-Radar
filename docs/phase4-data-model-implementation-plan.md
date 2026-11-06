@@ -439,7 +439,7 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 from sqlmodel import SQLModel
 
-from radar_core.models import *  # noqa: F401,F403 — registers all tables on SQLModel.metadata
+from radar_core.models import *  # noqa: F401,F403 - registers all tables on SQLModel.metadata
 
 config = context.config
 

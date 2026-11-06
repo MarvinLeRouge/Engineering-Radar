@@ -19,7 +19,7 @@ class PydepsRunner:
     runs in the normalizer (a DFS over each module's `imports` adjacency list), not here.
 
     Accuracy depends on `target_path` being an actual importable package root (contains
-    `__init__.py`, its directory name matching the import style used inside it) — see the
+    `__init__.py`, its directory name matching the import style used inside it); see the
     plan's "Known limitation" note.
     """
 

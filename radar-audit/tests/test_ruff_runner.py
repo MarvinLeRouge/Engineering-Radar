@@ -25,7 +25,7 @@ def test_reports_violations_on_unused_import(tmp_path):
     assert result.exit_code == 1
     violations = result.raw_output["violations"]
     # Ruff's real default rule set also flags I001 (unsorted imports) on this
-    # fixture alongside F401 — assert F401 is present rather than requiring
+    # fixture alongside F401: assert F401 is present rather than requiring
     # it to be the only violation.
     f401_violations = [v for v in violations if v["code"] == "F401"]
     assert len(f401_violations) == 1

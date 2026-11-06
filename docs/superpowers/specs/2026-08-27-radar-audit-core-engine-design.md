@@ -126,7 +126,7 @@ categories:
     weight: 6.15
     criteria:
       - name: "Dependency direction / circularity"
-        description: "dependency-cruiser (JS/TS), pydeps (Python) — cycle count"
+        description: "dependency-cruiser (JS/TS), pydeps (Python): cycle count"
         scoring_model: FIXED_SCALE
   - name: "Security"
     order: 4
