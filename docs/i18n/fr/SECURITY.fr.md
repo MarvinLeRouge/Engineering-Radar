@@ -20,4 +20,4 @@ Ce projet est maintenu par un développeur unique, les délais de réponse sont 
 
 Dans le périmètre : les packages `radar-core` et `radar-audit`, leurs manifestes de dépendances, et la configuration CI de ce dépôt.
 
-Hors périmètre : les dépôts cibles que `radar-audit` lit et analyse lors d'un audit de portfolio local — les vulnérabilités de ces dépôts doivent être signalées à leurs propres mainteneurs, pas ici.
+Hors périmètre : les dépôts cibles que `radar-audit` lit et analyse lors d'un audit de portfolio local. Les vulnérabilités de ces dépôts doivent être signalées à leurs propres mainteneurs, pas ici.

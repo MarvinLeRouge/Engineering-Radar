@@ -13,7 +13,7 @@ narrow additive `radar-api` endpoints the dashboard needs (evidence candidates f
 workspace) matching Triton's frontend socle: Vue 3 + Vite + TypeScript, Pinia stores for fetched
 data and the session-scoped API key, Vue Router for the three screens, a single `api/client.ts`
 module that is the only place aware of `radar-api`'s request/response shapes. Same-origin `/api/*`
-calls only, proxied by Vite locally and by Traefik in Docker — no CORS handling anywhere in the
+calls only, proxied by Vite locally and by Traefik in Docker: no CORS handling anywhere in the
 app. Score gauges are discrete flat-color bands (plain SVG/CSS, no charting library), reusing
 `radar-api`'s `_badge_color()` thresholds server- and client-side.
 
@@ -30,7 +30,7 @@ package (Python 3.12, SQLModel).
 - Stack pinned to: `vue@^3.5.38`, `vite@^8.0.16`, `typescript@~6.0.0`, `pinia@^3.0.4`,
   `vue-router@^5.3.1`, `vitest@^4.1.9`, `@vue/test-utils@^2.4.11`, `jsdom@^29.1.1` (exact devDeps
   in Task 3).
-- All API access goes through relative `/api/...` paths only — no absolute
+- All API access goes through relative `/api/...` paths only: no absolute
   `radar-api.marvinlerouge.*` URL anywhere in the app, no CORS handling.
 - Score-band thresholds mirror `radar-api`'s `_badge_color()` exactly: `>=8` brightgreen, `>=6`
   green, `>=4` yellow, `>=2` orange, else red.
@@ -40,25 +40,25 @@ package (Python 3.12, SQLModel).
   `PATCH` calls, and is never sent on read requests or persisted to `localStorage`.
 - No charting library. No E2E test suite this increment.
 - `radar-api`'s two additions (Tasks 1-2) stay read-only and reuse the same linked-finding-ids
-  check `update_roadmap_item_status` already runs — no loosening of that validation.
+  check `update_roadmap_item_status` already runs: no loosening of that validation.
 
 ## Review Focus
 
 1. A criterion report with `status: "not_applicable"` and `value: null` must render the NA gray
    band with its reason, not crash or misrender by trying to pick a color band from a null value.
 2. A roadmap status update to any target other than `DONE` must omit `done_evidence_id` from the
-   request body entirely (not send it as `null`) — matching what `radar-api`'s Pydantic schema
+   request body entirely (not send it as `null`): matching what `radar-api`'s Pydantic schema
    expects for a non-DONE transition.
 3. The repository list and detail views must render a distinguishable loading state and error
    state (not a blank page or an unhandled rejection) when a fetch is in flight or fails.
 4. A write request that returns `401` (missing/invalid API key) must surface an inline message
    pointing at Settings, not fail silently or throw an unhandled promise rejection.
 5. The evidence picker must handle an empty evidence-candidates list gracefully (message, not a
-   picker with nothing to select) — a roadmap item can be `IN_PROGRESS` with no evidence yet.
+   picker with nothing to select): a roadmap item can be `IN_PROGRESS` with no evidence yet.
 
 ---
 
-### Task 1: `radar-api` — `GET /roadmap-items/{id}/evidence-candidates`
+### Task 1: `radar-api`: `GET /roadmap-items/{id}/evidence-candidates`
 
 **Files:**
 - Modify: `radar-api/src/radar_api/schemas/roadmap.py`
@@ -71,7 +71,7 @@ package (Python 3.12, SQLModel).
 - Produces: `radar_api.schemas.roadmap.EvidenceCandidate`,
   `radar_api.routers.roadmap._linked_finding_ids(session, improvement_task_id) -> set[int]` (a
   helper extracted from the existing `update_roadmap_item_status` DONE-branch and reused by the
-  new endpoint — the two now share one definition of "which evidence is valid for this roadmap
+  new endpoint: the two now share one definition of "which evidence is valid for this roadmap
   item" instead of the check living only inline in the `PATCH` handler)
 
 **Design note:** `radar-api/src/radar_api/routers/roadmap.py` currently computes
@@ -147,7 +147,7 @@ def test_evidence_candidates_no_api_key_required(client, db_session):
 
 Run: `cd radar-api && uv run pytest tests/test_roadmap.py -v -k evidence_candidates`
 Expected: FAIL (`404 Not Found` on a route that does not exist yet, since FastAPI's default 404
-applies to unmatched routes too — the collection succeeds but every new test fails on the
+applies to unmatched routes too: the collection succeeds but every new test fails on the
 assertion)
 
 - [ ] **Step 3: Add the schema**
@@ -334,7 +334,7 @@ git commit -m "feat(radar-api): add GET /roadmap-items/{id}/evidence-candidates"
 
 ---
 
-### Task 2: `radar-api` — `RoadmapItemRead` gains `title`/`description`
+### Task 2: `radar-api`: `RoadmapItemRead` gains `title`/`description`
 
 **Files:**
 - Modify: `radar-api/src/radar_api/schemas/roadmap.py`
@@ -344,7 +344,7 @@ git commit -m "feat(radar-api): add GET /roadmap-items/{id}/evidence-candidates"
 **Interfaces:**
 - Consumes: `ImprovementTask.title: str`, `ImprovementTask.description: str` (existing
   `radar-core` fields, already joined by `list_roadmap_items`'s query but not currently selected)
-- Produces: `RoadmapItemRead.title: str`, `RoadmapItemRead.description: str` (both required —
+- Produces: `RoadmapItemRead.title: str`, `RoadmapItemRead.description: str` (both required:
   `ImprovementTask.title`/`.description` are non-nullable columns)
 
 **Design note:** `list_roadmap_items`'s query already joins `ImprovementTask` (needed for the
@@ -372,7 +372,7 @@ def test_list_roadmap_items_includes_task_title_and_description(client, db_sessi
 - [ ] **Step 2: Run it, confirm it fails**
 
 Run: `cd radar-api && uv run pytest tests/test_roadmap.py -v -k title_and_description`
-Expected: FAIL (`KeyError`/`AssertionError` — `title` is not a key in the current response body)
+Expected: FAIL (`KeyError`/`AssertionError`: `title` is not a key in the current response body)
 
 - [ ] **Step 3: Extend the schema**
 
@@ -500,7 +500,7 @@ git commit -m "feat(radar-api): add title/description to RoadmapItemRead"
 **Design note:** this mirrors `Triton/frontend`'s toolchain exactly (same dependency versions,
 same config shape), minus `vitest-canvas-mock`/`vite-plugin-vue-devtools`'s `HMR_PORT` override
 (Triton-specific, not needed here) and plus `vue-router` (Triton has no router; this SPA needs
-one). This task's only functional code is a smoke-test placeholder — real screens start at Task 4.
+one). This task's only functional code is a smoke-test placeholder: real screens start at Task 4.
 
 - [ ] **Step 1: Create `package.json`**
 
@@ -845,7 +845,7 @@ git commit -m "chore(radar-dashboard): scaffold Vue 3 + Vite + Vitest project"
 
 ---
 
-### Task 4: `stores/apiKey.ts` — session-scoped API key
+### Task 4: `stores/apiKey.ts`: session-scoped API key
 
 **Files:**
 - Create: `radar-dashboard/src/stores/apiKey.ts`
@@ -950,7 +950,7 @@ git commit -m "feat(radar-dashboard): add session-scoped API key store"
 
 ---
 
-### Task 5: `api/client.ts` — typed fetch wrapper for every `radar-api` endpoint
+### Task 5: `api/client.ts`: typed fetch wrapper for every `radar-api` endpoint
 
 **Files:**
 - Create: `radar-dashboard/src/api/client.ts`
@@ -965,7 +965,7 @@ git commit -m "feat(radar-dashboard): add session-scoped API key store"
   `getRoadmapItemEvidenceCandidates(id)`, `updateFindingVerdict(id, humanVerdict)`,
   `updateFindingStatus(id, status)`, `updateRoadmapItemStatus(id, status, doneEvidenceId?)`
 
-**Design note:** interfaces mirror `radar-api`'s Pydantic response schemas field-for-field —
+**Design note:** interfaces mirror `radar-api`'s Pydantic response schemas field-for-field:
 `RepositoryRead` matches `radar_api.schemas.repositories.RepositoryRead`, `RepositoryReport`/
 `CategoryReport`/`CriterionReport`/`FindingReport` match `radar_api.schemas.report.*`,
 `RoadmapItemRead` matches the Task 2 extended schema, `EvidenceCandidate` matches the Task 1
@@ -1286,7 +1286,7 @@ git commit -m "feat(radar-dashboard): add typed radar-api client"
 
 ---
 
-### Task 6: `stores/repositories.ts` — fetched data and loading/error state
+### Task 6: `stores/repositories.ts`: fetched data and loading/error state
 
 **Files:**
 - Create: `radar-dashboard/src/stores/repositories.ts`
@@ -1495,7 +1495,7 @@ git commit -m "feat(radar-dashboard): add repositories store with loading/error 
 
 ---
 
-### Task 7: `ScoreGauge.vue` — flat-band score gauge
+### Task 7: `ScoreGauge.vue`: flat-band score gauge
 
 **Files:**
 - Create: `radar-dashboard/src/components/ScoreGauge.vue`
@@ -1631,7 +1631,7 @@ const displayValue = computed(() => {
   if (props.status === 'scored' && props.value !== null) {
     return props.value.toFixed(1)
   }
-  return props.status === 'not_applicable' ? 'N/A' : '—'
+  return props.status === 'not_applicable' ? 'N/A' : '-'
 })
 
 const reasonText = computed(() => {
@@ -1710,7 +1710,7 @@ git commit -m "feat(radar-dashboard): add ScoreGauge flat-band component"
 
 ---
 
-### Task 8: `FindingCard.vue` — severity badge, recommendation, verdict/status controls
+### Task 8: `FindingCard.vue`: severity badge, recommendation, verdict/status controls
 
 **Files:**
 - Create: `radar-dashboard/src/components/FindingCard.vue`
@@ -1863,7 +1863,7 @@ const severityClass = computed(() => `finding-card--${props.finding.severity.toL
 
 function handleError(error: unknown): void {
   if (error instanceof ApiError && error.status === 401) {
-    errorMessage.value = 'Missing or invalid API key — set it in Settings.'
+    errorMessage.value = 'Missing or invalid API key: set it in Settings.'
   } else {
     errorMessage.value = error instanceof Error ? error.message : 'update failed'
   }
@@ -1932,7 +1932,7 @@ git commit -m "feat(radar-dashboard): add FindingCard with verdict/status contro
 
 ---
 
-### Task 9: `EvidencePicker.vue` — evidence-candidates picker
+### Task 9: `EvidencePicker.vue`: evidence-candidates picker
 
 **Files:**
 - Create: `radar-dashboard/src/components/EvidencePicker.vue`
@@ -2030,7 +2030,7 @@ Expected: FAIL (`../EvidencePicker.vue` does not exist)
             @change="emitSelection"
           />
           <strong>{{ candidate.evidence_type }}</strong>
-          — {{ preview(candidate.content) }}
+          - {{ preview(candidate.content) }}
         </label>
       </li>
     </ul>
@@ -2086,7 +2086,7 @@ git commit -m "feat(radar-dashboard): add EvidencePicker component"
 
 ---
 
-### Task 10: `RoadmapItemRow.vue` — status transitions and the `DONE` evidence gate
+### Task 10: `RoadmapItemRow.vue`: status transitions and the `DONE` evidence gate
 
 **Files:**
 - Create: `radar-dashboard/src/components/RoadmapItemRow.vue`
@@ -2098,7 +2098,7 @@ git commit -m "feat(radar-dashboard): add EvidencePicker component"
   `RepositoryDetailView.vue`, Task 12)
 
 **Covers Review Focus #2** (omit `done_evidence_id` entirely for non-`DONE` transitions) and
-**Review Focus #4** (401 message) at the component-wiring level — the payload-shape assertion
+**Review Focus #4** (401 message) at the component-wiring level: the payload-shape assertion
 itself lives in Task 5's `client.spec.ts`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -2264,7 +2264,7 @@ async function submit(): Promise<void> {
     emit('updated')
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
-      errorMessage.value = 'Missing or invalid API key — set it in Settings.'
+      errorMessage.value = 'Missing or invalid API key: set it in Settings.'
     } else {
       errorMessage.value = error instanceof Error ? error.message : 'update failed'
     }
@@ -2775,7 +2775,7 @@ git commit -m "feat(radar-dashboard): add SettingsView for the API key"
 **Interfaces:**
 - Consumes: `RepositoryListView.vue` (Task 11), `RepositoryDetailView.vue` (Task 12),
   `SettingsView.vue` (Task 13)
-- Produces: the mounted app — this is the last task before the app is a working whole
+- Produces: the mounted app: this is the last task before the app is a working whole
 
 **Design note:** this replaces Task 3's placeholder `App.vue`/`main.ts` and their smoke test with
 real navigation. The smoke test's assertion ("renders `radar-dashboard`") moves to asserting the
@@ -2831,7 +2831,7 @@ describe('App', () => {
 
 Run: `cd radar-dashboard && npm run test:unit -- --run App`
 Expected: FAIL (`App.vue` has no `<RouterView>`/links yet, mounting without a router plugin
-present previously — this now requires `router/index.ts` and real views)
+present previously: this now requires `router/index.ts` and real views)
 
 - [ ] **Step 3: Create `router/index.ts`**
 
@@ -3070,4 +3070,4 @@ git add -u
 git commit -m "chore(radar-dashboard): apply formatting fixes"
 ```
 
-(Skip this step entirely if Steps 1-4 made no changes — no empty commits.)
+(Skip this step entirely if Steps 1-4 made no changes: no empty commits.)

@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stand up `radar-audit`'s core orchestration engine: discover repos/sub-projects, run a throwaway example `ToolRunner` end-to-end, persist `ToolResult`/`Audit` rows, and seed the full Quality Framework v1.0 taxonomy — with zero category-specific tool integration or normalization logic.
+**Goal:** Stand up `radar-audit`'s core orchestration engine: discover repos/sub-projects, run a throwaway example `ToolRunner` end-to-end, persist `ToolResult`/`Audit` rows, and seed the full Quality Framework v1.0 taxonomy: with zero category-specific tool integration or normalization logic.
 
 **Architecture:** A new uv workspace member (`radar-audit/`) depending on `radar-core` for models/db helpers. A Typer CLI (`radar-audit run`) drives a sequential orchestrator: load config → resolve `Repository` → seed taxonomy → create `Audit` → discover sub-projects → compute worktree exclusions → run registered `ToolRunner`s → persist `ToolResult` per run, continuing past individual tool failures.
 
@@ -13,17 +13,17 @@
 ## Global Constraints
 
 - `radar-audit` is a new uv workspace member (root `pyproject.toml`), depending on `radar-core` via `[tool.uv.sources] radar-core = { workspace = true }`.
-- Python 3.12, ruff + ruff-format + mypy (strict) — same toolchain discipline as `radar-core`; extend `.pre-commit-config.yaml` to cover `radar-audit/` alongside the existing `radar-core/` scope.
+- Python 3.12, ruff + ruff-format + mypy (strict): same toolchain discipline as `radar-core`; extend `.pre-commit-config.yaml` to cover `radar-audit/` alongside the existing `radar-core/` scope.
 - CLI via Typer.
-- `portfolio.yaml` (repo config) and `quality_framework_v1_0.yaml` (taxonomy) are YAML, versioned in git (not gitignored — only `radar.db` is, already covered by the repo's `*.db` gitignore rule).
-- No environment-variable override for `repos_root` — `portfolio.yaml` is the single source of truth for it.
-- `RADAR_DATABASE_URL` must be set explicitly for real CLI runs — no implicit default, consistent with `radar-core`'s existing `db.py`/`env.py` convention (production code must never silently fall back to `radar.db`).
-- `ToolResult.raw_output` stays DB-only (existing JSON column on `radar_core.models.audit.ToolResult`) — no filesystem raw-output tree.
-- Sequential tool execution; a single tool's failure (crash, timeout, non-zero exit) never aborts the whole audit — it is still persisted as a `ToolResult` recording the failure.
-- Tests never depend on real external tools (only `git`, already a portfolio-wide prerequisite) or on `~/projets/`'s actual repos — fixtures are self-contained git repos created in `pytest`'s `tmp_path`.
-- Running the real CLI against a fresh `radar.db` requires `radar-core`'s Alembic migrations to already be applied against the same `RADAR_DATABASE_URL` (`uv run --package radar-core alembic -c radar-core/alembic.ini upgrade head`) — increment 2.0 does not automate this bootstrap step; it is an operational prerequisite, documented in `radar-audit/README.md` (Task 10).
+- `portfolio.yaml` (repo config) and `quality_framework_v1_0.yaml` (taxonomy) are YAML, versioned in git (not gitignored: only `radar.db` is, already covered by the repo's `*.db` gitignore rule).
+- No environment-variable override for `repos_root`: `portfolio.yaml` is the single source of truth for it.
+- `RADAR_DATABASE_URL` must be set explicitly for real CLI runs: no implicit default, consistent with `radar-core`'s existing `db.py`/`env.py` convention (production code must never silently fall back to `radar.db`).
+- `ToolResult.raw_output` stays DB-only (existing JSON column on `radar_core.models.audit.ToolResult`): no filesystem raw-output tree.
+- Sequential tool execution; a single tool's failure (crash, timeout, non-zero exit) never aborts the whole audit: it is still persisted as a `ToolResult` recording the failure.
+- Tests never depend on real external tools (only `git`, already a portfolio-wide prerequisite) or on `~/projets/`'s actual repos: fixtures are self-contained git repos created in `pytest`'s `tmp_path`.
+- Running the real CLI against a fresh `radar.db` requires `radar-core`'s Alembic migrations to already be applied against the same `RADAR_DATABASE_URL` (`uv run --package radar-core alembic -c radar-core/alembic.ini upgrade head`): increment 2.0 does not automate this bootstrap step; it is an operational prerequisite, documented in `radar-audit/README.md` (Task 10).
 - Existing `radar_core` model fields used verbatim (do not rename or reshape): `Repository(id, name, path, created_at)`, `Audit(id, repository_id, commit_sha, is_dirty, audited_at, network_flags)`, `ToolResult(id, audit_id, tool_name, tool_version, command, raw_output, exit_code, ran_at, duration_ms)`, `MethodologyVersion(id, version_label, frozen_at, notes)`, `Category(id, methodology_version_id, name, weight, order)`, `Criterion(id, category_id, name, description, weight, scoring_model)`, `radar_core.enums.ScoringModel` (`FIXED_SCALE`, `STATUS_4STATE`).
-- `Audit` has a unique index on `(repository_id, commit_sha)` where `is_dirty = 0` (`radar_core/src/radar_core/models/audit.py:14-22`) — re-running an audit against the same clean commit must reuse the existing `Audit` row rather than attempt a duplicate insert (Task 8).
+- `Audit` has a unique index on `(repository_id, commit_sha)` where `is_dirty = 0` (`radar_core/src/radar_core/models/audit.py:14-22`): re-running an audit against the same clean commit must reuse the existing `Audit` row rather than attempt a duplicate insert (Task 8).
 
 ---
 
@@ -74,7 +74,7 @@ Each module has one responsibility: `config.py` only parses/validates `portfolio
 - Modify: `.pre-commit-config.yaml`
 - Create: `radar-audit/pyproject.toml`
 - Create: `radar-audit/src/radar_audit/__init__.py`
-- Create: `radar-audit/tests/__init__.py` (empty, makes the tests package importable if needed by later relative imports — matches `radar-core/tests/models/__init__.py` precedent)
+- Create: `radar-audit/tests/__init__.py` (empty, makes the tests package importable if needed by later relative imports: matches `radar-core/tests/models/__init__.py` precedent)
 - Test: `radar-audit/tests/test_package.py`
 
 **Interfaces:**
@@ -94,7 +94,7 @@ def test_package_is_importable():
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_package.py -v`
-Expected: FAIL — `radar-audit` isn't a workspace member yet / `radar_audit` module doesn't exist (command itself will error: no `radar-audit` package to run `uv run` against). This is expected at this point; proceed to scaffolding.
+Expected: FAIL: `radar-audit` isn't a workspace member yet / `radar_audit` module doesn't exist (command itself will error: no `radar-audit` package to run `uv run` against). This is expected at this point; proceed to scaffolding.
 
 - [ ] **Step 3: Create the package files**
 
@@ -181,7 +181,7 @@ repos:
         pass_filenames: false
 ```
 
-Note: `cli.py` doesn't exist yet (Task 10 creates it), so the `[project.scripts]` entry point will not resolve until then — this is fine, it does not block `uv sync` or `pytest` for this task, only `uv run radar-audit` as a console script (unused before Task 10).
+Note: `cli.py` doesn't exist yet (Task 10 creates it), so the `[project.scripts]` entry point will not resolve until then: this is fine, it does not block `uv sync` or `pytest` for this task, only `uv run radar-audit` as a console script (unused before Task 10).
 
 - [ ] **Step 4: Sync the workspace and run the test to verify it passes**
 
@@ -198,7 +198,7 @@ git commit -m "chore(radar-audit): scaffold workspace package"
 
 ---
 
-### Task 2: Test infrastructure — git fixture helper and DB session fixture
+### Task 2: Test infrastructure: git fixture helper and DB session fixture
 
 **Files:**
 - Create: `radar-audit/tests/git_helpers.py`
@@ -206,7 +206,7 @@ git commit -m "chore(radar-audit): scaffold workspace package"
 - Test: `radar-audit/tests/test_conftest_infra.py`
 
 **Interfaces:**
-- Produces: `init_git_repo(path: Path, files: dict[str, str] | None = None) -> None` (git_helpers.py) — used by Tasks 4, 5, 6, 8, 9, 11. `db_session` pytest fixture (conftest.py, function-scoped) — a `sqlmodel.Session` bound to a fresh SQLite file with `radar-core`'s Alembic migrations already applied — used by Tasks 7, 8, 9, 11.
+- Produces: `init_git_repo(path: Path, files: dict[str, str] | None = None) -> None` (git_helpers.py), used by Tasks 4, 5, 6, 8, 9, 11. `db_session` pytest fixture (conftest.py, function-scoped): a `sqlmodel.Session` bound to a fresh SQLite file with `radar-core`'s Alembic migrations already applied, used by Tasks 7, 8, 9, 11.
 - Consumes: `radar_core.db.get_engine` (existing, `radar-core/src/radar_core/db.py`).
 
 - [ ] **Step 1: Write the failing test**
@@ -256,7 +256,7 @@ def test_db_session_fixture_has_migrated_schema(db_session):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_conftest_infra.py -v`
-Expected: FAIL — `tests.git_helpers` doesn't exist, `db_session` fixture isn't defined.
+Expected: FAIL: `tests.git_helpers` doesn't exist, `db_session` fixture isn't defined.
 
 - [ ] **Step 3: Implement the test infrastructure**
 
@@ -351,7 +351,7 @@ git commit -m "test(radar-audit): add git fixture helper and migrated db_session
 
 ---
 
-### Task 3: Config loading — `portfolio.yaml`
+### Task 3: Config loading: `portfolio.yaml`
 
 **Files:**
 - Create: `radar-audit/src/radar_audit/config.py`
@@ -359,7 +359,7 @@ git commit -m "test(radar-audit): add git fixture helper and migrated db_session
 - Test: `radar-audit/tests/test_config.py`
 
 **Interfaces:**
-- Produces: `PortfolioConfigError(ValueError)`, `PortfolioConfig` (frozen dataclass: `repos_root: Path`, `repositories: list[str]`, method `resolve_repo_path(name: str) -> Path`), `load_portfolio_config(path: Path) -> PortfolioConfig` — consumed by Task 8 (`orchestrator.py`) and Task 10 (`cli.py`).
+- Produces: `PortfolioConfigError(ValueError)`, `PortfolioConfig` (frozen dataclass: `repos_root: Path`, `repositories: list[str]`, method `resolve_repo_path(name: str) -> Path`), `load_portfolio_config(path: Path) -> PortfolioConfig`: consumed by Task 8 (`orchestrator.py`) and Task 10 (`cli.py`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -462,7 +462,7 @@ def test_resolve_repo_path_unknown_repo_raises(tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_config.py -v`
-Expected: FAIL — `radar_audit.config` doesn't exist.
+Expected: FAIL: `radar_audit.config` doesn't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -506,7 +506,7 @@ def load_portfolio_config(path: Path) -> PortfolioConfig:
     return PortfolioConfig(repos_root=repos_root, repositories=repositories)
 ```
 
-`radar-audit/portfolio.yaml` (the real, versioned config — D1's confirmed 10-repo scope):
+`radar-audit/portfolio.yaml` (the real, versioned config: D1's confirmed 10-repo scope):
 ```yaml
 repos_root: ~/projets
 repositories:
@@ -544,7 +544,7 @@ git commit -m "feat(radar-audit): add portfolio.yaml loading and validation"
 
 **Interfaces:**
 - Consumes: `tests.git_helpers.init_git_repo` (Task 2).
-- Produces: `SubProject` (frozen dataclass: `path: Path`, `stack: str`), `discover_subprojects(repo_path: Path) -> list[SubProject]` — consumed by Task 8 (`orchestrator.py`).
+- Produces: `SubProject` (frozen dataclass: `path: Path`, `stack: str`), `discover_subprojects(repo_path: Path) -> list[SubProject]`: consumed by Task 8 (`orchestrator.py`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -656,7 +656,7 @@ def test_dot_directories_are_ignored(tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_discovery.py -v`
-Expected: FAIL — `radar_audit.discovery` doesn't exist.
+Expected: FAIL: `radar_audit.discovery` doesn't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -725,7 +725,7 @@ git commit -m "feat(radar-audit): add manifest-based sub-project discovery"
 
 **Interfaces:**
 - Consumes: `tests.git_helpers.init_git_repo` (Task 2).
-- Produces: `compute_exclude_paths(repo_path: Path) -> list[Path]` — consumed by Task 8 (`orchestrator.py`).
+- Produces: `compute_exclude_paths(repo_path: Path) -> list[Path]`: consumed by Task 8 (`orchestrator.py`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -777,7 +777,7 @@ def test_main_repo_path_itself_is_never_in_the_exclude_list(tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_worktree.py -v`
-Expected: FAIL — `radar_audit.worktree` doesn't exist.
+Expected: FAIL: `radar_audit.worktree` doesn't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -832,7 +832,7 @@ git commit -m "feat(radar-audit): compute worktree exclusion list via git worktr
 
 **Interfaces:**
 - Consumes: `tests.git_helpers.init_git_repo` (Task 2).
-- Produces: `RawToolOutput` (frozen dataclass: `command: str`, `raw_output: dict[str, object]`, `exit_code: int`, `duration_ms: int`), `ToolRunner` (`Protocol`: `tool_name: str`, `tool_version: str`, `run(subproject_path: Path, exclude_paths: list[Path]) -> RawToolOutput`), `ExampleGitLogRunner` (implements `ToolRunner`, `tool_name = "example-git-log"`, `tool_version = "1.0.0"`) — consumed by Task 8/9 (`orchestrator.py`), Task 10 (`cli.py`).
+- Produces: `RawToolOutput` (frozen dataclass: `command: str`, `raw_output: dict[str, object]`, `exit_code: int`, `duration_ms: int`), `ToolRunner` (`Protocol`: `tool_name: str`, `tool_version: str`, `run(subproject_path: Path, exclude_paths: list[Path]) -> RawToolOutput`), `ExampleGitLogRunner` (implements `ToolRunner`, `tool_name = "example-git-log"`, `tool_version = "1.0.0"`): consumed by Task 8/9 (`orchestrator.py`), Task 10 (`cli.py`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -875,7 +875,7 @@ def test_example_runner_nonzero_exit_on_non_git_directory(tmp_path):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_runner.py -v`
-Expected: FAIL — `radar_audit.runner` and `radar_audit.runners.example` don't exist.
+Expected: FAIL: `radar_audit.runner` and `radar_audit.runners.example` don't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -953,7 +953,7 @@ git commit -m "feat(radar-audit): add ToolRunner protocol and throwaway example 
 
 ---
 
-### Task 7: Taxonomy — full catalog YAML and idempotent seed function
+### Task 7: Taxonomy: full catalog YAML and idempotent seed function
 
 **Files:**
 - Create: `radar-audit/src/radar_audit/taxonomy/__init__.py`
@@ -964,7 +964,7 @@ git commit -m "feat(radar-audit): add ToolRunner protocol and throwaway example 
 
 **Interfaces:**
 - Consumes: `db_session` fixture (Task 2), `radar_core.enums.ScoringModel`, `radar_core.models.methodology.{MethodologyVersion, Category, Criterion}` (existing).
-- Produces: `TAXONOMY_PATH: Path` (points at `quality_framework_v1_0.yaml`), `seed_taxonomy(session: Session, yaml_path: Path = TAXONOMY_PATH) -> MethodologyVersion` — consumed by Task 9 (`orchestrator.py`).
+- Produces: `TAXONOMY_PATH: Path` (points at `quality_framework_v1_0.yaml`), `seed_taxonomy(session: Session, yaml_path: Path = TAXONOMY_PATH) -> MethodologyVersion`: consumed by Task 9 (`orchestrator.py`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1073,7 +1073,7 @@ def test_seed_taxonomy_default_path_loads_the_real_catalog(db_session):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_taxonomy_seed.py -v`
-Expected: FAIL — `radar_audit.taxonomy.seed` doesn't exist, `quality_framework_v1_0.yaml` doesn't exist.
+Expected: FAIL: `radar_audit.taxonomy.seed` doesn't exist, `quality_framework_v1_0.yaml` doesn't exist.
 
 - [ ] **Step 3: Write the taxonomy YAML and the seed implementation**
 
@@ -1082,7 +1082,7 @@ Expected: FAIL — `radar_audit.taxonomy.seed` doesn't exist, `quality_framework
 ```
 (empty file)
 
-`radar-audit/src/radar_audit/taxonomy/quality_framework_v1_0.yaml` — full transcription of `docs/quality-framework.md`§4 (15 categories, 51 criteria). Category weights: Security and Testing & reliability at `10.0`, the remaining 13 categories at `6.15` each (≈80/13, per `docs/quality-framework.md`§3.1 — the `99.95` sum this produces is the source document's own rounding, not an error). Criterion weights are equal within each category, expressed so they sum to `100.0` per category (`100 / n`, rounded to 2 decimals). `scoring_model` maps archetype A and B to `FIXED_SCALE`, archetype C to `STATUS_4STATE` (`docs/quality-framework.md`§2). Two catalog entries whose Archetype column is `—` (not A/B/C) are cross-referenced evidence only, not independently scored, and are excluded as separate `Criterion` rows: **10.3** (Accessibility/WCAG, folded into 10.1's evidence per its own note "Not a separate criterion, avoids double-counting") and **12.1** (Secrets never hardcoded, folded into 4.2's evidence). Backend/DB performance (§4.6) has no criterion in v1.0 at all — category 6 has exactly one criterion (6.1, Frontend performance).
+`radar-audit/src/radar_audit/taxonomy/quality_framework_v1_0.yaml`: full transcription of `docs/quality-framework.md`§4 (15 categories, 51 criteria). Category weights: Security and Testing & reliability at `10.0`, the remaining 13 categories at `6.15` each (≈80/13, per `docs/quality-framework.md`§3.1; the `99.95` sum this produces is the source document's own rounding, not an error). Criterion weights are equal within each category, expressed so they sum to `100.0` per category (`100 / n`, rounded to 2 decimals). `scoring_model` maps archetype A and B to `FIXED_SCALE`, archetype C to `STATUS_4STATE` (`docs/quality-framework.md`§2). Two catalog entries whose Archetype column is `-` (not A/B/C) are cross-referenced evidence only, not independently scored, and are excluded as separate `Criterion` rows: **10.3** (Accessibility/WCAG, folded into 10.1's evidence per its own note "Not a separate criterion, avoids double-counting") and **12.1** (Secrets never hardcoded, folded into 4.2's evidence). Backend/DB performance (§4.6) has no criterion in v1.0 at all: category 6 has exactly one criterion (6.1, Frontend performance).
 
 ```yaml
 version_label: "Quality Framework v1.0"
@@ -1430,12 +1430,12 @@ git commit -m "feat(radar-audit): seed Quality Framework v1.0 taxonomy idempoten
 ### Task 8: Repository resolution and Audit creation
 
 **Files:**
-- Create: `radar-audit/src/radar_audit/orchestrator.py` (partial — this task's functions only)
-- Test: `radar-audit/tests/test_orchestrator.py` (partial — this task's tests only; Task 9 extends both files)
+- Create: `radar-audit/src/radar_audit/orchestrator.py` (partial: this task's functions only)
+- Test: `radar-audit/tests/test_orchestrator.py` (partial: this task's tests only; Task 9 extends both files)
 
 **Interfaces:**
 - Consumes: `db_session` fixture, `tests.git_helpers.init_git_repo` (Task 2); `radar_core.models.repository.Repository`, `radar_core.models.audit.Audit` (existing).
-- Produces: `resolve_repository(session: Session, repo_path: Path, repo_name: str) -> Repository`, `get_commit_sha(repo_path: Path) -> str`, `is_dirty(repo_path: Path) -> bool`, `get_or_create_audit(session: Session, repository: Repository) -> Audit` — consumed by Task 9 (same file, `execute_audit`).
+- Produces: `resolve_repository(session: Session, repo_path: Path, repo_name: str) -> Repository`, `get_commit_sha(repo_path: Path) -> str`, `is_dirty(repo_path: Path) -> bool`, `get_or_create_audit(session: Session, repository: Repository) -> Audit`: consumed by Task 9 (same file, `execute_audit`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1533,7 +1533,7 @@ def test_get_or_create_audit_creates_a_new_row_per_dirty_run(db_session, tmp_pat
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_orchestrator.py -v`
-Expected: FAIL — `radar_audit.orchestrator` doesn't exist.
+Expected: FAIL: `radar_audit.orchestrator` doesn't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -1623,7 +1623,7 @@ git commit -m "feat(radar-audit): resolve Repository and create/reuse Audit rows
 
 ---
 
-### Task 9: Full orchestration flow — plan_audit and execute_audit
+### Task 9: Full orchestration flow: plan_audit and execute_audit
 
 **Files:**
 - Modify: `radar-audit/src/radar_audit/orchestrator.py`
@@ -1631,7 +1631,7 @@ git commit -m "feat(radar-audit): resolve Repository and create/reuse Audit rows
 
 **Interfaces:**
 - Consumes: `PortfolioConfig` (Task 3), `discover_subprojects`/`SubProject` (Task 4), `compute_exclude_paths` (Task 5), `RawToolOutput`/`ToolRunner` (Task 6), `seed_taxonomy` (Task 7), `resolve_repository`/`get_or_create_audit` (Task 8, same file).
-- Produces: `AuditPlan` (frozen dataclass: `repository_name: str`, `repository_path: Path`, `subprojects: list[SubProject]`, `exclude_paths: list[Path]`), `plan_audit(config: PortfolioConfig, repo_name: str) -> AuditPlan`, `execute_audit(session: Session, config: PortfolioConfig, repo_name: str, runners: list[ToolRunner]) -> Audit` — consumed by Task 10 (`cli.py`), Task 11 (end-to-end test).
+- Produces: `AuditPlan` (frozen dataclass: `repository_name: str`, `repository_path: Path`, `subprojects: list[SubProject]`, `exclude_paths: list[Path]`), `plan_audit(config: PortfolioConfig, repo_name: str) -> AuditPlan`, `execute_audit(session: Session, config: PortfolioConfig, repo_name: str, runners: list[ToolRunner]) -> Audit`: consumed by Task 10 (`cli.py`), Task 11 (end-to-end test).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1727,12 +1727,12 @@ def test_execute_audit_seeds_the_taxonomy(db_session, tmp_path):
     assert version is not None
 ```
 
-(This extends the existing test file — keep the imports already present at the top, e.g. `init_git_repo`, `select`, alongside these additions.)
+(This extends the existing test file: keep the imports already present at the top, e.g. `init_git_repo`, `select`, alongside these additions.)
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_orchestrator.py -v`
-Expected: FAIL — `AuditPlan`, `plan_audit`, `execute_audit` don't exist yet.
+Expected: FAIL: `AuditPlan`, `plan_audit`, `execute_audit` don't exist yet.
 
 - [ ] **Step 3: Extend the implementation**
 
@@ -1803,7 +1803,7 @@ def execute_audit(
 def _run_tool_safely(runner: ToolRunner, subproject_path: Path, exclude_paths: list[Path]) -> RawToolOutput:
     try:
         return runner.run(subproject_path, exclude_paths)
-    except Exception as exc:  # noqa: BLE001 — a tool crash must persist as evidence, never abort the audit
+    except Exception as exc:  # noqa: BLE001 - a tool crash must persist as evidence, never abort the audit
         return RawToolOutput(
             command=f"{runner.tool_name} (crashed)",
             raw_output={"error": str(exc)},
@@ -1914,7 +1914,7 @@ def test_real_run_persists_audit_and_tool_results(tmp_path, monkeypatch):
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd radar-audit && uv run pytest tests/test_cli.py -v`
-Expected: FAIL — `radar_audit.cli` doesn't exist.
+Expected: FAIL: `radar_audit.cli` doesn't exist.
 
 - [ ] **Step 3: Write the implementation**
 
@@ -2039,7 +2039,7 @@ git commit -m "feat(radar-audit): add Typer CLI with run and --dry-run"
 
 ### Task 11: Full-suite verification and lint/type-check pass
 
-**Files:** none created — this task verifies Tasks 1-10 together.
+**Files:** none created: this task verifies Tasks 1-10 together.
 
 **Interfaces:** none new.
 
@@ -2072,12 +2072,12 @@ uv run --package radar-audit radar-audit run Engineering-Radar --dry-run
 ```
 Expected: prints `Engineering-Radar` as the repository, at least two sub-projects (root `python` from the workspace `pyproject.toml`, plus `radar-core` and `radar-audit` as first-level `python` sub-projects), and `would run: example-git-log` for each. No `radar.db` file is created by this command.
 
-This step has no code to commit — it is a manual verification gate confirming the full increment 2.0 pipeline behaves as designed against a real (not fixture) repository. If it fails, return to the relevant earlier task and fix the underlying module; do not patch behavior only in this step.
+This step has no code to commit: it is a manual verification gate confirming the full increment 2.0 pipeline behaves as designed against a real (not fixture) repository. If it fails, return to the relevant earlier task and fix the underlying module; do not patch behavior only in this step.
 
 ---
 
 ## Self-Review Notes
 
-- **Spec coverage:** every §-numbered element of the design spec has a task: package layout (Task 1), CLI (Task 10), 7-step orchestration flow (Tasks 4, 5, 8, 9), `portfolio.yaml` (Task 3), `ToolResult` storage decision (unchanged, no task needed — verified by Task 9's assertions using the existing `radar_core` model), execution/error-handling model (Task 9), discovery heuristic (Task 4), taxonomy encoding (Task 7), testing strategy (Task 2 infra, used throughout).
-- **Ambiguity resolved during planning, not left open:** the spec didn't cover the `Audit` unique-index-on-clean-commit interaction with re-runs; Task 8 resolves it (reuse existing clean-commit `Audit`, always create a new row for dirty checkouts) and states the reasoning in a docstring. The spec also didn't specify which quality-framework.md catalog rows are cross-referenced-only (archetype `—`); Task 7 makes the exact two exclusions (10.3, 12.1) explicit with the source document's own justification quoted.
+- **Spec coverage:** every §-numbered element of the design spec has a task: package layout (Task 1), CLI (Task 10), 7-step orchestration flow (Tasks 4, 5, 8, 9), `portfolio.yaml` (Task 3), `ToolResult` storage decision (unchanged, no task needed: verified by Task 9's assertions using the existing `radar_core` model), execution/error-handling model (Task 9), discovery heuristic (Task 4), taxonomy encoding (Task 7), testing strategy (Task 2 infra, used throughout).
+- **Ambiguity resolved during planning, not left open:** the spec didn't cover the `Audit` unique-index-on-clean-commit interaction with re-runs; Task 8 resolves it (reuse existing clean-commit `Audit`, always create a new row for dirty checkouts) and states the reasoning in a docstring. The spec also didn't specify which quality-framework.md catalog rows are cross-referenced-only (archetype `-`); Task 7 makes the exact two exclusions (10.3, 12.1) explicit with the source document's own justification quoted.
 - **Type consistency checked:** `ToolRunner.run` signature (`subproject_path: Path, exclude_paths: list[Path]) -> RawToolOutput`) is identical in `runner.py` (Task 6), `runners/example.py` (Task 6), and every call site in `orchestrator.py` (Task 9). `PortfolioConfig` field names (`repos_root`, `repositories`) are identical between Task 3's definition and every later task that constructs or consumes it (Tasks 9, 10).

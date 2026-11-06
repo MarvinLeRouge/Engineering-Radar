@@ -8,18 +8,18 @@
 
 **Tech Stack:** Python 3.12, `uv` (workspace + dependency management), SQLModel, Alembic, SQLite, pytest, ruff, mypy.
 
-**Spec:** `docs/phase4-data-model-design.md` — this plan implements it in full; executors should read both.
+**Spec:** `docs/phase4-data-model-design.md`: this plan implements it in full; executors should read both.
 
 ## Global Constraints
 
-- Auto-increment integer primary keys everywhere (no UUIDs) — spec decision log #2.
-- All enum-valued fields use Python `Enum` + SQLAlchemy `Enum` type, never free-form strings — spec decision log #3.
-- `Audit`/`ScoringRun` are separate entities, never merged — spec decision log #4.
-- `Audit.commit_sha` + `Audit.is_dirty`, with a partial unique index `(repository_id, commit_sha) WHERE is_dirty = 0` — spec decision log #6.
-- `ImprovementTask`/`RoadmapItem` are separate tables, optional 1—1 — spec decision log #7.
-- Tests build schema via `alembic upgrade head` against a real temporary file per test, never `SQLModel.metadata.create_all()` — spec decision log #8.
-- `db.py`'s engine/session factory takes the database URL as an explicit required parameter, never an implicit default — spec Testing section.
-- Root `pyproject.toml` declares the `uv` workspace; each package keeps its own `pyproject.toml` — spec decision log #9.
+- Auto-increment integer primary keys everywhere (no UUIDs): spec decision log #2.
+- All enum-valued fields use Python `Enum` + SQLAlchemy `Enum` type, never free-form strings: spec decision log #3.
+- `Audit`/`ScoringRun` are separate entities, never merged: spec decision log #4.
+- `Audit.commit_sha` + `Audit.is_dirty`, with a partial unique index `(repository_id, commit_sha) WHERE is_dirty = 0`: spec decision log #6.
+- `ImprovementTask`/`RoadmapItem` are separate tables, optional 1-1: spec decision log #7.
+- Tests build schema via `alembic upgrade head` against a real temporary file per test, never `SQLModel.metadata.create_all()`: spec decision log #8.
+- `db.py`'s engine/session factory takes the database URL as an explicit required parameter, never an implicit default: spec Testing section.
+- Root `pyproject.toml` declares the `uv` workspace; each package keeps its own `pyproject.toml`: spec decision log #9.
 - UTC-aware `datetime` everywhere (`datetime.now(timezone.utc)` as `default_factory`), never naive.
 - Every SQLite-targeting Alembic migration must be batch-mode safe (`render_as_batch=True`), since SQLite cannot `ALTER TABLE` most changes directly.
 
@@ -88,7 +88,7 @@ packages = ["src/radar_core"]
 # radar-core/src/radar_core/__init__.py
 ```
 
-(Empty file — just marks the package.)
+(Empty file: just marks the package.)
 
 - [ ] **Step 4: Update `.gitignore`**
 
@@ -102,7 +102,7 @@ __pycache__/
 .mypy_cache/
 ```
 
-(`.ruff_cache/` is already implicitly untracked at the root — verify it's covered; if not, add it too.)
+(`.ruff_cache/` is already implicitly untracked at the root; verify it's covered; if not, add it too.)
 
 - [ ] **Step 5: Sync the workspace and verify the package imports**
 
@@ -128,7 +128,7 @@ git commit -m "chore(radar-core): scaffold uv workspace and empty package"
 - Test: `radar-core/tests/test_enums.py`
 
 **Interfaces:**
-- Produces: `ScoringModel`, `ScoreLevel`, `Confidence`, `FindingSeverity`, `FindingStatus`, `HumanVerdict`, `EvidenceType`, `RoadmapStatus` — all `str, Enum` subclasses, consumed by every model task from Task 6 onward.
+- Produces: `ScoringModel`, `ScoreLevel`, `Confidence`, `FindingSeverity`, `FindingStatus`, `HumanVerdict`, `EvidenceType`, `RoadmapStatus`, all `str, Enum` subclasses, consumed by every model task from Task 6 onward.
 
 - [ ] **Step 1: Write failing test**
 
@@ -275,7 +275,7 @@ git commit -m "feat(radar-core): add shared enums"
 - Test: `radar-core/tests/test_db.py`
 
 **Interfaces:**
-- Produces: `get_engine(database_url: str) -> Engine`, `get_session(engine: Engine) -> Session` — consumed by Task 4's `conftest.py` fixture and, later, by `radar-audit`/`radar-api`.
+- Produces: `get_engine(database_url: str) -> Engine`, `get_session(engine: Engine) -> Session`, consumed by Task 4's `conftest.py` fixture and, later, by `radar-audit`/`radar-api`.
 
 - [ ] **Step 1: Write failing test**
 
@@ -349,12 +349,12 @@ git commit -m "feat(radar-core): add explicit-url engine/session factory"
 - Create: `radar-core/alembic.ini`
 - Create: `radar-core/alembic/env.py`
 - Create: `radar-core/alembic/script.py.mako`
-- Create: `radar-core/src/radar_core/models/__init__.py` (empty for now — populated model-by-model from Task 5 onward)
+- Create: `radar-core/src/radar_core/models/__init__.py` (empty for now, populated model-by-model from Task 5 onward)
 - Create: `radar-core/alembic/versions/0001_initial_empty_schema.py` (generated)
 
 **Interfaces:**
 - Consumes: nothing yet (no models exist).
-- Produces: a working `alembic upgrade head` against any SQLite file, driven by the `RADAR_DATABASE_URL` environment variable — consumed by Task 4's test fixture and every model task's migration step from here on.
+- Produces: a working `alembic upgrade head` against any SQLite file, driven by the `RADAR_DATABASE_URL` environment variable, consumed by Task 4's test fixture and every model task's migration step from here on.
 
 - [ ] **Step 1: Create `radar-core/alembic.ini`**
 
@@ -397,7 +397,7 @@ formatter = generic
 format = %(levelname)-5.5s [%(name)s] %(message)s
 ```
 
-Note the deliberately blank `sqlalchemy.url` — `env.py` (below) refuses to fall back to any default and requires `RADAR_DATABASE_URL` to be set, so this file can never silently point at a real database.
+Note the deliberately blank `sqlalchemy.url`: `env.py` (below) refuses to fall back to any default and requires `RADAR_DATABASE_URL` to be set, so this file can never silently point at a real database.
 
 - [ ] **Step 2: Create `radar-core/alembic/script.py.mako`**
 
@@ -501,7 +501,7 @@ else:
 # radar-core/src/radar_core/models/__init__.py
 ```
 
-(Empty for now — Task 5 onward adds `from radar_core.models.X import ...` lines here as each model module is created.)
+(Empty for now: Task 5 onward adds `from radar_core.models.X import ...` lines here as each model module is created.)
 
 - [ ] **Step 5: Generate and verify the initial (empty) migration**
 
@@ -642,7 +642,7 @@ git commit -m "test(radar-core): add migration-backed db_session fixture with is
 - Test: `radar-core/tests/models/test_repository.py`
 
 **Interfaces:**
-- Produces: `Repository` (fields: `id`, `name`, `path`, `created_at`) — consumed by Task 7 (`Audit.repository_id`).
+- Produces: `Repository` (fields: `id`, `name`, `path`, `created_at`), consumed by Task 7 (`Audit.repository_id`).
 
 - [ ] **Step 1: Write failing test**
 
@@ -741,7 +741,7 @@ git commit -m "feat(radar-core): add Repository model"
 
 **Interfaces:**
 - Consumes: `ScoringModel` (Task 1).
-- Produces: `MethodologyVersion`, `Category`, `Criterion` — consumed by Task 8 (`ScoringRun.methodology_version_id`, `Score.category_id`/`criterion_id`) and Task 9 (`Finding.criterion_id`).
+- Produces: `MethodologyVersion`, `Category`, `Criterion`, consumed by Task 8 (`ScoringRun.methodology_version_id`, `Score.category_id`/`criterion_id`) and Task 9 (`Finding.criterion_id`).
 
 - [ ] **Step 1: Write failing test**
 
@@ -859,7 +859,7 @@ uv run --package radar-core alembic -c radar-core/alembic.ini upgrade head
 unset RADAR_DATABASE_URL
 ```
 
-Note: `upgrade head` is run once *before* autogenerate too, since autogenerate diffs against a DB that already has the `repository` table's migration applied — running against a completely empty file would make it try to re-create `repository` as well.
+Note: `upgrade head` is run once *before* autogenerate too, since autogenerate diffs against a DB that already has the `repository` table's migration applied; running against a completely empty file would make it try to re-create `repository` as well.
 
 - [ ] **Step 5: Run test, verify it passes**
 
@@ -885,7 +885,7 @@ git commit -m "feat(radar-core): add MethodologyVersion, Category, Criterion mod
 
 **Interfaces:**
 - Consumes: `Repository` (Task 5).
-- Produces: `Audit` (fields: `id`, `repository_id`, `commit_sha`, `is_dirty`, `audited_at`, `network_flags`), `ToolResult` — consumed by Task 8 (`ScoringRun.audit_id`) and Task 9 (`Finding.tool_result_id`).
+- Produces: `Audit` (fields: `id`, `repository_id`, `commit_sha`, `is_dirty`, `audited_at`, `network_flags`), `ToolResult`, consumed by Task 8 (`ScoringRun.audit_id`) and Task 9 (`Finding.tool_result_id`).
 
 - [ ] **Step 1: Write failing test**
 
@@ -1001,7 +1001,7 @@ class ToolResult(SQLModel, table=True):
     duration_ms: int
 ```
 
-Note: the SQLite partial unique index (`sqlite_where`) is what makes `is_dirty=True` audits exempt from the "one clean audit per commit" rule — verified explicitly by `test_multiple_dirty_audits_on_same_commit_are_allowed` above.
+Note: the SQLite partial unique index (`sqlite_where`) is what makes `is_dirty=True` audits exempt from the "one clean audit per commit" rule, verified explicitly by `test_multiple_dirty_audits_on_same_commit_are_allowed` above.
 
 Register it:
 
@@ -1024,7 +1024,7 @@ uv run --package radar-core alembic -c radar-core/alembic.ini upgrade head
 unset RADAR_DATABASE_URL
 ```
 
-Inspect the generated migration file: confirm the partial unique index is included with its `sqlite_where` clause — Alembic's autogenerate does pick up dialect-specific `Index` kwargs, but verify manually since this is the plan's single most failure-prone step. If the `sqlite_where` clause is missing from the generated `op.create_index(...)` call, add it by hand: `sqlite_where=sa.text("is_dirty = 0")`.
+Inspect the generated migration file: confirm the partial unique index is included with its `sqlite_where` clause. Alembic's autogenerate does pick up dialect-specific `Index` kwargs, but verify manually since this is the plan's single most failure-prone step. If the `sqlite_where` clause is missing from the generated `op.create_index(...)` call, add it by hand: `sqlite_where=sa.text("is_dirty = 0")`.
 
 - [ ] **Step 5: Run test, verify it passes**
 
@@ -1049,7 +1049,7 @@ git commit -m "feat(radar-core): add Audit, ToolResult models with clean-commit 
 
 **Interfaces:**
 - Consumes: `Audit` (Task 7), `MethodologyVersion`/`Category`/`Criterion` (Task 6), `Confidence`/`ScoreLevel` (Task 1).
-- Produces: `ScoringRun`, `Score` — consumed by Task 9 (`Finding.scoring_run_id`, `Evidence.score_id`).
+- Produces: `ScoringRun`, `Score`, consumed by Task 9 (`Finding.scoring_run_id`, `Evidence.score_id`).
 
 - [ ] **Step 1: Write failing test**
 
@@ -1250,7 +1250,7 @@ git commit -m "feat(radar-core): add ScoringRun, Score models"
 
 **Interfaces:**
 - Consumes: `ScoringRun`/`Score` (Task 8), `Criterion` (Task 6), `ToolResult` (Task 7), `FindingSeverity`/`FindingStatus`/`HumanVerdict`/`Confidence`/`EvidenceType` (Task 1).
-- Produces: `Finding`, `Evidence`, `Recommendation` — `Finding.id` consumed by Task 10 (`FindingImprovementTaskLink`).
+- Produces: `Finding`, `Evidence`, `Recommendation`; `Finding.id` consumed by Task 10 (`FindingImprovementTaskLink`).
 
 - [ ] **Step 1: Write failing test**
 
@@ -1368,7 +1368,7 @@ def test_evidence_requires_exactly_one_parent(db_session):
             content="ok",
         )
     )
-    db_session.commit()  # exactly one parent set — must succeed
+    db_session.commit()  # exactly one parent set, must succeed
 
     db_session.add(
         Evidence(
@@ -1485,7 +1485,7 @@ uv run --package radar-core alembic -c radar-core/alembic.ini upgrade head
 unset RADAR_DATABASE_URL
 ```
 
-Inspect the generated migration: confirm the `CheckConstraint` on `evidence` is included in `op.create_table(...)`. Alembic autogenerate does not always detect `CHECK` constraints depending on version — if missing, add `sa.CheckConstraint("(finding_id IS NOT NULL) + (score_id IS NOT NULL) = 1", name="ck_evidence_exactly_one_parent")` to the table's constraint list by hand.
+Inspect the generated migration: confirm the `CheckConstraint` on `evidence` is included in `op.create_table(...)`. Alembic autogenerate does not always detect `CHECK` constraints depending on version; if missing, add `sa.CheckConstraint("(finding_id IS NOT NULL) + (score_id IS NOT NULL) = 1", name="ck_evidence_exactly_one_parent")` to the table's constraint list by hand.
 
 - [ ] **Step 5: Run test, verify it passes**
 
@@ -1501,7 +1501,7 @@ git commit -m "feat(radar-core): add Finding, Evidence, Recommendation models"
 
 ---
 
-### Task 10: `ImprovementTask`, `RoadmapItem` models and the `Finding` N—N link
+### Task 10: `ImprovementTask`, `RoadmapItem` models and the `Finding` N-N link
 
 **Files:**
 - Create: `radar-core/src/radar_core/models/links.py`
@@ -1513,7 +1513,7 @@ git commit -m "feat(radar-core): add Finding, Evidence, Recommendation models"
 - Consumes: `Finding` (Task 9), `Evidence` (Task 9), `RoadmapStatus` (Task 1).
 - Produces: `FindingImprovementTaskLink`, `ImprovementTask`, `RoadmapItem`.
 
-Note: `links.py` is one file more than the original design doc's file list — it holds only the `Finding`⟷`ImprovementTask` association table, kept separate to avoid a circular import between `finding.py` and `roadmap.py` (both would otherwise need to import each other's concrete class to build the `link_model=` relationship). Consistent with the design's intent, not a deviation from it.
+Note: `links.py` is one file more than the original design doc's file list; it holds only the `Finding`⟷`ImprovementTask` association table, kept separate to avoid a circular import between `finding.py` and `roadmap.py` (both would otherwise need to import each other's concrete class to build the `link_model=` relationship). Consistent with the design's intent, not a deviation from it.
 
 - [ ] **Step 1: Write failing test**
 
@@ -1767,7 +1767,7 @@ git commit -m "feat(radar-core): add ImprovementTask, RoadmapItem models and Fin
 
 **Interfaces:**
 - Consumes: `Confidence` (Task 1).
-- Produces: `Snapshot` — standalone, no FK dependents.
+- Produces: `Snapshot`, standalone, no FK dependents.
 
 - [ ] **Step 1: Write failing test**
 
@@ -1886,7 +1886,7 @@ git commit -m "feat(radar-core): add Snapshot model"
 
 **Interfaces:**
 - Consumes: every model from Tasks 5-11.
-- Produces: nothing new — this is a pure verification task confirming the full chain works together, per the design spec's testing section.
+- Produces: nothing new; this is a pure verification task confirming the full chain works together, per the design spec's testing section.
 
 - [ ] **Step 1: Write the test**
 
@@ -2033,7 +2033,7 @@ def test_full_audit_to_roadmap_chain(db_session):
 - [ ] **Step 2: Run test, verify it passes**
 
 Run: `uv run --package radar-core pytest radar-core/tests/test_end_to_end.py -v`
-Expected: PASS (1 test) — this exercises every table created across Tasks 5-11, so a failure here means an earlier task's model or migration has a real integration bug, not just an isolated unit issue.
+Expected: PASS (1 test). This exercises every table created across Tasks 5-11, so a failure here means an earlier task's model or migration has a real integration bug, not just an isolated unit issue.
 
 - [ ] **Step 3: Run the full suite once**
 
@@ -2055,7 +2055,7 @@ git commit -m "test(radar-core): add end-to-end audit-to-roadmap integration tes
 - Create: `.pre-commit-config.yaml` (repo root)
 
 **Interfaces:**
-- Produces: a working `pre-commit` config covering `radar-core`'s lint/format/type-check — dogfoods D12, the same criterion the audit system itself measures on target repos.
+- Produces: a working `pre-commit` config covering `radar-core`'s lint/format/type-check; dogfoods D12, the same criterion the audit system itself measures on target repos.
 
 - [ ] **Step 1: Create the config**
 
@@ -2089,7 +2089,7 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-Expected: `ruff`, `ruff-format` pass clean (or auto-fix and require a re-run). `mypy` may surface real type errors on first run — fix them in `radar-core/src/radar_core/` (not by loosening `[tool.mypy]` in the root `pyproject.toml`) until the hook passes clean.
+Expected: `ruff`, `ruff-format` pass clean (or auto-fix and require a re-run). `mypy` may surface real type errors on first run; fix them in `radar-core/src/radar_core/` (not by loosening `[tool.mypy]` in the root `pyproject.toml`) until the hook passes clean.
 
 - [ ] **Step 3: Verify tests still pass after any mypy-driven fixes**
 
@@ -2103,4 +2103,4 @@ git add .pre-commit-config.yaml
 git commit -m "chore(radar-core): add pre-commit lint/format/type-check gate"
 ```
 
-(If Step 2 required source fixes to satisfy mypy, commit those as a separate preceding commit, e.g. `git commit -m "fix(radar-core): satisfy mypy strict mode"`, before the config commit — keeps the history honest about what changed why.)
+(If Step 2 required source fixes to satisfy mypy, commit those as a separate preceding commit, e.g. `git commit -m "fix(radar-core): satisfy mypy strict mode"`, before the config commit. This keeps the history honest about what changed why.)

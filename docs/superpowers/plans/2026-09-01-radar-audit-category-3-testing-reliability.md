@@ -2,31 +2,31 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver 6 real `ToolRunner`s and 4 normalizers covering Quality Framework category 3 ("Testing & reliability"): Unit tests present & passing with coverage, Integration tests, E2E tests, CI executes the test suite — across Python, JavaScript/TypeScript, and PHP. Criterion 3.5 (test quality/relevance, narrow LLM-judgment layer) is out of scope, deferred alongside 1.4.
+**Goal:** Deliver 6 real `ToolRunner`s and 4 normalizers covering Quality Framework category 3 ("Testing & reliability"): Unit tests present & passing with coverage, Integration tests, E2E tests, CI executes the test suite: across Python, JavaScript/TypeScript, and PHP. Criterion 3.5 (test quality/relevance, narrow LLM-judgment layer) is out of scope, deferred alongside 1.4.
 
 **Architecture:** Same shape as increments 2.1/2.2: each criterion gets one or more `ToolRunner` classes producing a `RawToolOutput`, and one normalizer function that reads `ToolResult` rows for the relevant `tool_name`s and writes `Score`/`Finding` rows via the existing `get_or_create_scoring_run`/`get_criterion` helpers. No `ToolRunner` protocol changes, no orchestrator changes, no new Alembic migration.
 
 **Tech Stack:** Python 3.12, SQLModel, pytest, uv/uvx (pytest+pytest-cov), native npm-installed Vitest, native Composer-installed Pest, PyYAML (already a project dependency).
 
-**Spec:** `docs/superpowers/specs/2026-09-01-radar-audit-category-3-testing-reliability-design.md`, as corrected by the follow-up commit fixing `VitestRunner`'s invocation (§4/§11 — see Global Constraints below).
+**Spec:** `docs/superpowers/specs/2026-09-01-radar-audit-category-3-testing-reliability-design.md`, as corrected by the follow-up commit fixing `VitestRunner`'s invocation (§4/§11, see Global Constraints below).
 
 ## Global Constraints
 
 - No `ToolRunner` protocol changes, no orchestrator changes, no new Alembic migration (spec §2/§11).
 - **`VitestRunner` invocation, corrected during plan-writing.** The spec's original `npx --package=vitest --package=@vitest/coverage-v8` invocation was empirically tested and fails: unpinned versions hit an `ERESOLVE` peer-dependency conflict; pinned matching versions install cleanly but Vitest then throws `Cannot find package '@vitest/coverage-v8'` at runtime. `VitestRunner` instead invokes the target's own locally-installed binary directly (`node_modules/.bin/vitest`), same reasoning already used for `PintRunner`/`PestRunner` (measure the repo's own configured test suite, not an audit-owned tool version). This exception to the npx-pinning rule was confirmed working: coverage flags are added only when `node_modules/@vitest/coverage-v8` is also present locally; otherwise the runner still reports pass/fail without a coverage percentage.
-- **`PestRunner` fixture requirement, confirmed during plan-writing.** A bare `composer.json` + test file is not enough — Pest requires a `phpunit.xml` with a `<source><include>` block pointing at a real, coverable source directory, or coverage collection throws `Pest\Exceptions\ShouldNotHappen`. Every `PestRunner` test fixture must include a minimal `phpunit.xml` and at least one non-test PHP source file under the directory that `phpunit.xml` declares as coverable.
-- **JUnit/JSON `file`/`line` extraction is best-effort and tool-specific, confirmed empirically during plan-writing:** pytest's default `--junitxml` output has no `file`/`line` attribute on `<testcase>` (only `classname`/`name`/`time`), so `PytestCoverageRunner` derives `file` from `classname` (dots to slashes, `.py` appended) and leaves `line` as `None`. Pest's `<testcase>` does carry a `file` attribute (as `path::testname`, split on `::`) but no `line`. Vitest's JSON reporter's `assertionResults` have no `location`/`line` field either — `file` comes from the parent `testResults[].name`. `line` is `None` for all three tools; this is a deliberate, documented simplification, not a bug to fix later.
-- **Zero-collected-tests exit codes differ per tool, confirmed empirically:** pytest exits `5` with a valid empty `<testsuite tests="0">` element. Pest exits `0` with a bare `<testsuites/>` (no child `<testsuite>` element at all — parsers must guard for a missing child, not just a `tests="0"` attribute). Vitest's zero-collected behavior is not exercised by any fixture in this plan (JS fixtures always ship at least one test file); if it comes up during Task 11's real-world validation, treat it the same way — `tests.total == 0` drives `N/A`, not a specific exit code.
-- Coverage percent is optional (`None` allowed) for all three unit-test runners — a missing coverage provider or an unparseable report must not crash the runner or block the pass-rate score.
+- **`PestRunner` fixture requirement, confirmed during plan-writing.** A bare `composer.json` + test file is not enough: Pest requires a `phpunit.xml` with a `<source><include>` block pointing at a real, coverable source directory, or coverage collection throws `Pest\Exceptions\ShouldNotHappen`. Every `PestRunner` test fixture must include a minimal `phpunit.xml` and at least one non-test PHP source file under the directory that `phpunit.xml` declares as coverable.
+- **JUnit/JSON `file`/`line` extraction is best-effort and tool-specific, confirmed empirically during plan-writing:** pytest's default `--junitxml` output has no `file`/`line` attribute on `<testcase>` (only `classname`/`name`/`time`), so `PytestCoverageRunner` derives `file` from `classname` (dots to slashes, `.py` appended) and leaves `line` as `None`. Pest's `<testcase>` does carry a `file` attribute (as `path::testname`, split on `::`) but no `line`. Vitest's JSON reporter's `assertionResults` have no `location`/`line` field either: `file` comes from the parent `testResults[].name`. `line` is `None` for all three tools; this is a deliberate, documented simplification, not a bug to fix later.
+- **Zero-collected-tests exit codes differ per tool, confirmed empirically:** pytest exits `5` with a valid empty `<testsuite tests="0">` element. Pest exits `0` with a bare `<testsuites/>` (no child `<testsuite>` element at all; parsers must guard for a missing child, not just a `tests="0"` attribute). Vitest's zero-collected behavior is not exercised by any fixture in this plan (JS fixtures always ship at least one test file); if it comes up during Task 11's real-world validation, treat it the same way: `tests.total == 0` drives `N/A`, not a specific exit code.
+- Coverage percent is optional (`None` allowed) for all three unit-test runners: a missing coverage provider or an unparseable report must not crash the runner or block the pass-rate score.
 - `IntegrationTestRunner` and `CiWorkflowRunner` are `scope="repo"`, no subprocess. `PytestCoverageRunner`, `VitestRunner`, `PestRunner`, `PlaywrightPresenceRunner` are `scope="subproject"`.
-- Archetype B (3.1) aggregation: summed-ratio across every relevant `ToolResult` (`tests_passed`/`tests_collected` summed, then `score = (passed / collected) * 10`) — same pattern as `module_size.py`.
-- 3.2, 3.4: repo-scope, never more than one relevant `ToolResult` per audit — no aggregation rule needed.
+- Archetype B (3.1) aggregation: summed-ratio across every relevant `ToolResult` (`tests_passed`/`tests_collected` summed, then `score = (passed / collected) * 10`): same pattern as `module_size.py`.
+- 3.2, 3.4: repo-scope, never more than one relevant `ToolResult` per audit: no aggregation rule needed.
 - 3.3: worst-status-wins aggregation across every `PlaywrightPresenceRunner` result, paired with the single `CiWorkflowRunner` result for the CI-wiring signal.
-- Missing-data/N/A is represented by returning `None` (no `Score` row created) — same convention as every existing normalizer.
-- The §3.4 integration-test-ratio bands (0%→0, 0-10%→4, 10-25%→6, 25-50%→8, >50%→10) are resolved-but-provisional, not yet calibrated against real portfolio data — same discipline as every prior increment's thresholds.
+- Missing-data/N/A is represented by returning `None` (no `Score` row created): same convention as every existing normalizer.
+- The §3.4 integration-test-ratio bands (0%→0, 0-10%→4, 10-25%→6, 25-50%→8, >50%→10) are resolved-but-provisional, not yet calibrated against real portfolio data: same discipline as every prior increment's thresholds.
 - `Score` rows this plan writes are `ScoreLevel.CRITERION` only.
-- Tests use real `uvx`/native `npm`/native `composer` invocations and real PyYAML parsing against `tmp_path` git fixtures — no mocking of subprocess or tool output.
-- A real end-to-end audit run against an actual portfolio repo (Summit-Stats and/or GeoChallenge-Tracker) is required before the increment is considered done — Task 11.
+- Tests use real `uvx`/native `npm`/native `composer` invocations and real PyYAML parsing against `tmp_path` git fixtures: no mocking of subprocess or tool output.
+- A real end-to-end audit run against an actual portfolio repo (Summit-Stats and/or GeoChallenge-Tracker) is required before the increment is considered done: Task 11.
 
 ---
 
@@ -510,7 +510,7 @@ class VitestRunner:
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd radar-audit && uv run pytest tests/test_vitest_runner.py -v -m ""`
-Expected: PASS, all 5 tests green. The three `@pytest.mark.slow` tests perform a real `npm install` — confirm the exact exit codes and JSON shapes empirically against this run rather than assuming they match Task 1's pytest numbers, per this project's established "verify exit codes per tool" discipline.
+Expected: PASS, all 5 tests green. The three `@pytest.mark.slow` tests perform a real `npm install`: confirm the exact exit codes and JSON shapes empirically against this run rather than assuming they match Task 1's pytest numbers, per this project's established "verify exit codes per tool" discipline.
 
 - [ ] **Step 5: Commit**
 
@@ -2289,9 +2289,9 @@ git commit -m "feat(radar-audit): add normalize_ci_test_execution for criterion 
 ### Task 11: Register category-3 runners and validate against a real portfolio repository
 
 **Files:**
-- Modify: `src/radar_audit/cli.py` — add the 6 new runner instances to `DEFAULT_RUNNERS`.
-- Modify: none else expected beyond fixes surfaced by the real run — mirrors category 2's Task 17.
-- Test: none new — existing suites must stay green.
+- Modify: `src/radar_audit/cli.py`: add the 6 new runner instances to `DEFAULT_RUNNERS`.
+- Modify: none else expected beyond fixes surfaced by the real run: mirrors category 2's Task 17.
+- Test: none new: existing suites must stay green.
 
 **Interfaces:**
 - Consumes: every runner and normalizer from Tasks 1-10, the existing `radar-audit run` CLI, and `radar_audit.orchestrator`'s discovery/dispatch machinery (unchanged).
@@ -2329,7 +2329,7 @@ Expected: PASS, all tests from Tasks 1-10 plus every pre-existing 2.0/2.1/2.2 te
 
 - [ ] **Step 3: Run a real audit against a portfolio repository**
 
-Pick a real portfolio repo already used for 2.1's and 2.2's own validation (Summit-Stats — PHP/Laravel + Vue — or GeoChallenge-Tracker — Python/FastAPI + Vue). Run:
+Pick a real portfolio repo already used for 2.1's and 2.2's own validation (Summit-Stats, PHP/Laravel + Vue, or GeoChallenge-Tracker, Python/FastAPI + Vue). Run:
 
 ```bash
 cd radar-audit && uv run radar-audit run <repo-name>
