@@ -140,7 +140,7 @@ Hosted, multi-user publication of the global and category scores, with public re
 
 - [x] DOCS-012 - Record the radar-online decisions (ADR 0014) and design: disclosure limited to global and category scores, server-to-server upload, one trend point per commit, self-assessed scores namespaced per user, registration on request with admin approval
 - [x] CHORE-010 - Scaffold the `radar-online` package: FastAPI, SQLModel and Alembic on its own SQLite database, Dockerfile (uid 1000, pinned uv), compose service behind Traefik, pre-commit and CI jobs
-- [ ] FEAT-037 - Shared publication payload schema (`radar_core.publication`, v1, unknown fields rejected) and the radar-online data model: `User`, `ApiKey` (hashed), `ActionToken` (hashed, single use, expiring), `PublishedRepository`, `PublishedReport` (unique per repository and commit)
+- [x] FEAT-037 - Shared publication payload schema (`radar_core.publication`, v1, unknown fields rejected) and the radar-online data model: `User`, `ApiKey` (hashed), `ActionToken` (hashed, single use, expiring), `PublishedRepository`, `PublishedReport` (unique per repository and commit)
 - [ ] FEAT-038 - Email sending: SMTP through the Brevo relay in production, Maildev locally, text templates for every flow
 - [ ] FEAT-039 - Registration request and email confirmation: rate-limited request endpoint with honeypot, confirmation link leading to a page with an explicit confirm button, then admin notification
 - [ ] FEAT-040 - Admin review: review link leading to a page with accept and refuse buttons; acceptance emails a one-time key reveal link, refusal emails a short notice

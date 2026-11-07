@@ -31,3 +31,15 @@ def database_url(tmp_path: Path) -> str:
     url = f"sqlite:///{tmp_path / 'radar-online.db'}"
     run_migrations(url)
     return url
+
+
+@pytest.fixture
+def session(database_url: str):
+    """A session on the migrated throwaway database."""
+    from radar_core.db import get_engine
+    from sqlmodel import Session
+
+    engine = get_engine(database_url)
+    with Session(engine) as db_session:
+        yield db_session
+    engine.dispose()

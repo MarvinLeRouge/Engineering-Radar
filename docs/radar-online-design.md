@@ -48,7 +48,7 @@ radar-audit publish <repo>  ----------->  same builder
   "repository": {"slug": "summit-stats", "display_name": "Summit-Stats"},
   "commit_sha": "40 hex chars",
   "scored_at": "2026-11-05T14:20:00Z",
-  "methodology_version": "1.0",
+  "methodology_version": "Quality Framework v1.0",
   "global_score": 7.4,
   "categories": [
     {
@@ -71,7 +71,15 @@ Rules:
   criteria, findings, severity counts, risk, notes, paths).
 - `slug`: lowercase letters, digits and hyphens, 1 to 64 chars, unique per
   user. `display_name`: 1 to 100 chars.
-- Scores within 0 to 10 or null; at most 30 categories; body at most 64 KiB.
+- Free text (`display_name`, category `name`, `methodology_version`) is a short
+  printable label: no control characters or newlines, no `<` or `>`, so no field
+  can carry markup or a data dump. `confidence` is `HIGH`, `MEDIUM`, `LOW` or
+  null.
+- Scores within 0 to 10 or null, weights within 0 to 100, no NaN or infinity;
+  1 to 30 categories with unique names and orders; a non-null `global_score`
+  needs at least one scored category; body at most 64 KiB (checked by the API).
+- radar-online stores `payload.model_dump(mode="json")` of the validated model,
+  never the raw request body.
 - `status` is `scored` or `not_yet_audited`; unimplemented categories are sent
   with `implemented: false` and `value: null`, so the online report shows the
   same "Not implemented yet" markers.
@@ -82,11 +90,15 @@ Rules:
 
 | Entity | Fields | Notes |
 |---|---|---|
-| `User` | id, email (unique), display_name, slug (unique), message, status, created_at, approved_at | status: `PENDING_EMAIL`, `PENDING_APPROVAL`, `ACTIVE`, `REJECTED`, `DISABLED` |
+| `User` | id, email (unique, stored and compared lowercase), display_name, slug (unique), message (up to 1000 chars), status, created_at, approved_at | status: `PENDING_EMAIL`, `PENDING_APPROVAL`, `ACTIVE`, `REJECTED`, `DISABLED` |
 | `ApiKey` | id, user_id, prefix, key_hash, created_at, revoked_at | key shown once; `prefix` (first 8 chars) identifies it in logs and lists |
 | `ActionToken` | id, user_id, purpose, token_hash, expires_at, used_at | purposes: `CONFIRM_EMAIL`, `REVIEW_REQUEST`, `REVEAL_KEY`, `REGENERATE_KEY`; single use |
 | `PublishedRepository` | id, user_id, slug, display_name, created_at | unique (user_id, slug); created on first upload |
 | `PublishedReport` | id, repository_id, commit_sha, scored_at, uploaded_at, methodology_version, schema_version, global_score, payload (JSON) | unique (repository_id, commit_sha): a new upload for the same commit replaces the row |
+
+Implemented in `radar_online.models` (FEAT-037); deleting a user cascades in the
+database to their keys, tokens, repositories and reports. The payload contract is
+`radar_core.publication.PublicationPayload`.
 
 Keys and tokens: 32 random bytes, URL-safe; stored as SHA-256 hashes
 (high-entropy secrets, no need for a slow hash). Token lifetimes: email

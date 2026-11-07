@@ -10,14 +10,17 @@ badge, without any finding. Decisions in
 [ADR 0014](../docs/adr/0014-radar-online-public-reports.md), design in
 [radar-online design](../docs/radar-online-design.md).
 
-**Status:** scaffold only (CHORE-010). The app starts and answers
-`GET /api/health`; accounts, publication, public pages and the badge are the
-next tasks of [roadmap Section 9](../docs/roadmap.md).
+**Status:** data model in place (FEAT-037): users, hashed API keys, single-use
+action tokens, published repositories and reports, plus the shared payload
+contract `radar_core.publication`. The app only answers `GET /api/health` so
+far; accounts, publication, public pages and the badge are the next tasks of
+[roadmap Section 9](../docs/roadmap.md).
 
 ## Layout
 
 - `src/radar_online/`: FastAPI app (`main.py`), configuration, database session,
-  and `models/` (its own tables only, never radar-core's audit data).
+  `models/` (its own tables only, never radar-core's audit data) and `tokens.py`
+  (random keys and tokens, stored as SHA-256 hashes).
 - `alembic/`: radar-online's own migrations, on its own SQLite database.
 - `tests/`: each test runs on a throwaway, migrated SQLite file.
 
