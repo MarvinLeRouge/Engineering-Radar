@@ -152,7 +152,7 @@ Prochaines étapes : l'audit complet du portfolio, des indicateurs de ROI pour l
 - [Opérations](docs/operations.fr.md) : lancer les services et l'audit, données, logs, suivi des erreurs
 - [Guide d'agrégation des logs](docs/guides/log-aggregation.fr.md) : installation optionnelle de Loki et Grafana pour les logs structurés
 - [Contribuer](docs/i18n/fr/CONTRIBUTING.fr.md) : workflow, conventions de branches et de commits, style de code
-- README des packages : [`radar-core`](radar-core/README.fr.md), [`radar-audit`](radar-audit/README.fr.md), [`radar-api`](radar-api/README.fr.md), [`radar-dashboard`](radar-dashboard/README.fr.md)
+- README des packages : [`radar-core`](radar-core/README.fr.md), [`radar-audit`](radar-audit/README.fr.md), [`radar-api`](radar-api/README.fr.md), [`radar-dashboard`](radar-dashboard/README.fr.md), [`radar-online`](radar-online/README.fr.md)
 
 ## Langues
 

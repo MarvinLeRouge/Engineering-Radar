@@ -63,5 +63,6 @@ engineering-radar/
 - [Log aggregation](guides/log-aggregation.md)
 - [radar-api README](../radar-api/README.md)
 - [radar-dashboard README](../radar-dashboard/README.md)
+- [radar-online README](../radar-online/README.md)
 - [Product context](product-context.md)
 - [Operations](operations.md)

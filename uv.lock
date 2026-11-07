@@ -11,6 +11,7 @@ members = [
     "radar-api",
     "radar-audit",
     "radar-core",
+    "radar-online",
 ]
 
 [[package]]
@@ -966,6 +967,47 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "mypy", specifier = ">=1.11" },
+    { name = "pytest", specifier = ">=8.0" },
+    { name = "pytest-cov", specifier = ">=5.0" },
+    { name = "ruff", specifier = ">=0.6" },
+]
+
+[[package]]
+name = "radar-online"
+version = "0.1.0"
+source = { editable = "radar-online" }
+dependencies = [
+    { name = "alembic" },
+    { name = "fastapi" },
+    { name = "radar-core" },
+    { name = "sentry-sdk" },
+    { name = "sqlmodel" },
+    { name = "uvicorn" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "httpx" },
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "alembic", specifier = ">=1.13" },
+    { name = "fastapi", specifier = ">=0.115" },
+    { name = "radar-core", editable = "radar-core" },
+    { name = "sentry-sdk", specifier = ">=2.73.0" },
+    { name = "sqlmodel", specifier = ">=0.0.22" },
+    { name = "uvicorn", specifier = ">=0.30" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "httpx", specifier = ">=0.27" },
     { name = "mypy", specifier = ">=1.11" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-cov", specifier = ">=5.0" },
