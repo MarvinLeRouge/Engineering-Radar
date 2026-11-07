@@ -16,8 +16,15 @@ def _tables(database_url: str) -> set[str]:
     return {row[0] for row in sqlite3.connect(path).execute(query)}
 
 
-def test_migrations_upgrade_an_empty_database_to_head(database_url: str) -> None:
-    assert "alembic_version" in _tables(database_url)
+def test_migrations_create_exactly_the_radar_online_tables(database_url: str) -> None:
+    assert _tables(database_url) == {
+        "alembic_version",
+        "user",
+        "api_key",
+        "action_token",
+        "published_repository",
+        "published_report",
+    }
 
 
 def test_migrations_never_create_the_local_radar_tables(database_url: str) -> None:
@@ -59,3 +66,29 @@ def test_alembic_metadata_holds_no_local_radar_table() -> None:
 
     assert "radar_core.models" not in sys.modules
     assert not set(SQLModel.metadata.tables) & {"finding", "audit", "repository", "scoring_run"}
+
+
+def test_the_migrated_schema_matches_the_models(database_url: str) -> None:
+    # The only guard against drift between hand-edited migrations and the models.
+    import radar_online.models  # noqa: F401
+    from alembic.autogenerate import compare_metadata
+    from alembic.migration import MigrationContext
+    from radar_core.db import get_engine
+    from sqlalchemy import CheckConstraint
+    from sqlmodel import SQLModel
+
+    engine = get_engine(database_url)
+    with engine.connect() as connection:
+        diff = compare_metadata(MigrationContext.configure(connection), SQLModel.metadata)
+    engine.dispose()
+
+    # Alembic cannot reflect SQLite CHECK constraints, so it always reports the enum
+    # checks as removed (radar-core shows the same); anything else is real drift.
+    def _is_enum_check_noise(op: object) -> bool:
+        return (
+            isinstance(op, tuple)
+            and op[0] == "remove_constraint"
+            and isinstance(op[1], CheckConstraint)
+        )
+
+    assert [op for op in diff if not _is_enum_check_noise(op)] == []

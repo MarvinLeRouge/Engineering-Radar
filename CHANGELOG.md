@@ -164,6 +164,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Mark criteria and categories that are not implemented yet (FEAT-034)
 - *(radar-api)* List unimplemented categories and criteria last (FEAT-035)
 - *(radar-api)* Page the findings of large criteria (FEAT-036)
+- Add the publication payload contract and radar-online data model (FEAT-037)
 
 ### 🐛 Bug Fixes
 

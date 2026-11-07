@@ -10,16 +10,19 @@ tendances et un badge, sans aucun finding. Décisions dans
 l'[ADR 0014](../docs/adr/0014-radar-online-public-reports.md), conception dans
 [radar-online design](../docs/radar-online-design.md) (en anglais).
 
-**Statut :** socle uniquement (CHORE-010). L'application démarre et répond à
-`GET /api/health` ; les comptes, la publication, les pages publiques et le
-badge sont les prochaines tâches de la
+**Statut :** modèle de données en place (FEAT-037) : utilisateurs, clés d'API
+hachées, jetons d'action à usage unique, dépôts et rapports publiés, plus le
+contrat de payload partagé `radar_core.publication`. L'application ne répond
+encore qu'à `GET /api/health` ; les comptes, la publication, les pages
+publiques et le badge sont les prochaines tâches de la
 [section 9 de la roadmap](../docs/roadmap.fr.md).
 
 ## Organisation
 
 - `src/radar_online/` : application FastAPI (`main.py`), configuration, session
-  de base de données, et `models/` (ses propres tables uniquement, jamais les
-  données d'audit de radar-core).
+  de base de données, `models/` (ses propres tables uniquement, jamais les
+  données d'audit de radar-core) et `tokens.py` (clés et jetons aléatoires,
+  stockés sous forme de hachages SHA-256).
 - `alembic/` : les migrations propres à radar-online, sur sa propre base SQLite.
 - `tests/` : chaque test tourne sur un fichier SQLite jetable et migré.
 
