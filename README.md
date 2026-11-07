@@ -98,6 +98,7 @@ An improvement is not considered complete merely because code was changed. The s
 - Cross-project analysis
 - Portfolio-level trends and historical snapshots
 - Detection of resolved, new and regressed findings between audits
+- radar-online: public, sanitized reports (global and category scores only), trends and badge at `radar.marvinlerouge.dev`, see [ADR 0014](docs/adr/0014-radar-online-public-reports.md)
 
 ## Target environment
 
