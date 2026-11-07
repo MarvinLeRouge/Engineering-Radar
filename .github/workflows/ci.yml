@@ -102,6 +102,26 @@ jobs:
           uv run --package radar-api pytest radar-api/tests \
             --cov=radar_api --cov-report=term-missing --cov-fail-under=80 -q
 
+  radar-online:
+    name: radar-online
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: astral-sh/setup-uv@e58605a9b6da7c637471fab8847a5e5a6b8df081 # v5
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Run tests with coverage
+        run: |
+          uv run --package radar-online pytest radar-online/tests \
+            --cov=radar_online --cov-report=term-missing --cov-fail-under=80 -q
+
   radar-dashboard:
     name: radar-dashboard
     runs-on: ubuntu-latest

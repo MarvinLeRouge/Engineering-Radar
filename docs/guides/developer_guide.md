@@ -20,17 +20,18 @@ architecture docs in [`docs/architecture/`](../architecture/).
 
 ## Workspace layout
 
-This repository is a `uv` workspace with three Python packages:
+This repository is a `uv` workspace with four Python packages:
 
 - `radar-core`: the shared data model (SQLModel) and Alembic migrations
 - `radar-audit`: the tool orchestration and normalization engine, exposed as the `radar-audit` CLI
 - `radar-api`: the FastAPI service the dashboard reads from (see [`radar-api/README.md`](../../radar-api/README.md))
+- `radar-online`: the hosted service publishing sanitized reports, trends and badges (see [`radar-online/README.md`](../../radar-online/README.md))
 
 ```bash
 uv sync
 ```
 
-installs the three packages and their dependency groups into a single workspace virtual environment.
+installs the four packages and their dependency groups into a single workspace virtual environment.
 
 `radar-dashboard` (Vue 3 + Vite + Pinia) sits next to them as a separate npm project, outside the `uv` workspace.
 
@@ -101,6 +102,7 @@ An audit runs each repository's own test suite with its dependencies installed (
 uv run --package radar-core pytest radar-core/tests --cov=radar_core
 uv run --package radar-audit pytest radar-audit/tests --cov=radar_audit
 uv run --package radar-api pytest radar-api/tests --cov=radar_api
+uv run --package radar-online pytest radar-online/tests --cov=radar_online
 cd radar-dashboard && npm run test:coverage
 ```
 
@@ -118,7 +120,7 @@ npm run test:e2e
 
 `.github/workflows/ci.yml` runs on every push and pull request to `main`:
 
-- `radar-core`, `radar-api`, and `radar-audit` (fast, `-m "not slow"`) run tests with an 80% coverage gate and block the PR on failure.
+- `radar-core`, `radar-api`, `radar-online` and `radar-audit` (fast, `-m "not slow"`) run tests with an 80% coverage gate and block the PR on failure.
 - `radar-audit` (slow) runs the `npx`/`composer`-dependent tests separately and does not block the PR.
 - `radar-dashboard` runs Vitest with an 80% coverage gate and blocks the PR on failure.
 - `radar-dashboard` (e2e) runs the Playwright suite and blocks the PR on failure; the HTML report is uploaded as an artifact when it fails.
@@ -127,7 +129,7 @@ npm run test:e2e
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run on every commit:
 
-- `ruff` (with `--fix`) and `ruff-format` on `radar-core`, `radar-audit` and `radar-api`
+- `ruff` (with `--fix`) and `ruff-format` on `radar-core`, `radar-audit`, `radar-api` and `radar-online`
 - `mypy` (strict mode, set in the root `pyproject.toml`), one hook per Python package
 - dashboard: `eslint` + `oxlint` (`npm run lint`), `prettier` (`npm run format`) and `vue-tsc` (`npm run type-check`)
 - `changelog`, a `post-commit` hook that regenerates `CHANGELOG.md` with git-cliff

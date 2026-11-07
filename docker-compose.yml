@@ -44,6 +44,29 @@ services:
       - ${RADAR_PORTFOLIO_PATH:-./portfolio}:/portfolio:ro
     profiles: ["cli"]
 
+  radar-online:
+    build:
+      context: .
+      dockerfile: radar-online/Dockerfile
+    environment:
+      # Local parity only; the hosted deployment (radar.marvinlerouge.dev) is CHORE-012.
+      - RADAR_ONLINE_DATABASE_URL=sqlite:////data/radar-online.db
+      - SENTRY_DSN=${SENTRY_BACKEND_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-development}
+      - RADAR_LOG_LEVEL=${RADAR_LOG_LEVEL:-info}
+      - RADAR_LOG_FORMAT=${RADAR_LOG_FORMAT:-}
+    volumes:
+      - radar-data:/data
+    networks:
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik-public"
+      # The app serves everything under /api itself: no prefix stripping.
+      - "traefik.http.routers.radar-online.rule=Host(`radar-online.marvinlerouge.local`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.radar-online.entrypoints=web"
+      - "traefik.http.services.radar-online.loadbalancer.server.port=8000"
+
   radar-dashboard:
     build:
       context: ./radar-dashboard

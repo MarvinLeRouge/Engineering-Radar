@@ -140,7 +140,7 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 Publication hébergée et multi-utilisateur du score global et des scores par catégorie, avec rapport public, tendances et badge, sur `radar.marvinlerouge.dev`. Décisions dans l'[ADR 0014](adr/0014-radar-online-public-reports.md), conception dans [radar-online design](radar-online-design.md) (en anglais).
 
 - [x] DOCS-012 - Consigner les décisions de radar-online (ADR 0014) et sa conception : divulgation limitée au score global et aux scores par catégorie, envoi de serveur à serveur, un point de tendance par commit, scores auto-déclarés rangés par utilisateur, inscription sur demande validée par l'admin
-- [ ] CHORE-010 - Créer le paquet `radar-online` : FastAPI, SQLModel et Alembic sur sa propre base SQLite, Dockerfile (uid 1000, uv épinglé), service compose derrière Traefik, hooks pre-commit et jobs de CI
+- [x] CHORE-010 - Créer le paquet `radar-online` : FastAPI, SQLModel et Alembic sur sa propre base SQLite, Dockerfile (uid 1000, uv épinglé), service compose derrière Traefik, hooks pre-commit et jobs de CI
 - [ ] FEAT-037 - Schéma partagé du payload de publication (`radar_core.publication`, v1, champs inconnus refusés) et modèle de données de radar-online : `User`, `ApiKey` (hachée), `ActionToken` (haché, à usage unique, avec expiration), `PublishedRepository`, `PublishedReport` (unique par dépôt et par commit)
 - [ ] FEAT-038 - Envoi des e-mails : SMTP via le relais Brevo en production, Maildev en local, modèles texte pour chaque flux
 - [ ] FEAT-039 - Demande d'inscription et confirmation de l'e-mail : endpoint de demande limité en débit avec champ piège, lien de confirmation menant à une page avec un bouton de confirmation explicite, puis notification de l'admin

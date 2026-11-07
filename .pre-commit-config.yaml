@@ -5,9 +5,9 @@ repos:
     hooks:
       - id: ruff
         args: [--fix]
-        files: ^(radar-core|radar-audit|radar-api)/
+        files: ^(radar-core|radar-audit|radar-api|radar-online)/
       - id: ruff-format
-        files: ^(radar-core|radar-audit|radar-api)/
+        files: ^(radar-core|radar-audit|radar-api|radar-online)/
   - repo: local
     hooks:
       - id: mypy-radar-core
@@ -27,6 +27,12 @@ repos:
         entry: uv run --package radar-api mypy radar-api/src/radar_api
         language: system
         files: ^radar-api/src/
+        pass_filenames: false
+      - id: mypy-radar-online
+        name: mypy (radar-online)
+        entry: uv run --package radar-online mypy radar-online/src/radar_online
+        language: system
+        files: ^radar-online/src/
         pass_filenames: false
       # Dashboard: whole-project checks, like mypy, through its own npm scripts.
       - id: eslint

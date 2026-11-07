@@ -152,7 +152,7 @@ Next steps: the full portfolio audit, ROI indicators for the roadmap, and detect
 - [Operations](docs/operations.md): running the services and the audit, data, logging, error tracking
 - [Log aggregation guide](docs/guides/log-aggregation.md): optional Loki and Grafana setup for the structured logs
 - [Contributing](CONTRIBUTING.md): workflow, branch and commit conventions, code style
-- Package READMEs: [`radar-core`](radar-core/README.md), [`radar-audit`](radar-audit/README.md), [`radar-api`](radar-api/README.md), [`radar-dashboard`](radar-dashboard/README.md)
+- Package READMEs: [`radar-core`](radar-core/README.md), [`radar-audit`](radar-audit/README.md), [`radar-api`](radar-api/README.md), [`radar-dashboard`](radar-dashboard/README.md), [`radar-online`](radar-online/README.md)
 
 ## Language
 
