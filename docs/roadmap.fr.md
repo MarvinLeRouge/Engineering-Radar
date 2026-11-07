@@ -134,3 +134,26 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 - [x] CHORE-009 - Retirer les derniers tirets cadratins du code : quatre commentaires et quatre descriptions de la taxonomie (insérées une seule fois par version de méthodologie et non exposées par l'API, donc ni la base existante ni l'affichage ne changent), plus les blocs de code de la doc qui les recopient
 - [ ] Détecter les divergences entre roadmap et code
 - [ ] Suivre les métriques internes du système (stabilité des scores, taux de faux positifs, reproductibilité)
+
+## Section 9 - radar-online (rapports publics expurgés)
+
+Publication hébergée et multi-utilisateur du score global et des scores par catégorie, avec rapport public, tendances et badge, sur `radar.marvinlerouge.dev`. Décisions dans l'[ADR 0014](adr/0014-radar-online-public-reports.md), conception dans [radar-online design](radar-online-design.md) (en anglais).
+
+- [x] DOCS-012 - Consigner les décisions de radar-online (ADR 0014) et sa conception : divulgation limitée au score global et aux scores par catégorie, envoi de serveur à serveur, un point de tendance par commit, scores auto-déclarés rangés par utilisateur, inscription sur demande validée par l'admin
+- [ ] CHORE-010 - Créer le paquet `radar-online` : FastAPI, SQLModel et Alembic sur sa propre base SQLite, Dockerfile (uid 1000, uv épinglé), service compose derrière Traefik, hooks pre-commit et jobs de CI
+- [ ] FEAT-037 - Schéma partagé du payload de publication (`radar_core.publication`, v1, champs inconnus refusés) et modèle de données de radar-online : `User`, `ApiKey` (hachée), `ActionToken` (haché, à usage unique, avec expiration), `PublishedRepository`, `PublishedReport` (unique par dépôt et par commit)
+- [ ] FEAT-038 - Envoi des e-mails : SMTP via le relais Brevo en production, Maildev en local, modèles texte pour chaque flux
+- [ ] FEAT-039 - Demande d'inscription et confirmation de l'e-mail : endpoint de demande limité en débit avec champ piège, lien de confirmation menant à une page avec un bouton de confirmation explicite, puis notification de l'admin
+- [ ] FEAT-040 - Validation par l'admin : lien menant à une page avec des boutons accepter et refuser ; l'acceptation envoie un lien à usage unique pour afficher la clé, le refus envoie un court message
+- [ ] FEAT-041 - Affichage et régénération de la clé d'API : première clé affichée une seule fois depuis le lien reçu ; demande de clé perdue par e-mail, page de régénération qui révoque les clés précédentes
+- [ ] FEAT-042 - Envoi des rapports : `POST /api/reports` authentifié par clé d'API, validation stricte, dépôt créé au premier envoi, rapport remplacé si le commit est déjà publié
+- [ ] FEAT-043 - API publique de lecture et badge : profil, dernier rapport, historique (un point par commit), badge shields.io marqué auto-déclaré, en-têtes de cache
+- [ ] FEAT-044 - Dépublication et suppression de compte : supprimer un dépôt, un rapport ou tout le compte avec la clé d'API
+- [ ] CHORE-011 - Durcir radar-online : limites de débit, clés et jetons tenus hors des logs et de Sentry, sauvegarde quotidienne de la base SQLite
+- [ ] FEAT-045 - Construction et aperçu du payload en local : payload v1 construit depuis un scoring run (score global et scores par catégorie uniquement, test prouvant qu'aucun autre champ ne part), `GET /repositories/{id}/publish-preview` dans radar-api
+- [ ] FEAT-046 - Publication locale : `POST /repositories/{id}/publish` dans radar-api (de serveur à serveur, `RADAR_ONLINE_URL` et `RADAR_ONLINE_API_KEY` lus dans `.env`) et `radar-audit publish <repo>`
+- [ ] FEAT-047 - Bouton « Upload report » du dashboard : modale d'aperçu avec confirmation, lien vers la page publique en cas de succès, états d'erreur
+- [ ] FEAT-048 - Mode de build online du dashboard : routeur et client API dédiés, rapport limité aux jauges globale et par catégorie, tendances, mention auto-déclaré, sans roadmap, findings, verdicts ni réglages
+- [ ] FEAT-049 - Pages publiques online : profil, formulaire d'inscription, confirmation de l'e-mail, validation par l'admin, affichage de la clé et clé perdue
+- [ ] CHORE-012 - Déployer radar-online sur le VPS derrière Traefik (`radar.marvinlerouge.dev`, HTTPS), `.env` du serveur, expéditeur Brevo vérifié, sauvegardes planifiées
+- [ ] DOCS-013 - Guide utilisateur bilingue (inscription, publication, politique de divulgation, badge, API publique), mise à jour du README et de l'exploitation, lien du badge du README pointé vers la page publique

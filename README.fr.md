@@ -98,6 +98,7 @@ Une amélioration n'est pas considérée comme terminée simplement parce que du
 - Analyse transversale des projets
 - Tendances et snapshots historiques à l'échelle du portfolio
 - Détection des findings résolus, nouveaux et en régression entre deux audits
+- radar-online : rapports publics expurgés (score global et scores par catégorie uniquement), tendances et badge sur `radar.marvinlerouge.dev`, voir l'[ADR 0014](docs/adr/0014-radar-online-public-reports.md)
 
 ## Environnement cible
 

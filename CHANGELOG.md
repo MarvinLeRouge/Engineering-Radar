@@ -413,6 +413,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Note explanatory verdict note as a potential feature (DOCS-009)
 - Refresh the documentation after a month of changes (DOCS-010)
 - Remove em and en dashes from the Markdown docs (DOCS-011)
+- Plan radar-online, public sanitized reports and badges (DOCS-012)
 
 ### 🎨 Styling
 

@@ -19,3 +19,4 @@ not reader-facing prose.
 | [0011](0011-human-verdict-false-positive-feedback.md) | human_verdict on Finding: false-positive feedback loop | 2026-08-26 |
 | [0012](0012-registry-network-access-dependency-freshness.md) | External network access for dependency freshness checks | 2026-08-26 |
 | [0013](0013-phase4-implementation-stack.md) | Phase 4 implementation-level stack choices | 2026-08-27 |
+| [0014](0014-radar-online-public-reports.md) | radar-online: public, sanitized reports and badges | 2026-11-07 |
