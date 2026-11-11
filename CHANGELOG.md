@@ -462,3 +462,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Remove the last em dashes from code (CHORE-009)
 - Scaffold the radar-online package (CHORE-010)
 - Move to python 3.14
+- *(ci)* Add dependabot configuration
