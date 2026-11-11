@@ -154,9 +154,9 @@ def test_always_excludes_a_nested_vendor_directory(tmp_path):
 
     complexities = result.raw_output["complexities"]
     excluded_files = [c["file"] for c in complexities]
-    assert not any(
-        "bundle.js" in f for f in excluded_files
-    ), "backend/vendor/pkg/bundle.js should be excluded"
+    assert not any("bundle.js" in f for f in excluded_files), (
+        "backend/vendor/pkg/bundle.js should be excluded"
+    )
     assert any("a.js" in f for f in excluded_files), "src/a.js should not be excluded"
 
 
@@ -174,9 +174,9 @@ def test_does_not_exclude_a_directory_whose_name_merely_contains_vendor(tmp_path
 
     complexities = result.raw_output["complexities"]
     flagged_files = [c["file"] for c in complexities]
-    assert any(
-        "a.js" in f for f in flagged_files
-    ), "vendors-config/a.js should not be excluded (not a real vendor/ segment)"
+    assert any("a.js" in f for f in flagged_files), (
+        "vendors-config/a.js should not be excluded (not a real vendor/ segment)"
+    )
 
 
 @pytest.mark.slow

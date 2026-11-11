@@ -60,7 +60,7 @@ class PytestCoverageRunner:
                     timeout=self.timeout_s,
                     env=env,
                 )
-            except (FileNotFoundError, OSError):
+            except FileNotFoundError, OSError:
                 # target_path doesn't exist or is inaccessible; treat as "no tests"
                 duration_ms = int((time.monotonic() - start) * 1000)
                 return no_report_output(command, 1, duration_ms)

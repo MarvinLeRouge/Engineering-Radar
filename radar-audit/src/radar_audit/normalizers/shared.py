@@ -473,7 +473,7 @@ def python_dependency_names(candidate_dirs: list[Path]) -> set[str]:
         if pyproject_path.is_file():
             try:
                 data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeDecodeError, tomllib.TOMLDecodeError):
+            except OSError, UnicodeDecodeError, tomllib.TOMLDecodeError:
                 data = None
             if isinstance(data, dict):
                 names.update(_pyproject_dependency_names(data))
@@ -482,7 +482,7 @@ def python_dependency_names(candidate_dirs: list[Path]) -> set[str]:
         if requirements_path.is_file():
             try:
                 lines = requirements_path.read_text(encoding="utf-8").splitlines()
-            except (OSError, UnicodeDecodeError):
+            except OSError, UnicodeDecodeError:
                 lines = []
             names.update(
                 _package_name(line)
@@ -498,7 +498,7 @@ def _read_json_object(path: Path) -> dict[str, object] | None:
         return None
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    except OSError, UnicodeDecodeError, json.JSONDecodeError:
         return None
     return data if isinstance(data, dict) else None
 

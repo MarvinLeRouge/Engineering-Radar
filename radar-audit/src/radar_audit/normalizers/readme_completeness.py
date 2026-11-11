@@ -115,7 +115,7 @@ def _matched_sections(readme_path: Path) -> set[str]:
     """
     try:
         text = readme_path.read_text()
-    except (OSError, UnicodeDecodeError):
+    except OSError, UnicodeDecodeError:
         return set()
 
     found: set[str] = set()

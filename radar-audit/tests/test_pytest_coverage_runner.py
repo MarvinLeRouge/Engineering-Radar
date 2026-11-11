@@ -12,10 +12,7 @@ def test_reports_full_pass_and_coverage(tmp_path):
         repo_path,
         files={
             "tests/test_add.py": (
-                "def add(a, b):\n"
-                "    return a + b\n\n\n"
-                "def test_add():\n"
-                "    assert add(1, 2) == 3\n"
+                "def add(a, b):\n    return a + b\n\n\ndef test_add():\n    assert add(1, 2) == 3\n"
             ),
         },
     )
@@ -36,10 +33,7 @@ def test_reports_failures_with_best_effort_file(tmp_path):
         repo_path,
         files={
             "tests/test_add.py": (
-                "def add(a, b):\n"
-                "    return a + b\n\n\n"
-                "def test_add():\n"
-                "    assert add(1, 2) == 4\n"
+                "def add(a, b):\n    return a + b\n\n\ndef test_add():\n    assert add(1, 2) == 4\n"
             ),
         },
     )

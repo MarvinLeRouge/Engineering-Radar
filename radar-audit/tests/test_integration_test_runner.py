@@ -27,9 +27,7 @@ def test_classifies_python_by_pytest_marker(tmp_path):
         files={
             "tests/test_unit.py": "def test_unit():\n    assert True\n",
             "tests/test_flow.py": (
-                "import pytest\n\n\n"
-                "@pytest.mark.integration\n"
-                "def test_flow():\n    assert True\n"
+                "import pytest\n\n\n@pytest.mark.integration\ndef test_flow():\n    assert True\n"
             ),
         },
     )

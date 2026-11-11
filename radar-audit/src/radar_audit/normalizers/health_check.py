@@ -80,7 +80,7 @@ def _has_health_route(target_path: Path) -> bool:
     for file_path in iter_source_files(target_path):
         try:
             text = file_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         if any(marker in text for marker in _HEALTH_PATH_MARKERS):
             return True

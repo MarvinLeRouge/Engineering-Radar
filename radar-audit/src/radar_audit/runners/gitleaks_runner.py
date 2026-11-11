@@ -71,7 +71,7 @@ class GitleaksRunner:
             report_path = Path(output_dir) / "report.json"
             try:
                 raw_findings = json.loads(report_path.read_text())
-            except (FileNotFoundError, json.JSONDecodeError):
+            except FileNotFoundError, json.JSONDecodeError:
                 return RawToolOutput(
                     command="docker run ... gitleaks git /repo",
                     # Failure shape: an "error" key and no "findings" list.
