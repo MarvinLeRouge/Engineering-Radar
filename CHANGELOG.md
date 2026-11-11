@@ -416,6 +416,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Refresh the documentation after a month of changes (DOCS-010)
 - Remove em and en dashes from the Markdown docs (DOCS-011)
 - Plan radar-online, public sanitized reports and badges (DOCS-012)
+- Update python version and tick CHORE-013
 
 ### 🎨 Styling
 

@@ -157,3 +157,7 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [ ] FEAT-049 - Pages publiques online : profil, formulaire d'inscription, confirmation de l'e-mail, validation par l'admin, affichage de la clé et clé perdue
 - [ ] CHORE-012 - Déployer radar-online sur le VPS derrière Traefik (`radar.marvinlerouge.dev`, HTTPS), `.env` du serveur, expéditeur Brevo vérifié, sauvegardes planifiées
 - [ ] DOCS-013 - Guide utilisateur bilingue (inscription, publication, politique de divulgation, badge, API publique), mise à jour du README et de l'exploitation, lien du badge du README pointé vers la page publique
+
+## Section 10 - Maintenance
+
+- [x] CHORE-013 - Passer à Python 3.14 et aux dernières dépendances (sqlmodel 0.0.49, SQLAlchemy 2.1), images Docker natives uv, Dependabot

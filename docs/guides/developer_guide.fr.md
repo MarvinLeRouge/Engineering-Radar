@@ -14,7 +14,7 @@ docs d'architecture par composant dans
 
 ## Prérequis
 
-- Python 3.12+
+- Python 3.14 (épinglé dans `.python-version`, uv l'installe s'il manque)
 - [`uv`](https://docs.astral.sh/uv/) (gère le workspace, les dépendances et l'environnement virtuel)
 - Une base de données accessible via une chaîne de connexion `RADAR_DATABASE_URL` (SQLite suffit en développement local)
 - Pour le dashboard : Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (le champ `engines` de `radar-dashboard/package.json` ; la CI utilise la 24) et npm, puis `npm ci` dans `radar-dashboard/` (les hooks pre-commit du dashboard en ont aussi besoin)

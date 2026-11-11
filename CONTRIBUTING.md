@@ -8,7 +8,7 @@ This is primarily a personal project. External contributions (bug reports, fixes
 
 ## Prerequisites
 
-- Python 3.12+
+- Python 3.14 (pinned in `.python-version`, uv installs it if missing)
 - [`uv`](https://docs.astral.sh/uv/) for dependency management
 - Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (the `engines` field of `radar-dashboard/package.json`; CI uses 24) and npm, for the dashboard
 
