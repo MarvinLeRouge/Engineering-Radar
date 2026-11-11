@@ -173,8 +173,10 @@ jobs:
           uv sync --locked
           npm ci
 
+      # No --with-deps: the runner image already ships Chromium's system libraries (Google Chrome
+      # is preinstalled), and the apt-get it triggers fails the job whenever Ubuntu mirrors are down.
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       # Seeds a throwaway database, starts radar-api and the built dashboard (playwright.config.ts).
       - name: Run end-to-end tests

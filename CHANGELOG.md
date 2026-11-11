@@ -278,6 +278,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Stop binding one SQL parameter per finding (FIX-029)
 - *(radar-audit)* Stop PHPStan analysing git-ignored files (FIX-030)
 - *(radar-audit)* Skip git-ignored paths in every runner (FIX-031)
+- *(ci)* Install the playwright browser without apt dependencies
 
 ### 🚜 Refactor
 
