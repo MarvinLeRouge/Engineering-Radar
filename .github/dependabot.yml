@@ -36,6 +36,11 @@ updates:
       - "/radar-online"
       - "/radar-audit"
       - "/radar-dashboard"
+    ignore:
+      # The Python minor is a portfolio-wide decision (.python-version, requires-python, CI):
+      # only patch/digest updates of the python base image come from Dependabot.
+      - dependency-name: "python"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     schedule:
       interval: "weekly"
       day: "monday"
