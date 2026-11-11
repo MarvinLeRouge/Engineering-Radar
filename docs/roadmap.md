@@ -161,3 +161,4 @@ Hosted, multi-user publication of the global and category scores, with public re
 
 - [x] CHORE-013 - Move to Python 3.14 and the latest dependencies (sqlmodel 0.0.49, SQLAlchemy 2.1), uv-native Docker images, Dependabot
 - [x] FIX-032 - Install the Playwright browser in CI without `--with-deps`, so an Ubuntu mirror outage no longer fails the e2e job
+- [x] CHORE-014 - Move the dashboard to vitest 5 with `@vitest/coverage-v8` 5, hold typescript majors in Dependabot until typescript-eslint supports them
