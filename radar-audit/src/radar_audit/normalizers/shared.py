@@ -9,6 +9,7 @@ from collections.abc import Callable, Iterable, Iterator
 from operator import itemgetter
 from pathlib import Path
 
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import Audit, ToolResult
@@ -36,7 +37,9 @@ def get_or_create_scoring_run(
     if existing is not None:
         return existing
 
-    scoring_run = ScoringRun(audit_id=audit.id, methodology_version_id=methodology_version.id)
+    scoring_run = ScoringRun(
+        audit_id=persisted_id(audit), methodology_version_id=persisted_id(methodology_version)
+    )
     session.add(scoring_run)
     session.commit()
     session.refresh(scoring_run)
@@ -110,7 +113,7 @@ def add_finding_with_recommendation(
     """
     session.add(finding)
     session.flush()
-    session.add(Recommendation(finding_id=finding.id, text=recommendation_text))
+    session.add(Recommendation(finding_id=persisted_id(finding), text=recommendation_text))
     return finding
 
 
@@ -132,8 +135,8 @@ def add_repo_level_finding(
     return add_finding_with_recommendation(
         session,
         Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
+            scoring_run_id=persisted_id(scoring_run),
+            criterion_id=persisted_id(criterion),
             severity=severity,
             description=description,
             fingerprint=compute_fingerprint(
@@ -164,8 +167,8 @@ def add_tool_finding(
     return add_finding_with_recommendation(
         session,
         Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
+            scoring_run_id=persisted_id(scoring_run),
+            criterion_id=persisted_id(criterion),
             tool_result_id=tool_result.id,
             severity=severity,
             description=description,
@@ -189,7 +192,7 @@ def save_criterion_score(
 ) -> Score:
     """Persist and return a criterion-level Score, committing the session."""
     score = Score(
-        scoring_run_id=scoring_run.id,
+        scoring_run_id=persisted_id(scoring_run),
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
         value=value,
@@ -363,8 +366,8 @@ def _add_design_doc_finding(
     add_finding_with_recommendation(
         session,
         Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
+            scoring_run_id=persisted_id(scoring_run),
+            criterion_id=persisted_id(criterion),
             tool_result_id=tool_result.id,
             severity=FindingSeverity.LOW,
             description=description,

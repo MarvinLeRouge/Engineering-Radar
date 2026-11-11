@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
@@ -82,7 +83,7 @@ def _score_js_ts_only(
         return None
 
     score = Score(
-        scoring_run_id=scoring_run.id,
+        scoring_run_id=persisted_id(scoring_run),
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
         value=0.0,
@@ -114,8 +115,8 @@ def _score_docvet(
         added = add_finding_with_recommendation(
             session,
             Finding(
-                scoring_run_id=scoring_run.id,
-                criterion_id=criterion.id,
+                scoring_run_id=persisted_id(scoring_run),
+                criterion_id=persisted_id(criterion),
                 tool_result_id=tool_result.id,
                 severity=FindingSeverity.LOW,
                 description=f"{rule}: {message}",

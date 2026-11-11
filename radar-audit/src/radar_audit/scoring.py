@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 
 import structlog
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import Audit, ToolResult
@@ -14,8 +15,8 @@ from radar_core.models.links import FindingImprovementTaskLink
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
-from sqlalchemy import desc, func
-from sqlmodel import Session, select
+from sqlalchemy import func
+from sqlmodel import Session, col, select
 
 from radar_audit.normalizers import CRITERION_NORMALIZERS
 from radar_audit.normalizers.shared import (
@@ -54,7 +55,9 @@ def get_repository_by_name(session: Session, repo_name: str) -> Repository:
 
 def _get_latest_audit(session: Session, repository: Repository) -> Audit:
     audit = session.exec(
-        select(Audit).where(Audit.repository_id == repository.id).order_by(desc(Audit.audited_at))  # type: ignore[arg-type]
+        select(Audit)
+        .where(Audit.repository_id == repository.id)
+        .order_by(col(Audit.audited_at).desc())
     ).first()
     if audit is None:
         raise NoAuditFoundError(
@@ -294,7 +297,7 @@ def _write_category_score(
     confidence = max((score.confidence for _, score in pairs), key=lambda c: _CONFIDENCE_RANK[c])
 
     category_score = Score(
-        scoring_run_id=scoring_run.id,
+        scoring_run_id=persisted_id(scoring_run),
         category_id=category.id,
         level=ScoreLevel.CATEGORY,
         value=value,

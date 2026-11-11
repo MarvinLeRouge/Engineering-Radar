@@ -8,8 +8,7 @@ from radar_core.models.audit import Audit
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
-from sqlalchemy import asc
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from radar_api.dependencies import get_db_session
 from radar_api.risk import compute_risk
@@ -78,7 +77,7 @@ def get_score_history(
         select(ScoringRun, Audit)
         .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
         .where(Audit.repository_id == repository_id)
-        .order_by(asc(ScoringRun.scored_at))  # type: ignore[arg-type]
+        .order_by(col(ScoringRun.scored_at).asc())
     ).all()
 
     # One query per methodology version, not per run: a history rarely spans more than one.

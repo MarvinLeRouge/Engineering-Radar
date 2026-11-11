@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
@@ -38,7 +39,7 @@ def normalize_health_check(
     # endpoint isn't a meaningful concept for this repo.
     if find_prod_compose(target_path) is None:
         score = Score(
-            scoring_run_id=scoring_run.id,
+            scoring_run_id=persisted_id(scoring_run),
             criterion_id=criterion.id,
             level=ScoreLevel.CRITERION,
             # Same numeric value as _NOT_FOUND_VALUE below, intentionally: both
@@ -62,7 +63,7 @@ def normalize_health_check(
                 "no-health-check-route",
             )
         score = Score(
-            scoring_run_id=scoring_run.id,
+            scoring_run_id=persisted_id(scoring_run),
             criterion_id=criterion.id,
             level=ScoreLevel.CRITERION,
             value=value,
