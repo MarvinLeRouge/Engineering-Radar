@@ -307,6 +307,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Extract data-gathering helpers out of render_report (FIX-020)
 - *(radar-audit)* Remove duplicated normalizer and runner code (REFACTOR-001)
 - *(radar-dashboard)* Remove duplicated toggle, chart list and styles (REFACTOR-002)
+- Adapt to typed sqlmodel init and sqlalchemy 2.1 ordering
 
 ### 📚 Documentation
 
@@ -415,10 +416,12 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Refresh the documentation after a month of changes (DOCS-010)
 - Remove em and en dashes from the Markdown docs (DOCS-011)
 - Plan radar-online, public sanitized reports and badges (DOCS-012)
+- Update python version and tick CHORE-013
 
 ### 🎨 Styling
 
 - *(radar-dashboard)* Format the dashboard with prettier (CHORE-007)
+- Apply ruff 0.17 and py314 autofixes
 
 ### 🧪 Testing
 
@@ -459,3 +462,5 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Pin uv and use a numeric user in the Python Dockerfiles (CHORE-008)
 - Remove the last em dashes from code (CHORE-009)
 - Scaffold the radar-online package (CHORE-010)
+- Move to python 3.14
+- *(ci)* Add dependabot configuration

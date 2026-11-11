@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
@@ -49,8 +50,8 @@ def normalize_code_duplication(
         added = add_finding_with_recommendation(
             session,
             Finding(
-                scoring_run_id=scoring_run.id,
-                criterion_id=criterion.id,
+                scoring_run_id=persisted_id(scoring_run),
+                criterion_id=persisted_id(criterion),
                 tool_result_id=tool_result.id,
                 severity=FindingSeverity.LOW,
                 description=(

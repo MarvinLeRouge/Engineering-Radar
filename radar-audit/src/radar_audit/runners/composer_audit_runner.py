@@ -124,7 +124,7 @@ def _declares_package_dependencies(manifest: Path) -> bool:
     """
     try:
         data = json.loads(manifest.read_text())
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return True
     if not isinstance(data, dict):
         return True

@@ -10,7 +10,7 @@ from sqlmodel import Session
 from radar_api.config import get_database_url
 
 
-def get_db_session() -> Generator[Session, None, None]:
+def get_db_session() -> Generator[Session]:
     """Yield a session bound to RADAR_DATABASE_URL and dispose its engine when the request ends."""
     engine = get_engine(get_database_url())
     session = get_session(engine)

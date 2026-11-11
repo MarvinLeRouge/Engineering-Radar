@@ -1,6 +1,7 @@
 """Database engine and session factories, enforcing SQLite foreign keys on every connection."""
 
 import sqlite3
+from typing import Protocol
 
 from sqlalchemy import Engine, event
 from sqlalchemy.engine.interfaces import DBAPIConnection
@@ -33,3 +34,19 @@ def get_engine(database_url: str) -> Engine:
 def get_session(engine: Engine) -> Session:
     """Open a new SQLModel session bound to the given engine."""
     return Session(engine)
+
+
+class _HasId(Protocol):
+    @property
+    def id(self) -> int | None: ...
+
+
+def persisted_id(row: _HasId) -> int:
+    """Return the primary key of a row already flushed to the database.
+
+    Table models type `id` as `int | None` (unset until the first flush) while
+    foreign-key fields expect `int`. Raises `ValueError` if the row was never flushed.
+    """
+    if row.id is None:
+        raise ValueError(f"{type(row).__name__} has no id yet: flush it first")
+    return row.id

@@ -2,7 +2,7 @@
 name = "radar-online"
 version = "0.1.0"
 description = "Hosted service publishing sanitized Engineering-Radar reports, trends and badges."
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "radar-core",
     "fastapi>=0.115",

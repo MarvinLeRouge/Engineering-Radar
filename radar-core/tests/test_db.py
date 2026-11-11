@@ -1,7 +1,7 @@
 import pytest
-from radar_core.db import get_engine, get_session
+from radar_core.db import get_engine, get_session, persisted_id
 from radar_core.enums import ScoringModel
-from radar_core.models.methodology import Criterion
+from radar_core.models.methodology import Criterion, MethodologyVersion
 from sqlalchemy.exc import IntegrityError
 
 
@@ -41,3 +41,16 @@ def test_get_session_returns_open_session(tmp_path):
         assert session.is_active
     finally:
         session.close()
+
+
+def test_persisted_id_returns_the_id_of_a_flushed_row(db_session):
+    version = MethodologyVersion(version_label="persisted-id-test")
+    db_session.add(version)
+    db_session.flush()
+
+    assert persisted_id(version) == version.id
+
+
+def test_persisted_id_rejects_an_unsaved_row():
+    with pytest.raises(ValueError, match="MethodologyVersion"):
+        persisted_id(MethodologyVersion(version_label="never-flushed"))

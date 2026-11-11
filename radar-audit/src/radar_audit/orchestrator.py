@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import structlog
+from radar_core.db import persisted_id
 from radar_core.enums import FindingStatus, HumanVerdict
 from radar_core.models.audit import Audit, ToolResult
 from radar_core.models.finding import Finding, Recommendation
@@ -85,7 +86,7 @@ def get_or_create_audit(session: Session, repository: Repository) -> Audit:
         if existing is not None:
             return existing
 
-    audit = Audit(repository_id=repository.id, commit_sha=commit_sha, is_dirty=dirty)
+    audit = Audit(repository_id=persisted_id(repository), commit_sha=commit_sha, is_dirty=dirty)
     session.add(audit)
     session.commit()
     session.refresh(audit)
@@ -305,7 +306,7 @@ def _run_planned_tools(
             )
         session.add(
             ToolResult(
-                audit_id=audit.id,
+                audit_id=persisted_id(audit),
                 subproject_path=subproject_path,
                 tool_name=run.runner.tool_name,
                 tool_version=run.runner.tool_version,

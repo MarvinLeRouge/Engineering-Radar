@@ -13,8 +13,7 @@ from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.roadmap import ImprovementTask, RoadmapItem
 from radar_core.models.scoring import ScoringRun
-from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from radar_api.auth import require_api_key
 from radar_api.dependencies import get_db_session
@@ -83,7 +82,7 @@ def list_roadmap_items(
         .order_by(
             Category.order,  # type: ignore[arg-type]
             Criterion.id,  # type: ignore[arg-type]
-            desc(RoadmapItem.priority),  # type: ignore[arg-type]
+            col(RoadmapItem.priority).desc(),
             ImprovementTask.title,
         )
     ).all()

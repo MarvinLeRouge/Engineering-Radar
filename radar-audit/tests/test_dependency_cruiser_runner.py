@@ -112,9 +112,9 @@ def test_does_not_exclude_a_directory_whose_name_merely_contains_vendor(tmp_path
 
     assert result.exit_code == 0
     modules = result.raw_output["modules"]
-    assert any(
-        "vendors-config" in m["source"] for m in modules
-    ), "vendors-config/a.js should not be excluded (not a real vendor/ segment)"
+    assert any("vendors-config" in m["source"] for m in modules), (
+        "vendors-config/a.js should not be excluded (not a real vendor/ segment)"
+    )
 
 
 def test_excludes_compiled_build_output_from_the_scan(tmp_path):

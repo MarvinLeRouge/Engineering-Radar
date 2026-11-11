@@ -10,8 +10,7 @@ from radar_core.models.audit import Audit
 from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.scoring import Score, ScoringRun
-from sqlalchemy import desc
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from radar_audit.scoring import get_repository_by_name
 
@@ -27,7 +26,7 @@ def _get_latest_scoring_run(
         select(ScoringRun)
         .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
         .where(Audit.repository_id == repository_id)
-        .order_by(desc(ScoringRun.scored_at))  # type: ignore[arg-type]
+        .order_by(col(ScoringRun.scored_at).desc())
     ).first()
     if scoring_run is None:
         msg = (

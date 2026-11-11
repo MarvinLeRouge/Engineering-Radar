@@ -39,10 +39,7 @@ def test_reports_no_diagnostics_on_well_typed_code(tmp_path):
 def test_reports_a_type_error(tmp_path):
     repo_path = tmp_path / "repo"
     code_with_error = (
-        "export function add(a: number, b: number): number {\n"
-        "  return a + b;\n"
-        "}\n"
-        "add('x', 1);\n"
+        "export function add(a: number, b: number): number {\n  return a + b;\n}\nadd('x', 1);\n"
     )
     init_git_repo(repo_path, files={"src/a.ts": code_with_error})
     _write_package_json(repo_path)

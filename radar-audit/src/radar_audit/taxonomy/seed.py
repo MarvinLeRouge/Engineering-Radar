@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from radar_core.db import persisted_id
 from radar_core.enums import ScoringModel
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from sqlmodel import Session, select
@@ -34,7 +35,7 @@ def seed_taxonomy(session: Session, yaml_path: Path = TAXONOMY_PATH) -> Methodol
 
     for category_data in data["categories"]:
         category = Category(
-            methodology_version_id=methodology_version.id,
+            methodology_version_id=persisted_id(methodology_version),
             name=category_data["name"],
             weight=category_data["weight"],
             order=category_data["order"],
@@ -44,7 +45,7 @@ def seed_taxonomy(session: Session, yaml_path: Path = TAXONOMY_PATH) -> Methodol
 
         for criterion_data in category_data["criteria"]:
             criterion = Criterion(
-                category_id=category.id,
+                category_id=persisted_id(category),
                 name=criterion_data["name"],
                 description=criterion_data["description"],
                 weight=criterion_data["weight"],

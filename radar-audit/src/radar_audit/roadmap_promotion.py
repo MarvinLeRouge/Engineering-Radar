@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from radar_core.db import persisted_id
 from radar_core.enums import FindingSeverity, RoadmapStatus
 from radar_core.improvement_task_grouping import compute_task_group_key
 from radar_core.models.finding import Finding, Recommendation
@@ -122,7 +123,7 @@ def _upsert_task(
         task = ImprovementTask(
             title=title,
             description=description,
-            criterion_id=criterion.id,
+            criterion_id=persisted_id(criterion),
             file=file,
             group_key=group_key,
         )

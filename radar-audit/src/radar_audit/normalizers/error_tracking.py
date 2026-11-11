@@ -92,7 +92,7 @@ def _has_env_sourced_dsn(target_path: Path) -> bool:
     for file_path in iter_source_files(target_path):
         try:
             text = file_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
+        except OSError, UnicodeDecodeError:
             continue
         for match in _DSN_PATTERN.finditer(text):
             value = match.group(1)

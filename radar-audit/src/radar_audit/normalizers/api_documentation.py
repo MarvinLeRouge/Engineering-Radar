@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
@@ -46,7 +47,7 @@ def normalize_api_documentation(
 
     if has_fastapi or has_l5_swagger:
         score = Score(
-            scoring_run_id=scoring_run.id,
+            scoring_run_id=persisted_id(scoring_run),
             criterion_id=criterion.id,
             level=ScoreLevel.CRITERION,
             value=10.0,
@@ -54,7 +55,7 @@ def normalize_api_documentation(
         )
     else:
         score = Score(
-            scoring_run_id=scoring_run.id,
+            scoring_run_id=persisted_id(scoring_run),
             criterion_id=criterion.id,
             level=ScoreLevel.CRITERION,
             value=0.0,

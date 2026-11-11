@@ -2,7 +2,7 @@
 name = "radar-api"
 version = "0.1.0"
 description = "Minimal read/write API for Engineering-Radar."
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "radar-core",
     "fastapi>=0.115",

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
@@ -116,8 +117,8 @@ def _add_abnormal_exit_finding(
     add_finding_with_recommendation(
         session,
         Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
+            scoring_run_id=persisted_id(scoring_run),
+            criterion_id=persisted_id(criterion),
             tool_result_id=tool_result.id,
             severity=FindingSeverity.HIGH,
             description=(
@@ -153,8 +154,8 @@ def _add_coverage_floor_finding(
     add_finding_with_recommendation(
         session,
         Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
+            scoring_run_id=persisted_id(scoring_run),
+            criterion_id=persisted_id(criterion),
             tool_result_id=tool_result.id,
             severity=FindingSeverity.LOW,
             description=(f"Coverage is {coverage_percent}%, below the {_COVERAGE_FLOOR}% floor"),
@@ -184,17 +185,19 @@ def _add_failure_finding(
     name = failure.get("name") or "unknown test"
     file = failure.get("file")
     file = file if isinstance(file, str) else None
+    line = failure.get("line")
+    line = line if isinstance(line, int) else None
     description = f"Failing test: {name}"
     return add_finding_with_recommendation(
         session,
         Finding(
-            scoring_run_id=scoring_run.id,
-            criterion_id=criterion.id,
+            scoring_run_id=persisted_id(scoring_run),
+            criterion_id=persisted_id(criterion),
             tool_result_id=tool_result.id,
             severity=FindingSeverity.LOW,
             description=description,
             file=file,
-            line=failure.get("line"),
+            line=line,
             fingerprint=compute_fingerprint(criterion.id, FindingSeverity.LOW, file, description),
             confidence=Confidence.HIGH,
             status=FindingStatus.OPEN,

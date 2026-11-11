@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, FindingStatus, HumanVerdict, ScoreLevel
 from radar_core.finding_fingerprint import compute_fingerprint
 from radar_core.models.audit import ToolResult
@@ -59,8 +60,8 @@ def normalize_traefik_parity(
         add_finding_with_recommendation(
             session,
             Finding(
-                scoring_run_id=scoring_run.id,
-                criterion_id=criterion.id,
+                scoring_run_id=persisted_id(scoring_run),
+                criterion_id=persisted_id(criterion),
                 severity=FindingSeverity.LOW,
                 description=description,
                 fingerprint=compute_fingerprint(
@@ -82,7 +83,7 @@ def _na_score(
     session: Session, scoring_run: ScoringRun, criterion: Criterion, reason: str
 ) -> Score:
     score = Score(
-        scoring_run_id=scoring_run.id,
+        scoring_run_id=persisted_id(scoring_run),
         criterion_id=criterion.id,
         level=ScoreLevel.CRITERION,
         value=0.0,

@@ -6,6 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
+from radar_core.db import persisted_id
 from radar_core.enums import Confidence, FindingSeverity, ScoreLevel
 from radar_core.models.audit import ToolResult
 from radar_core.models.methodology import Criterion
@@ -42,7 +43,7 @@ def normalize_deployment_automation(
     # Same long-lived-service signal as criteria 7.2 (D11) and 9.3.
     if find_prod_compose(target_path) is None:
         score = Score(
-            scoring_run_id=scoring_run.id,
+            scoring_run_id=persisted_id(scoring_run),
             criterion_id=criterion.id,
             level=ScoreLevel.CRITERION,
             value=0.0,
