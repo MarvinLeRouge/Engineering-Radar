@@ -459,3 +459,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Pin uv and use a numeric user in the Python Dockerfiles (CHORE-008)
 - Remove the last em dashes from code (CHORE-009)
 - Scaffold the radar-online package (CHORE-010)
+- Move to python 3.14
