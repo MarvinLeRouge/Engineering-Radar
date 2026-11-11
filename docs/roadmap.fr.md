@@ -161,3 +161,4 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 ## Section 10 - Maintenance
 
 - [x] CHORE-013 - Passer à Python 3.14 et aux dernières dépendances (sqlmodel 0.0.49, SQLAlchemy 2.1), images Docker natives uv, Dependabot
+- [x] FIX-032 - Installer le navigateur Playwright en CI sans `--with-deps`, pour qu'une panne des miroirs Ubuntu ne fasse plus échouer le job e2e
