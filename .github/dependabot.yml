@@ -17,8 +17,14 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint caps its typescript peer below each new major (8.72 supports <6.1):
+      # bump typescript by hand once typescript-eslint supports it.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
-      # vitest and its plugins must move together, majors included.
+      # vitest and its plugins must move together, majors included (a vitest major may still
+      # come without @vitest/coverage-v8: then bump both by hand).
       vitest:
         patterns: ["vitest", "@vitest/*"]
       minor-and-patch:
