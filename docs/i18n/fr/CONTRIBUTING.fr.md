@@ -77,7 +77,7 @@ Les hooks pre-commit (`.pre-commit-config.yaml`) vérifient chaque commit :
 
 Un hook qui corrige ou reformate des fichiers fait échouer le commit : relire les modifications et commiter à nouveau. Lancer `uv run pre-commit run --all-files` pour tout vérifier d'un coup.
 
-La CI (`.github/workflows/ci.yml`) lance les tests de chaque package avec un seuil de couverture de 80 %, les vérifications de lint, de format et de types du dashboard, et ses tests end-to-end Playwright. Le lint et la vérification de types Python ne tournent que dans les hooks pre-commit.
+La CI (`.github/workflows/ci.yml`) lance les tests de chaque package avec un seuil de couverture de 80 %, les vérifications de lint, de format et de types du dashboard, ses tests end-to-end Playwright, et un scan `pip-audit` des dépendances Python verrouillées (`uv.lock`) qui échoue sur toute vulnérabilité connue. Le lint et la vérification de types Python ne tournent que dans les hooks pre-commit.
 
 ## Code de conduite
 
