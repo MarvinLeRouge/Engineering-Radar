@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  # Dispatched by changelog.yml on its bot PR: events created with GITHUB_TOKEN do not
+  # trigger pull_request runs, but workflow_dispatch is exempt from that rule
+  workflow_dispatch: {}
   push:
     branches: [main]
   pull_request:
@@ -154,6 +157,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: npm audit (dependency vulnerability scan)
+        run: npm audit --audit-level=critical
+
       - name: Lint
         run: npx oxlint . && npx eslint .
 
@@ -209,3 +215,21 @@ jobs:
             radar-dashboard/playwright-report/
             radar-dashboard/test-results/
           retention-days: 7
+
+  # Single required check for the protect-main ruleset. radar-audit-slow is left out: non-blocking.
+  ci-status:
+    name: CI status
+    if: always()
+    needs:
+      - radar-core
+      - radar-audit-fast
+      - radar-api
+      - radar-online
+      - security
+      - radar-dashboard
+      - radar-dashboard-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any required job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
