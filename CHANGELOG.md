@@ -468,3 +468,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(dashboard)* Move to vitest 5 and hold typescript majors
 - *(ci)* Hold python image minors in dependabot
 - Scan python dependencies with pip-audit
+- Audit dashboard deps and add a ci-status required-check job

@@ -163,3 +163,4 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] FIX-032 - Install the Playwright browser in CI without `--with-deps`, so an Ubuntu mirror outage no longer fails the e2e job
 - [x] CHORE-014 - Move the dashboard to vitest 5 with `@vitest/coverage-v8` 5, hold typescript majors in Dependabot until typescript-eslint supports them
 - [x] CI-001 - Scan the locked Python dependencies of the whole uv workspace with pip-audit in CI, blocking on any known vulnerability
+- [x] CI-002 - Run npm audit on the dashboard, add a `CI status` aggregator job for the protect-main ruleset, and dispatch CI on the changelog bot PR

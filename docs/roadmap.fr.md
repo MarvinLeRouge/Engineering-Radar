@@ -164,3 +164,4 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] FIX-032 - Installer le navigateur Playwright en CI sans `--with-deps`, pour qu'une panne des miroirs Ubuntu ne fasse plus échouer le job e2e
 - [x] CHORE-014 - Passer le dashboard à vitest 5 avec `@vitest/coverage-v8` 5, bloquer les majeures de typescript dans Dependabot tant que typescript-eslint ne les supporte pas
 - [x] CI-001 - Scanner avec pip-audit en CI les dépendances Python verrouillées de tout le workspace uv, en bloquant sur toute vulnérabilité connue
+- [x] CI-002 - Lancer npm audit sur le dashboard, ajouter un job agrégateur `CI status` pour le ruleset protect-main, et déclencher la CI sur la PR du bot changelog
