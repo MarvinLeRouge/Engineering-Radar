@@ -18,6 +18,12 @@ Out of scope for the first version: criterion scores, findings, roadmap,
 repository ownership verification, open self-service sign-up, history
 backfill (the online trend starts at the first upload).
 
+Delivery order (roadmap Section 9, reordered 2026-11-15): the badge and the
+read-only public report ship first, with accounts created by an admin command
+(`ACTIVE` user plus a first API key shown once). The email registration flow of
+section 5.1, key regeneration (5.2) and unpublishing (5.4) follow as a second
+milestone, once other users need them; the data model already supports them.
+
 ## 2. Components
 
 ```
@@ -106,7 +112,7 @@ confirmation 48 h, admin review 7 days, key reveal and regeneration 24 h.
 
 ## 5. Flows
 
-### 5.1 Registration
+### 5.1 Registration (second milestone)
 
 1. Visitor fills `/register`: email, display name, public slug, optional
    message. Rate limited per IP, honeypot field, slug and email uniqueness

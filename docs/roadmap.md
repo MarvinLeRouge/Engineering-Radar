@@ -138,23 +138,30 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 
 Hosted, multi-user publication of the global and category scores, with public report, trends and badge, at `radar.marvinlerouge.dev`. Decisions in [ADR 0014](adr/0014-radar-online-public-reports.md), design in [radar-online design](radar-online-design.md).
 
+**First milestone: badge and read-only public report.** Accounts are created by an admin command; publishing, the public report and trends, the badge and the deployment come first.
+
 - [x] DOCS-012 - Record the radar-online decisions (ADR 0014) and design: disclosure limited to global and category scores, server-to-server upload, one trend point per commit, self-assessed scores namespaced per user, registration on request with admin approval
 - [x] CHORE-010 - Scaffold the `radar-online` package: FastAPI, SQLModel and Alembic on its own SQLite database, Dockerfile (uid 1000, pinned uv), compose service behind Traefik, pre-commit and CI jobs
 - [x] FEAT-037 - Shared publication payload schema (`radar_core.publication`, v1, unknown fields rejected) and the radar-online data model: `User`, `ApiKey` (hashed), `ActionToken` (hashed, single use, expiring), `PublishedRepository`, `PublishedReport` (unique per repository and commit)
-- [ ] FEAT-038 - Email sending: SMTP through the Brevo relay in production, Maildev locally, text templates for every flow
-- [ ] FEAT-039 - Registration request and email confirmation: rate-limited request endpoint with honeypot, confirmation link leading to a page with an explicit confirm button, then admin notification
-- [ ] FEAT-040 - Admin review: review link leading to a page with accept and refuse buttons; acceptance emails a one-time key reveal link, refusal emails a short notice
-- [ ] FEAT-041 - API key reveal and regeneration: first key shown once from the reveal link; lost-key request by email, regeneration page that revokes previous keys
+- [x] DOCS-014 - Reorder Section 9 to ship the badge and the read-only public report first: accounts created by an admin command until other users need the email registration flow
+- [ ] FEAT-050 - Admin command creating an active account and its first API key (shown once), so publishing works before the email registration flow exists
 - [ ] FEAT-042 - Report upload: `POST /api/reports` authenticated by API key, strict validation, repository created on first upload, report replaced when the commit is already published
 - [ ] FEAT-043 - Public read API and badge: profile, latest report, history (one point per commit), shields.io badge marked self-assessed, cache headers
-- [ ] FEAT-044 - Unpublishing and account deletion: delete a repository, a report, or the whole account with the API key
-- [ ] CHORE-011 - Harden radar-online: rate limits, keys and tokens kept out of logs and Sentry, daily SQLite backup
 - [ ] FEAT-045 - Local payload builder and preview: build the v1 payload from a scoring run (global and category scores only, test proving no other field leaves), `GET /repositories/{id}/publish-preview` in radar-api
 - [ ] FEAT-046 - Local publishing: `POST /repositories/{id}/publish` in radar-api (server to server, `RADAR_ONLINE_URL` and `RADAR_ONLINE_API_KEY` from `.env`) and `radar-audit publish <repo>`
 - [ ] FEAT-047 - Dashboard "Upload report" button: preview modal with confirmation, success link to the public page, error states
 - [ ] FEAT-048 - Dashboard online build mode: online router and API client, report with global and category gauges only, trends, self-assessed note, no roadmap, findings, verdicts or settings
-- [ ] FEAT-049 - Online public pages: profile, registration form, email confirmation, admin review, key reveal and lost key
+- [ ] CHORE-011 - Harden radar-online: rate limits, keys and tokens kept out of logs and Sentry, daily SQLite backup
 - [ ] CHORE-012 - Deploy radar-online on the VPS behind Traefik (`radar.marvinlerouge.dev`, HTTPS), server `.env`, Brevo sender verified, backups scheduled
+
+**Second milestone: self-service accounts.** Email registration with admin approval, key regeneration, unpublishing and deletion, the public registration pages and the user guide.
+
+- [ ] FEAT-038 - Email sending: SMTP through the Brevo relay in production, Maildev locally, text templates for every flow
+- [ ] FEAT-039 - Registration request and email confirmation: rate-limited request endpoint with honeypot, confirmation link leading to a page with an explicit confirm button, then admin notification
+- [ ] FEAT-040 - Admin review: review link leading to a page with accept and refuse buttons; acceptance emails a one-time key reveal link, refusal emails a short notice
+- [ ] FEAT-041 - API key reveal and regeneration: first key shown once from the reveal link; lost-key request by email, regeneration page that revokes previous keys
+- [ ] FEAT-044 - Unpublishing and account deletion: delete a repository, a report, or the whole account with the API key
+- [ ] FEAT-049 - Online public pages: profile, registration form, email confirmation, admin review, key reveal and lost key
 - [ ] DOCS-013 - Bilingual user guide (registering, publishing, disclosure policy, badge, public API), README and operations updates, README badge link pointed at the public page
 
 ## Section 10 - Maintenance
