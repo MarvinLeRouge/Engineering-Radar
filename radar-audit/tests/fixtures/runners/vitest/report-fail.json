@@ -1,0 +1,51 @@
+{
+ "numTotalTestSuites": 1,
+ "numPassedTestSuites": 0,
+ "numFailedTestSuites": 1,
+ "numPendingTestSuites": 0,
+ "numTotalTests": 1,
+ "numPassedTests": 0,
+ "numFailedTests": 1,
+ "numPendingTests": 0,
+ "numTodoTests": 0,
+ "snapshot": {
+  "added": 0,
+  "failure": false,
+  "filesAdded": 0,
+  "filesRemoved": 0,
+  "filesRemovedList": [],
+  "filesUnmatched": 0,
+  "filesUpdated": 0,
+  "matched": 0,
+  "total": 0,
+  "unchecked": 0,
+  "uncheckedKeysByFile": [],
+  "unmatched": 0,
+  "updated": 0,
+  "didUpdate": false
+ },
+ "startTime": 1794860596924,
+ "success": false,
+ "testResults": [
+  {
+   "assertionResults": [
+    {
+     "ancestorTitles": [],
+     "fullName": "adds",
+     "status": "failed",
+     "title": "adds",
+     "duration": 7.220169999999996,
+     "failureMessages": [
+      "AssertionError: expected 3 to be 4 // Object.is equality"
+     ],
+     "meta": {}
+    }
+   ],
+   "startTime": 1794860597191,
+   "endTime": 1794860597198.2202,
+   "status": "failed",
+   "message": "",
+   "name": "{target}/src/add.test.js"
+  }
+ ]
+}

@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 
 import pytest
+from radar_audit.runners import typescript_runner
 from radar_audit.runners.typescript_runner import TypeScriptRunner
 
 from tests.git_helpers import init_git_repo
@@ -105,4 +107,89 @@ def test_drops_diagnostics_of_excluded_files(tmp_path):
     result = runner.run(repo_path, exclude_paths=[(repo_path / "src" / "a.spec.ts").resolve()])
 
     assert result.raw_output["diagnostics"] == []
+    assert result.raw_output["total_files"] == 1
+
+
+_TSC_ERROR = (Path(__file__).parent / "fixtures" / "runners" / "tsc" / "type-error.txt").read_text()
+
+
+def _ts_repo(tmp_path, devDependencies=None, files=None):
+    repo_path = tmp_path / "repo"
+    init_git_repo(
+        repo_path,
+        files=files or {"src/a.ts": "export const a = 1;\n", "src/b.vue": "<template/>\n"},
+    )
+    _write_package_json(repo_path, devDependencies)
+    return repo_path
+
+
+def test_parses_diagnostics_and_counts_source_files(tmp_path, fake_tool):
+    repo_path = _ts_repo(tmp_path)
+    calls = fake_tool(typescript_runner, stdout=_TSC_ERROR, returncode=1)
+
+    result = TypeScriptRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 1
+    assert result.command == "npx --package=typescript -- tsc --noEmit"
+    assert calls == [["npx", "--package=typescript", "--", "tsc", "--noEmit"]]
+    assert result.raw_output["diagnostics"] == [
+        {
+            "file": "src/a.ts",
+            "line": 4,
+            "column": 5,
+            "code": "TS2345",
+            "message": "Argument of type 'string' is not assignable to parameter of type 'number'.",
+        }
+    ]
+    assert result.raw_output["total_files"] == 2
+
+
+def test_uses_vue_tsc_command_when_declared(tmp_path, fake_tool):
+    repo_path = _ts_repo(tmp_path, {"vue-tsc": "^2.0.0"})
+    calls = fake_tool(typescript_runner)
+
+    result = TypeScriptRunner().run(repo_path, exclude_paths=[])
+
+    assert calls[0] == ["npx", "--package=vue-tsc", "--", "vue-tsc", "--noEmit"]
+    assert result.raw_output["diagnostics"] == []
+
+
+def test_defaults_to_typescript_when_package_json_missing(tmp_path, fake_tool):
+    repo_path = _ts_repo(tmp_path)
+    (repo_path / "package.json").unlink()
+    calls = fake_tool(typescript_runner)
+
+    TypeScriptRunner().run(repo_path, exclude_paths=[])
+
+    assert calls[0][1:3] == ["--package=typescript", "--"]
+
+
+def test_ignores_non_diagnostic_lines(tmp_path, fake_tool):
+    repo_path = _ts_repo(tmp_path)
+    stdout = "Found 1 error.\n  continuation line\n" + _TSC_ERROR
+    fake_tool(typescript_runner, stdout=stdout, returncode=1)
+
+    result = TypeScriptRunner().run(repo_path, exclude_paths=[])
+
+    assert [d["file"] for d in result.raw_output["diagnostics"]] == ["src/a.ts"]
+
+
+def test_drops_excluded_and_skipped_directory_diagnostics(tmp_path, fake_tool):
+    repo_path = _ts_repo(
+        tmp_path,
+        files={"src/a.ts": "x\n", "src/a.spec.ts": "x\n", "dist/out.ts": "x\n"},
+    )
+    error = _TSC_ERROR.strip()
+    stdout = "\n".join(
+        [
+            error.replace("src/a.ts", "src/a.spec.ts"),
+            error.replace("src/a.ts", "dist/out.ts"),
+            error,
+        ]
+    )
+    fake_tool(typescript_runner, stdout=stdout, returncode=1)
+
+    result = TypeScriptRunner().run(repo_path, exclude_paths=[repo_path / "src" / "a.spec.ts"])
+
+    assert [d["file"] for d in result.raw_output["diagnostics"]] == ["src/a.ts"]
     assert result.raw_output["total_files"] == 1

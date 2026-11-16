@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="{target}/phpunit.xml" tests="1" assertions="1" errors="0" failures="1" skipped="0" time="0.013098">
+    <testsuite name="Test Suite" tests="1" assertions="1" errors="0" failures="1" skipped="0" time="0.013098">
+      <testsuite name="Tests\Unit\CalculatorTest" file="tests/Unit/CalculatorTest.php" tests="1" assertions="1" errors="0" failures="1" skipped="0" time="0.013098">
+        <testcase name="adds" file="tests/Unit/CalculatorTest.php::adds" class="Tests\Unit\CalculatorTest" classname="Tests.Unit.CalculatorTest" assertions="1" time="0.013098">
+          <failure type="PHPUnit\Framework\ExpectationFailedException">addsFailed asserting that 3 is identical to 4.
+at tests/Unit/CalculatorTest.php:7</failure>
+        </testcase>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

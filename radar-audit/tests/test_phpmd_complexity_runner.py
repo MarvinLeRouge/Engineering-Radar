@@ -1,4 +1,7 @@
+from pathlib import Path
+
 import pytest
+from radar_audit.runners import phpmd_complexity_runner
 from radar_audit.runners.phpmd_complexity_runner import PhpmdComplexityRunner
 
 from tests.git_helpers import init_git_repo
@@ -114,3 +117,111 @@ def test_tags_codesize_and_unusedcode_violations_separately(tmp_path):
     # attribute at all (confirmed empirically against real phpmd output) -- the
     # key only expects the attribute to be present when phpmd provides it.
     assert all(v.get("class") is None for v in unusedcode)
+
+
+_FIXTURE_DIR = Path(__file__).parent / "fixtures" / "runners" / "phpmd"
+
+
+def _pmd(body: str) -> str:
+    return f'<?xml version="1.0" encoding="UTF-8" ?>\n<pmd version="3.0.0">{body}</pmd>\n'
+
+
+def test_parses_real_phpmd_xml_into_tagged_relative_violations(tmp_path, fake_tool):
+    stdout = (
+        (_FIXTURE_DIR / "codesize-and-unusedcode.xml")
+        .read_text()
+        .replace("{target}", str(tmp_path))
+    )
+    calls = fake_tool(phpmd_complexity_runner, stdout=stdout, returncode=2)
+
+    result = PhpmdComplexityRunner().run(tmp_path, exclude_paths=[])
+
+    assert [c[:2] for c in calls[:2]] == [
+        ["composer", "init"],
+        ["composer", "require"],
+    ]
+    assert result.exit_code == 2
+    assert result.command == " ".join(calls[2])
+    assert calls[2][1:] == [str(tmp_path), "xml", "codesize,unusedcode", "--exclude=vendor/*"]
+    # The NPathComplexity violation has no "Cyclomatic Complexity of N" text: dropped.
+    assert result.raw_output["violations"] == [
+        {
+            "ruleset": "codesize",
+            "file": "src/A.php",
+            "line": 5,
+            "complexity": 16,
+            "class": "A",
+            "method": "classify",
+        },
+        {
+            "ruleset": "unusedcode",
+            "file": "src/B.php",
+            "line": 7,
+            "rule": "UnusedLocalVariable",
+            "message": "Avoid unused local variables such as '$unused'.",
+            "class": None,
+            "method": None,
+        },
+    ]
+
+
+def test_keeps_stdout_and_no_violations_when_phpmd_output_is_not_xml(tmp_path, fake_tool):
+    fake_tool(phpmd_complexity_runner, stdout="PHP Fatal error: boom", returncode=1)
+
+    result = PhpmdComplexityRunner().run(tmp_path, exclude_paths=[])
+
+    assert result.exit_code == 1
+    assert result.raw_output == {"violations": [], "stdout": "PHP Fatal error: boom"}
+
+
+def test_passes_one_exclude_flag_per_path_and_skips_paths_outside_the_target(tmp_path, fake_tool):
+    excluded_dir = tmp_path / "src" / "excluded"
+    excluded_dir.mkdir(parents=True)
+    excluded_file = tmp_path / "src" / "Legacy.php"
+    excluded_file.write_text("<?php\n")
+    outside = tmp_path.parent / "elsewhere"
+    calls = fake_tool(phpmd_complexity_runner, stdout=_pmd(""))
+
+    PhpmdComplexityRunner().run(tmp_path, exclude_paths=[excluded_dir, excluded_file, outside])
+
+    assert calls[2][4:] == [
+        "--exclude=vendor/*",
+        "--exclude=src/excluded/*",
+        "--exclude=src/Legacy.php",
+    ]
+
+
+def test_ignores_unknown_rulesets_and_defaults_missing_attributes(tmp_path, fake_tool):
+    body = (
+        '<file name="x.php">'
+        '<violation ruleset="Naming Rules" rule="ShortVariable">short</violation>'
+        '<violation ruleset="Unused Code Rules" rule="UnusedPrivateMethod" class="K" method="m">'
+        "  Avoid unused private methods.  </violation>"
+        '<violation ruleset="Unused Code Rules" rule="UnusedFormalParameter"/>'
+        '<violation ruleset="Code Size Rules"/>'
+        "</file>"
+    )
+    fake_tool(phpmd_complexity_runner, stdout=_pmd(body))
+
+    result = PhpmdComplexityRunner().run(tmp_path, exclude_paths=[])
+
+    assert result.raw_output["violations"] == [
+        {
+            "ruleset": "unusedcode",
+            "file": "x.php",
+            "line": 0,
+            "rule": "UnusedPrivateMethod",
+            "message": "Avoid unused private methods.",
+            "class": "K",
+            "method": "m",
+        },
+        {
+            "ruleset": "unusedcode",
+            "file": "x.php",
+            "line": 0,
+            "rule": "UnusedFormalParameter",
+            "message": "",
+            "class": None,
+            "method": None,
+        },
+    ]

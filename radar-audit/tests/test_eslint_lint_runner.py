@@ -1,7 +1,9 @@
 # tests/test_eslint_lint_runner.py
 import json
+from pathlib import Path
 
 import pytest
+from radar_audit.runners import eslint_lint_runner
 from radar_audit.runners.eslint_lint_runner import EslintLintRunner
 
 from tests.git_helpers import init_git_repo
@@ -141,3 +143,117 @@ def test_reports_tool_identity():
     assert runner.tool_name == "eslint"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"javascript"})
+
+
+# --- fast tests: ESLint is faked, outputs come from real captured runs ---
+
+_FIXTURES = Path(__file__).parent / "fixtures" / "runners" / "eslint"
+
+
+def _violation_stdout(target):
+    return (_FIXTURES / "violation.json").read_text().replace("{target}", str(target))
+
+
+def test_relativizes_file_paths_of_the_eslint_json_report(tmp_path, fake_tool):
+    _write_package_json(tmp_path, "eslint src")
+    (tmp_path / "src").mkdir()
+    calls = fake_tool(eslint_lint_runner, stdout=_violation_stdout(tmp_path), returncode=1)
+
+    result = EslintLintRunner().run(tmp_path, exclude_paths=[])
+
+    assert calls == [["npx", "--package=eslint", "--", "eslint", "src", "--format", "json"]]
+    assert result.command == "npx --package=eslint -- eslint src --format json"
+    assert result.exit_code == 1
+    (entry,) = result.raw_output["results"]
+    assert entry["filePath"] == "src/a.js"
+    assert entry["messages"][0]["ruleId"] == "no-unused-vars"
+    assert entry["messages"][0]["line"] == 2
+
+
+def test_falls_back_to_raw_output_when_eslint_stdout_is_not_json(tmp_path, fake_tool):
+    fake_tool(eslint_lint_runner, stdout="Oops! Something went wrong", stderr="boom", returncode=2)
+
+    result = EslintLintRunner().run(tmp_path, exclude_paths=[])
+
+    assert result.raw_output == {"stdout": "Oops! Something went wrong", "stderr": "boom"}
+    assert result.exit_code == 2
+
+
+def test_lints_the_whole_target_when_there_is_no_package_json(tmp_path, fake_tool):
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    result = EslintLintRunner().run(tmp_path, exclude_paths=[])
+
+    assert calls[0][4:] == [".", "--format", "json"]
+    assert result.raw_output == {"results": []}
+
+
+def test_ignores_flags_and_missing_paths_of_the_lint_script(tmp_path, fake_tool):
+    _write_package_json(tmp_path, "eslint --fix src missing.js tests")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "tests").mkdir()
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    EslintLintRunner().run(tmp_path, exclude_paths=[])
+
+    assert calls[0][4:] == ["src", "tests", "--format", "json"]
+
+
+def test_lints_the_whole_target_when_no_lint_script_path_exists(tmp_path, fake_tool):
+    _write_package_json(tmp_path, "eslint missing")
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    EslintLintRunner().run(tmp_path, exclude_paths=[])
+
+    assert calls[0][4:] == [".", "--format", "json"]
+
+
+def test_lints_the_whole_target_when_the_package_has_no_lint_script(tmp_path, fake_tool):
+    (tmp_path / "package.json").write_text(json.dumps({"name": "fixture"}))
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    EslintLintRunner().run(tmp_path, exclude_paths=[])
+
+    assert calls[0][4:] == [".", "--format", "json"]
+
+
+def test_drops_an_excluded_scope_token_and_keeps_the_others(tmp_path, fake_tool):
+    _write_package_json(tmp_path, "eslint src tests")
+    (tmp_path / "src").mkdir()
+    (tmp_path / "tests").mkdir()
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    EslintLintRunner().run(tmp_path, exclude_paths=[tmp_path / "tests"])
+
+    assert calls[0] == [
+        "npx",
+        "--package=eslint",
+        "--",
+        "eslint",
+        "src",
+        "--format",
+        "json",
+        "--ignore-pattern",
+        "tests/**",
+    ]
+
+
+def test_falls_back_to_the_whole_target_when_every_scope_token_is_excluded(tmp_path, fake_tool):
+    _write_package_json(tmp_path, "eslint src")
+    (tmp_path / "src").mkdir()
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    EslintLintRunner().run(tmp_path, exclude_paths=[tmp_path / "src"])
+
+    assert calls[0][4:] == [".", "--format", "json", "--ignore-pattern", "src/**"]
+
+
+def test_skips_excluded_paths_outside_the_target(tmp_path, fake_tool):
+    target = tmp_path / "repo"
+    target.mkdir()
+    calls = fake_tool(eslint_lint_runner, stdout="[]")
+
+    EslintLintRunner().run(target, exclude_paths=[tmp_path / "elsewhere", target / "dist"])
+
+    assert calls[0].count("--ignore-pattern") == 1
+    assert calls[0][-1] == "dist/**"

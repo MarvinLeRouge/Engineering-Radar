@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="{target}/phpunit.xml" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.009612">
+    <testsuite name="Test Suite" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.009612">
+      <testsuite name="Tests\Unit\CalculatorTest" file="tests/Unit/CalculatorTest.php" tests="1" assertions="1" errors="0" failures="0" skipped="0" time="0.009612">
+        <testcase name="adds" file="tests/Unit/CalculatorTest.php::adds" class="Tests\Unit\CalculatorTest" classname="Tests.Unit.CalculatorTest" assertions="1" time="0.009612"/>
+      </testsuite>
+    </testsuite>
+  </testsuite>
+</testsuites>

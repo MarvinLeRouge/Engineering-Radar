@@ -172,3 +172,4 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] CI-001 - Scan the locked Python dependencies of the whole uv workspace with pip-audit in CI, blocking on any known vulnerability
 - [x] CI-002 - Run npm audit on the dashboard, add a `CI status` aggregator job for the protect-main ruleset, and dispatch CI on the changelog bot PR
 - [x] FIX-033 - Run audit tools with an empty stdin, so `npx` no longer waits on its install prompt until the 60 s timeout when the audit is started from a terminal
+- [x] TEST-001 - Close the per-file coverage gaps below 80% (radar-audit runners, radar-dashboard utilities and branches) with fast behavior tests

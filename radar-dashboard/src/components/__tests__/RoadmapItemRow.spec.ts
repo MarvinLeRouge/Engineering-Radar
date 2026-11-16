@@ -96,4 +96,29 @@ describe('RoadmapItemRow', () => {
 
     expect(wrapper.text()).toContain('Settings')
   })
+
+  it('shows the server message on a non-401 API error, without emitting updated', async () => {
+    vi.mocked(client.updateRoadmapItemStatus).mockRejectedValueOnce(
+      new ApiError(409, 'status transition not allowed'),
+    )
+    const wrapper = mount(RoadmapItemRow, { props: { item } })
+
+    await wrapper.find('select').setValue('WONT_FIX')
+    await wrapper.find('button').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.roadmap-item-row__error').text()).toBe('status transition not allowed')
+    expect(wrapper.emitted('updated')).toBeUndefined()
+  })
+
+  it('shows a generic message when the rejection is not an Error', async () => {
+    vi.mocked(client.updateRoadmapItemStatus).mockRejectedValueOnce('boom')
+    const wrapper = mount(RoadmapItemRow, { props: { item } })
+
+    await wrapper.find('select').setValue('WONT_FIX')
+    await wrapper.find('button').trigger('click')
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('.roadmap-item-row__error').text()).toBe('update failed')
+  })
 })

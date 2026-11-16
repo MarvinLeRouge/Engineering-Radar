@@ -435,6 +435,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Relax test assertion for Ruff 0.16.5 defaults
 - *(radar-audit)* Cover PestRunner fallback when tests directory missing
 - *(radar-audit)* Cover phpdoc-checker fallback payload and align spec with real knip shape
+- Close per-file coverage gaps below 80% (TEST-001)
 
 ### ⚙️ Miscellaneous Tasks
 

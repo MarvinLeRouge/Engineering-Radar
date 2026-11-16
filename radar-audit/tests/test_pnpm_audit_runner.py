@@ -1,7 +1,9 @@
 import json
 import subprocess
+from pathlib import Path
 
 import pytest
+from radar_audit.runners import pnpm_audit_runner
 from radar_audit.runners.pnpm_audit_runner import PnpmAuditRunner
 
 from tests.git_helpers import init_git_repo
@@ -277,3 +279,192 @@ def test_reports_tool_identity():
     assert runner.tool_name == "pnpm-audit"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"javascript"})
+
+
+# --- fast tests: audit tools are faked, outputs come from real captured runs ---
+
+_FIXTURES = Path(__file__).parent / "fixtures" / "runners" / "pnpm-audit"
+
+
+def _fixture(name):
+    return (_FIXTURES / name).read_text()
+
+
+def _target_with(tmp_path, lockfile):
+    (tmp_path / "package.json").write_text("{}")
+    if lockfile:
+        (tmp_path / lockfile).write_text("")
+    return tmp_path
+
+
+def test_reports_no_lockfile_without_running_any_audit(tmp_path, fake_tool):
+    calls = fake_tool(pnpm_audit_runner)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, None), exclude_paths=[])
+
+    assert calls == []
+    assert result.command == "npm/pnpm/yarn audit (skipped, no lockfile)"
+    assert result.exit_code == 0
+    assert result.raw_output["manifest_found"] is True
+    assert result.raw_output["error"]["code"] == "NO_LOCKFILE_DETECTED"
+
+
+def test_reports_no_manifest_without_running_any_audit(tmp_path, fake_tool):
+    calls = fake_tool(pnpm_audit_runner)
+
+    result = PnpmAuditRunner().run(tmp_path, exclude_paths=[])
+
+    assert calls == []
+    assert result.command == "npm/pnpm/yarn audit (skipped, no package.json)"
+
+
+def test_dispatches_to_npm_audit_and_parses_its_report(tmp_path, fake_tool):
+    calls = fake_tool(pnpm_audit_runner, stdout=_fixture("npm-audit.json"), returncode=1)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "package-lock.json"), exclude_paths=[])
+
+    assert calls == [["npm", "audit", "--json"]]
+    assert result.command == "npm audit --json"
+    assert result.exit_code == 1
+    assert result.raw_output == {
+        "manifest_found": True,
+        "vulnerabilities": [
+            {"id": "1106913", "package": "lodash", "severity": "HIGH", "fix_available": True}
+        ],
+    }
+
+
+def test_dispatches_to_pnpm_audit_and_parses_its_report(tmp_path, fake_tool):
+    calls = fake_tool(pnpm_audit_runner, stdout=_fixture("pnpm-audit.json"), returncode=1)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "pnpm-lock.yaml"), exclude_paths=[])
+
+    assert calls == [["pnpm", "audit", "--json"]]
+    assert result.raw_output["vulnerabilities"] == [
+        {"id": "1106913", "package": "lodash", "severity": "HIGH", "fix_available": True}
+    ]
+
+
+def test_dispatches_to_yarn_audit_through_npx_and_parses_its_report(tmp_path, fake_tool):
+    calls = fake_tool(pnpm_audit_runner, stdout=_fixture("yarn-audit.ndjson"), returncode=8)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "yarn.lock"), exclude_paths=[])
+
+    assert calls == [["npx", "--package=yarn", "--", "yarn", "audit", "--json"]]
+    assert result.exit_code == 8
+    assert result.raw_output["vulnerabilities"] == [
+        {"id": "1106913", "package": "lodash", "severity": "HIGH", "fix_available": True}
+    ]
+
+
+def test_prefers_npm_over_pnpm_and_yarn_lockfiles(tmp_path, fake_tool):
+    target = _target_with(tmp_path, "yarn.lock")
+    (target / "pnpm-lock.yaml").write_text("")
+    (target / "package-lock.json").write_text("")
+    calls = fake_tool(pnpm_audit_runner, stdout=_fixture("npm-audit.json"))
+
+    PnpmAuditRunner().run(target, exclude_paths=[])
+
+    assert calls == [["npm", "audit", "--json"]]
+
+
+def test_reports_no_vulnerabilities_for_an_empty_pnpm_advisory_map(tmp_path, fake_tool):
+    fake_tool(pnpm_audit_runner, stdout='{"actions": [], "advisories": {}}')
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "pnpm-lock.yaml"), exclude_paths=[])
+
+    assert result.raw_output == {"manifest_found": True, "vulnerabilities": []}
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "not json at all",
+        "[]",
+        '{"error": {"code": "ENOAUDIT"}}',
+        '{"auditReportVersion": 2}',
+        '{"auditReportVersion": 2, "vulnerabilities": []}',
+    ],
+)
+def test_npm_parser_rejects_unusable_output(stdout):
+    assert PnpmAuditRunner._parse_npm_audit(stdout) is None
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    [
+        "not json at all",
+        "[]",
+        '{"error": {"code": "ERR_PNPM_AUDIT_NO_LOCKFILE"}}',
+        '{"advisories": []}',
+        "{}",
+    ],
+)
+def test_pnpm_parser_rejects_unusable_output(stdout):
+    assert PnpmAuditRunner._parse_pnpm_audit(stdout) is None
+
+
+def test_yarn_parser_ignores_blank_lines_and_unknown_record_types():
+    stdout = (
+        _fixture("yarn-audit.ndjson")
+        .replace("\n", "\n\n")
+        .replace('{"type":"auditSummary"', '{"type":"info","data":"x"}\n{"type":"auditSummary"')
+    )
+
+    vulnerabilities = PnpmAuditRunner._parse_yarn_audit(stdout)
+
+    assert [v["id"] for v in vulnerabilities] == ["1106913"]
+
+
+@pytest.mark.parametrize("stdout", ["not json\n", "[1]\n", '{"type":"auditSummary"}\nnot json\n'])
+def test_yarn_parser_rejects_unusable_lines(stdout):
+    assert PnpmAuditRunner._parse_yarn_audit(stdout) is None
+
+
+def test_npm_parser_defaults_unknown_severity_to_medium():
+    stdout = json.dumps({"vulnerabilities": {"pkg": {"via": [{"source": 7, "severity": "weird"}]}}})
+
+    (vulnerability,) = PnpmAuditRunner._parse_npm_audit(stdout)
+
+    assert vulnerability == {
+        "id": "7",
+        "package": "pkg",
+        "severity": "MEDIUM",
+        "fix_available": False,
+    }
+
+
+def test_failed_audit_surfaces_the_tool_error_and_raw_streams(tmp_path, fake_tool):
+    stdout = '{"error": {"code": "ERR_PNPM_AUDIT_BAD_RESPONSE", "message": "registry down"}}'
+    fake_tool(pnpm_audit_runner, stdout=stdout, stderr="warn", returncode=1)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "pnpm-lock.yaml"), exclude_paths=[])
+
+    assert result.exit_code == 1
+    assert result.raw_output == {
+        "manifest_found": True,
+        "error": {"code": "ERR_PNPM_AUDIT_BAD_RESPONSE", "message": "registry down"},
+        "stdout": stdout,
+        "stderr": "warn",
+    }
+
+
+def test_failed_audit_with_non_json_stdout_uses_a_generic_error(tmp_path, fake_tool):
+    fake_tool(pnpm_audit_runner, stdout="npm ERR! network", stderr="e", returncode=1)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "package-lock.json"), exclude_paths=[])
+
+    assert result.raw_output == {
+        "manifest_found": True,
+        "error": "audit produced no usable advisories report",
+        "stdout": "npm ERR! network",
+        "stderr": "e",
+    }
+
+
+def test_failed_audit_with_non_object_json_uses_a_generic_error(tmp_path, fake_tool):
+    fake_tool(pnpm_audit_runner, stdout="[1, 2]", returncode=1)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, "pnpm-lock.yaml"), exclude_paths=[])
+
+    assert result.raw_output["error"] == "audit produced no usable advisories report"
