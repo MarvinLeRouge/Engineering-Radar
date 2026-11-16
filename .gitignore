@@ -15,3 +15,6 @@ radar-audit/reports/
 
 # Tooling
 .codegraph
+
+# Backups
+radar.db.bak*

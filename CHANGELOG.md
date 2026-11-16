@@ -470,3 +470,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(ci)* Hold python image minors in dependabot
 - Scan python dependencies with pip-audit
 - Audit dashboard deps and add a ci-status required-check job
+- Ignore local radar.db backups (CHORE-015)
