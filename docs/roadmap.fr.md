@@ -172,3 +172,4 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] CHORE-014 - Passer le dashboard à vitest 5 avec `@vitest/coverage-v8` 5, bloquer les majeures de typescript dans Dependabot tant que typescript-eslint ne les supporte pas
 - [x] CI-001 - Scanner avec pip-audit en CI les dépendances Python verrouillées de tout le workspace uv, en bloquant sur toute vulnérabilité connue
 - [x] CI-002 - Lancer npm audit sur le dashboard, ajouter un job agrégateur `CI status` pour le ruleset protect-main, et déclencher la CI sur la PR du bot changelog
+- [x] FIX-033 - Lancer les outils d'audit avec un stdin vide, pour que `npx` n'attende plus sa question d'installation jusqu'au timeout de 60 s quand l'audit est lancé depuis un terminal

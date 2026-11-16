@@ -63,9 +63,19 @@ SKIP_GLOB_SUFFIXES = tuple(f"/{name}/*" for name in _SKIPPED_DIRS)
 def run_timed(
     command: list[str], timeout_s: int, cwd: Path | None = None
 ) -> tuple[subprocess.CompletedProcess[str], int]:
-    """Run `command` capturing text output, and return it with its duration in milliseconds."""
+    """Run `command` capturing text output, and return it with its duration in milliseconds.
+
+    stdin is empty, not the terminal: npx would otherwise wait on its install prompt.
+    """
     start = time.monotonic()
-    completed = subprocess.run(command, cwd=cwd, capture_output=True, text=True, timeout=timeout_s)
+    completed = subprocess.run(
+        command,
+        cwd=cwd,
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        timeout=timeout_s,
+    )
     return completed, int((time.monotonic() - start) * 1000)
 
 

@@ -113,6 +113,7 @@ class TrivyImageRunner:
         completed = subprocess.run(
             ["docker", "images", "--format", "{{.Repository}}:{{.Tag}}"],
             capture_output=True,
+            stdin=subprocess.DEVNULL,
             text=True,
             timeout=10,
         )
