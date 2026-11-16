@@ -1,0 +1,1 @@
+{"totals":{"errors":0,"file_errors":1},"files":{"{target}/src/Broken.php":{"errors":1,"messages":[{"message":"Function broken() should return int but returns string.","line":5,"ignorable":true,"identifier":"return.type"}]}},"errors":[]}

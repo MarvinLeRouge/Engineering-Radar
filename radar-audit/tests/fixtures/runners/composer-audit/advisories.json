@@ -1,0 +1,46 @@
+{
+    "advisories": {
+        "phpmailer/phpmailer": [
+            {
+                "advisoryId": "PKSA-35kn-2ddp-d3p4",
+                "packageName": "phpmailer/phpmailer",
+                "affectedVersions": "<6.5.0",
+                "title": "RCE affecting Windows hosts via UNC paths to translation files",
+                "cve": "CVE-2021-34551",
+                "link": "https://github.com/PHPMailer/PHPMailer/releases/tag/v6.5.0",
+                "reportedAt": "2021-06-16T16:20:00+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-7q44-r25x-wm4q"
+                    },
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "phpmailer/phpmailer/CVE-2021-34551.yaml"
+                    }
+                ],
+                "severity": "high"
+            },
+            {
+                "advisoryId": "PKSA-m8by-bb7v-7qt5",
+                "packageName": "phpmailer/phpmailer",
+                "affectedVersions": "<6.5.0",
+                "title": "Untrusted code may be run from an overridden address validator",
+                "cve": "CVE-2021-3603",
+                "link": "https://github.com/PHPMailer/PHPMailer/releases/tag/v6.5.0",
+                "reportedAt": "2021-06-16T16:20:00+00:00",
+                "sources": [
+                    {
+                        "name": "GitHub",
+                        "remoteId": "GHSA-77mr-wc79-m8j3"
+                    },
+                    {
+                        "name": "FriendsOfPHP/security-advisories",
+                        "remoteId": "phpmailer/phpmailer/CVE-2021-3603.yaml"
+                    }
+                ]
+            }
+        ]
+    },
+    "abandoned": []
+}

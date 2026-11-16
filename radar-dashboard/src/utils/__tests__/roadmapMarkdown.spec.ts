@@ -1,6 +1,6 @@
 // radar-dashboard/src/utils/__tests__/roadmapMarkdown.spec.ts
-import { describe, expect, it } from 'vitest'
-import { buildRoadmapMarkdown } from '../roadmapMarkdown'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { buildRoadmapMarkdown, downloadRoadmapMarkdown } from '../roadmapMarkdown'
 import type { RoadmapItemRead } from '@/api/client'
 
 function makeItem(overrides: Partial<RoadmapItemRead>): RoadmapItemRead {
@@ -89,5 +89,33 @@ describe('buildRoadmapMarkdown', () => {
     expect(markdown).toContain('## Testing')
     expect(markdown).toContain('### SAST findings')
     expect(markdown).toContain('### Coverage')
+  })
+})
+
+describe('downloadRoadmapMarkdown', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  it('downloads the built markdown as roadmap-corrections.md and releases the object URL', async () => {
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:roadmap')
+    const revokeObjectURL = vi.fn<(url: string) => void>()
+    vi.stubGlobal('URL', { ...URL, createObjectURL, revokeObjectURL })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      expect(this.href).toBe('blob:roadmap')
+      expect(this.download).toBe('roadmap-corrections.md')
+    })
+    const items = [makeItem({})]
+
+    downloadRoadmapMarkdown(items)
+
+    expect(click).toHaveBeenCalledOnce()
+    const blob = createObjectURL.mock.calls[0]![0]
+    expect(blob.type).toBe('text/markdown')
+    expect(await blob.text()).toBe(buildRoadmapMarkdown(items))
+    expect(revokeObjectURL).toHaveBeenCalledWith('blob:roadmap')
   })
 })

@@ -1,0 +1,1 @@
+{"tool":"pint","result":"fail","files":[{"path":"src\/A.php","fixers":["class_definition","function_declaration","blank_line_after_opening_tag","braces_position","statement_indentation","single_line_empty_body"]}]}

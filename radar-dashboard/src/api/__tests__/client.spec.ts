@@ -5,7 +5,9 @@ import {
   ApiError,
   getCriterionFindings,
   getRepositoryReport,
+  getRepositoryRoadmap,
   getRoadmapItemEvidenceCandidates,
+  getScoreHistory,
   listRepositories,
   updateFindingNote,
   updateFindingStatus,
@@ -77,6 +79,52 @@ describe('api/client', () => {
     await expect(getRepositoryReport(999)).rejects.toMatchObject({
       status: 404,
       message: 'not found',
+    })
+  })
+
+  it('getRepositoryReport adds the scoring_run_id query when a run is given', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ repository_id: 1, categories: [] }))
+
+    await getRepositoryReport(1, 7)
+
+    expect(fetch).toHaveBeenCalledWith('/api/repositories/1/report?scoring_run_id=7', {})
+  })
+
+  it('getScoreHistory calls GET /api/repositories/:id/score-history', async () => {
+    const points = [{ scoring_run_id: 3 }]
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse(points))
+
+    const result = await getScoreHistory(5)
+
+    expect(fetch).toHaveBeenCalledWith('/api/repositories/5/score-history', {})
+    expect(result).toEqual(points)
+  })
+
+  it('getRepositoryRoadmap calls GET /api/repositories/:id/roadmap', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse([]))
+
+    const result = await getRepositoryRoadmap(5)
+
+    expect(fetch).toHaveBeenCalledWith('/api/repositories/5/roadmap', {})
+    expect(result).toEqual([])
+  })
+
+  it('resolves to undefined on a 204 response without reading a body', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+    await expect(updateFindingStatus(1, 'RESOLVED')).resolves.toBeUndefined()
+  })
+
+  it('falls back to statusText when the error detail is not a string', async () => {
+    const response = new Response(JSON.stringify({ detail: [{ msg: 'bad field' }] }), {
+      status: 422,
+      statusText: 'Unprocessable Entity',
+    })
+    vi.mocked(fetch).mockResolvedValueOnce(response)
+
+    await expect(getRepositoryReport(1)).rejects.toMatchObject({
+      status: 422,
+      message: 'Unprocessable Entity',
     })
   })
 

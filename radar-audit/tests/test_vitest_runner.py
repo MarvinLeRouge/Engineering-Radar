@@ -1,6 +1,9 @@
+import json
 import subprocess
+from pathlib import Path
 
 import pytest
+from radar_audit.runners import vitest_runner
 from radar_audit.runners.vitest_runner import VitestRunner
 
 from tests.git_helpers import init_git_repo
@@ -150,3 +153,148 @@ def test_reports_tool_identity():
     assert runner.tool_name == "vitest"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"javascript"})
+
+
+_FIXTURES = Path(__file__).parent / "fixtures" / "runners" / "vitest"
+
+
+def _fixture(name, repo_path):
+    return (_FIXTURES / name).read_text().replace("{target}", str(repo_path))
+
+
+def _fake_local_vitest(tmp_path, with_coverage=True):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/add.js": "export function add() {}\n"})
+    bin_path = repo_path / "node_modules" / ".bin" / "vitest"
+    bin_path.parent.mkdir(parents=True)
+    bin_path.touch()
+    if with_coverage:
+        (repo_path / "node_modules" / "@vitest" / "coverage-v8").mkdir(parents=True)
+    return repo_path
+
+
+def _flag_value(command, prefix):
+    return next(Path(arg.removeprefix(prefix)) for arg in command if arg.startswith(prefix))
+
+
+def _responder(report=None, summary=None):
+    def respond(command, cwd):
+        if report is not None:
+            _flag_value(command, "--outputFile=").write_text(report)
+        reports_dir = next(
+            (a for a in command if a.startswith("--coverage.reportsDirectory=")), None
+        )
+        if summary is not None and reports_dir is not None:
+            directory = Path(reports_dir.split("=", 1)[1])
+            directory.mkdir(parents=True)
+            (directory / "coverage-summary.json").write_text(summary)
+
+    return respond
+
+
+def test_parses_passing_report_and_coverage_percent(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path)
+    summary = (_FIXTURES / "coverage-summary.json").read_text()
+    calls = fake_tool(
+        vitest_runner,
+        returncode=0,
+        respond=_responder(_fixture("report-pass.json", repo_path), summary),
+    )
+
+    result = VitestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    assert result.raw_output == {
+        "tests": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+        "failures": [],
+        "coverage_percent": 100,
+    }
+    assert result.command == " ".join(calls[0])
+    assert "--coverage" in calls[0]
+    assert "--coverage.reporter=json-summary" in calls[0]
+
+
+def test_relativizes_failure_file_and_keeps_name(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path)
+    fake_tool(
+        vitest_runner,
+        returncode=1,
+        respond=_responder(_fixture("report-fail.json", repo_path)),
+    )
+
+    result = VitestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 1
+    assert result.raw_output["tests"] == {"total": 1, "passed": 0, "failed": 1, "skipped": 0}
+    assert result.raw_output["failures"] == [
+        {"file": "src/add.test.js", "name": "adds", "line": None}
+    ]
+    assert result.raw_output["coverage_percent"] is None
+
+
+def test_failure_name_falls_back_to_title_when_full_name_missing(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path, with_coverage=False)
+    report = json.loads(_fixture("report-fail.json", repo_path))
+    del report["testResults"][0]["assertionResults"][0]["fullName"]
+    fake_tool(vitest_runner, returncode=1, respond=_responder(json.dumps(report)))
+
+    result = VitestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["failures"][0]["name"] == "adds"
+
+
+def test_omits_coverage_flags_when_provider_absent(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path, with_coverage=False)
+    calls = fake_tool(
+        vitest_runner,
+        respond=_responder(_fixture("report-pass.json", repo_path)),
+    )
+
+    result = VitestRunner().run(repo_path, exclude_paths=[])
+
+    assert not any(arg.startswith("--coverage") for arg in calls[0])
+    assert result.raw_output["coverage_percent"] is None
+    assert result.raw_output["tests"]["passed"] == 1
+
+
+def test_coverage_is_none_when_summary_file_missing(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path)
+    fake_tool(
+        vitest_runner,
+        respond=_responder(_fixture("report-pass.json", repo_path)),
+    )
+
+    result = VitestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["coverage_percent"] is None
+
+
+def test_forwards_only_in_tree_exclude_paths_as_globs(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path, with_coverage=False)
+    calls = fake_tool(
+        vitest_runner,
+        respond=_responder(_fixture("report-pass.json", repo_path)),
+    )
+
+    VitestRunner().run(
+        repo_path, exclude_paths=[repo_path / "nested-worktree", tmp_path / "elsewhere"]
+    )
+
+    command = calls[0]
+    assert command.count("--exclude") == 1
+    assert command[command.index("--exclude") + 1] == "nested-worktree/**"
+
+
+def test_returns_zero_test_fallback_when_no_report_written(tmp_path, fake_tool):
+    repo_path = _fake_local_vitest(tmp_path)
+    calls = fake_tool(vitest_runner, returncode=1, stderr="boom")
+
+    result = VitestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 1
+    assert result.command == " ".join(calls[0])
+    assert result.raw_output == {
+        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
+        "failures": [],
+        "coverage_percent": None,
+    }

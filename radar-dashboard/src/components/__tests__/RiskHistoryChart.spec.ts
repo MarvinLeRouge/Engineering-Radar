@@ -108,6 +108,23 @@ describe('RiskHistoryChart', () => {
     expect(wrapper.emitted('select-point')).toEqual([[1]])
   })
 
+  it('emits nothing when the chart is clicked outside any audit', () => {
+    const wrapper = mount(RiskHistoryChart, { props: { points: twoPoints } })
+
+    const options = wrapper.findComponent({ name: 'LineStub' }).props('options')
+    options.onClick({}, [])
+    expect(wrapper.emitted('select-point')).toBeUndefined()
+  })
+
+  it('sorts tooltip items top-down, highest dataset index first', () => {
+    const wrapper = mount(RiskHistoryChart, { props: { points: twoPoints } })
+
+    const options = wrapper.findComponent({ name: 'LineStub' }).props('options')
+    const items = [{ datasetIndex: 0 }, { datasetIndex: 3 }, { datasetIndex: 1 }]
+    items.sort(options.plugins.tooltip.itemSort)
+    expect(items.map((item) => item.datasetIndex)).toEqual([3, 1, 0])
+  })
+
   it('lists every audit with its risk index for keyboard users and emits select-point', async () => {
     const wrapper = mount(RiskHistoryChart, { props: { points: twoPoints } })
 

@@ -1,6 +1,8 @@
 import subprocess
+from pathlib import Path
 
 import pytest
+from radar_audit.runners import pest_runner
 from radar_audit.runners.pest_runner import PestRunner
 
 from tests.git_helpers import init_git_repo
@@ -176,3 +178,150 @@ def test_reports_tool_identity():
     assert runner.tool_name == "pest"
     assert runner.scope == "subproject"
     assert runner.supported_stacks == frozenset({"php"})
+
+
+_FIXTURES = Path(__file__).parent / "fixtures" / "runners" / "pest"
+
+
+def _fake_local_pest(tmp_path):
+    repo_path = tmp_path / "repo"
+    init_git_repo(repo_path, files={"src/Calculator.php": "<?php\n"})
+    bin_path = repo_path / "vendor" / "bin" / "pest"
+    bin_path.parent.mkdir(parents=True)
+    bin_path.touch()
+    return repo_path
+
+
+def _flag_path(command, prefix):
+    return Path(next(arg for arg in command if arg.startswith(prefix)).split("=", 1)[1])
+
+
+def _write_reports(junit=None, clover=None):
+    def respond(command, cwd):
+        if junit is not None:
+            _flag_path(command, "--log-junit=").write_text(junit)
+        if clover is not None:
+            _flag_path(command, "--coverage-clover=").write_text(clover)
+
+    return respond
+
+
+def _read(name):
+    return (_FIXTURES / name).read_text()
+
+
+def test_parses_passing_junit_and_clover_coverage(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    calls = fake_tool(
+        pest_runner,
+        respond=_write_reports(_read("junit-pass.xml"), _read("clover-pass.xml")),
+    )
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    assert result.raw_output == {
+        "tests": {"total": 1, "passed": 1, "failed": 0, "skipped": 0},
+        "failures": [],
+        "coverage_percent": 100.0,
+    }
+    assert result.command == " ".join(calls[0])
+    assert "--min=0" in calls[0]
+
+
+def test_strips_test_name_suffix_from_failure_file(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    fake_tool(
+        pest_runner,
+        returncode=1,
+        respond=_write_reports(_read("junit-fail.xml"), _read("clover-pass.xml")),
+    )
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 1
+    assert result.raw_output["tests"] == {"total": 1, "passed": 0, "failed": 1, "skipped": 0}
+    assert result.raw_output["failures"] == [
+        {"file": "tests/Unit/CalculatorTest.php", "name": "adds", "line": None}
+    ]
+
+
+def test_failure_file_is_none_when_testcase_has_no_file_attribute(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    junit = _read("junit-fail.xml").replace(' file="tests/Unit/CalculatorTest.php::adds"', "")
+    fake_tool(pest_runner, returncode=1, respond=_write_reports(junit))
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["failures"] == [{"file": None, "name": "adds", "line": None}]
+
+
+def test_bare_testsuites_report_gives_zero_tests_with_uncovered_clover(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    fake_tool(
+        pest_runner,
+        respond=_write_reports(_read("junit-empty.xml"), _read("clover-uncovered.xml")),
+    )
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 0
+    assert result.raw_output["tests"]["total"] == 0
+    assert result.raw_output["failures"] == []
+    assert result.raw_output["coverage_percent"] == 0.0
+
+
+def test_coverage_is_none_when_clover_file_missing(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    fake_tool(pest_runner, respond=_write_reports(_read("junit-pass.xml")))
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["tests"]["passed"] == 1
+    assert result.raw_output["coverage_percent"] is None
+
+
+def test_coverage_is_none_when_clover_has_no_project_metrics(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    clover = '<?xml version="1.0"?><coverage><project name="x"/></coverage>'
+    fake_tool(pest_runner, respond=_write_reports(_read("junit-pass.xml"), clover))
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["coverage_percent"] is None
+
+
+def test_coverage_is_none_when_clover_counts_zero_statements(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    clover = _read("clover-pass.xml").replace('statements="1"', 'statements="0"')
+    fake_tool(pest_runner, respond=_write_reports(_read("junit-pass.xml"), clover))
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["coverage_percent"] is None
+
+
+def test_falls_back_when_junit_file_is_empty(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    fake_tool(pest_runner, returncode=2, respond=_write_reports(junit=""))
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 2
+    assert result.raw_output == {
+        "tests": {"total": 0, "passed": 0, "failed": 0, "skipped": 0},
+        "failures": [],
+        "coverage_percent": None,
+    }
+
+
+def test_falls_back_when_junit_file_not_written(tmp_path, fake_tool):
+    repo_path = _fake_local_pest(tmp_path)
+    calls = fake_tool(pest_runner, returncode=255)
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.exit_code == 255
+    assert result.command == " ".join(calls[0])
+    assert result.raw_output["tests"]["total"] == 0
+    assert result.raw_output["coverage_percent"] is None

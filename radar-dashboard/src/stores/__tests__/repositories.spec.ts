@@ -36,6 +36,16 @@ describe('repositories store', () => {
     expect(store.list).toEqual([])
   })
 
+  it('falls back to a generic error message when the rejection is not an Error', async () => {
+    vi.mocked(client.listRepositories).mockRejectedValueOnce('boom')
+    const store = useRepositoriesStore()
+
+    await store.fetchList()
+
+    expect(store.listError).toBe('unexpected error')
+    expect(store.listLoading).toBe(false)
+  })
+
   it('fetchReport populates report on success', async () => {
     const report = {
       repository_id: 1,
