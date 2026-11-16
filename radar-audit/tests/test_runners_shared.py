@@ -1,6 +1,7 @@
+import subprocess
 from pathlib import Path
 
-from radar_audit.runners.shared import relativize_file_field, relativize_path_keys
+from radar_audit.runners.shared import relativize_file_field, relativize_path_keys, run_timed
 
 
 def test_relativize_file_field_converts_an_absolute_path_under_target_path():
@@ -73,3 +74,18 @@ def test_relativize_path_keys_leaves_an_already_relative_key_unchanged():
     result = relativize_path_keys(mapping, target_path)
 
     assert result == {"src/a.py": {"sloc": 10}}
+
+
+def test_run_timed_gives_the_tool_an_empty_stdin_instead_of_the_terminal(monkeypatch):
+    # npx asks "Ok to proceed?" on a terminal stdin and waits until the timeout.
+    calls: list[dict[str, object]] = []
+
+    def fake_run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(kwargs)
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    run_timed(["npx", "--package=eslint", "--", "eslint", "."], timeout_s=10)
+
+    assert calls[0]["stdin"] is subprocess.DEVNULL

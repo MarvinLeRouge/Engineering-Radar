@@ -41,6 +41,7 @@ class PhpdocCheckerRunner:
                 ],
                 cwd=scratch,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=self.timeout_s,
                 check=False,
@@ -49,6 +50,7 @@ class PhpdocCheckerRunner:
                 ["composer", "require", "--dev", "php-censor/phpdoc-checker", "--no-interaction"],
                 cwd=scratch,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=self.timeout_s,
                 check=False,
@@ -72,7 +74,11 @@ class PhpdocCheckerRunner:
             ]
 
             completed = subprocess.run(
-                command, capture_output=True, text=True, timeout=self.timeout_s
+                command,
+                capture_output=True,
+                stdin=subprocess.DEVNULL,
+                text=True,
+                timeout=self.timeout_s,
             )
         duration_ms = int((time.monotonic() - start) * 1000)
 

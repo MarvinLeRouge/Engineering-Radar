@@ -36,6 +36,7 @@ class PhpmdComplexityRunner:
                 ["composer", "init", "--no-interaction", "--name=radar-audit/phpmd-scratch"],
                 cwd=scratch,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=self.timeout_s,
                 check=False,
@@ -44,6 +45,7 @@ class PhpmdComplexityRunner:
                 ["composer", "require", "--dev", "phpmd/phpmd", "--no-interaction"],
                 cwd=scratch,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=self.timeout_s,
                 check=False,
@@ -64,7 +66,11 @@ class PhpmdComplexityRunner:
                 command.append(f"--exclude={pattern}")
 
             completed = subprocess.run(
-                command, capture_output=True, text=True, timeout=self.timeout_s
+                command,
+                capture_output=True,
+                stdin=subprocess.DEVNULL,
+                text=True,
+                timeout=self.timeout_s,
             )
         duration_ms = int((time.monotonic() - start) * 1000)
 

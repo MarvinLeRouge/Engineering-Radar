@@ -41,6 +41,7 @@ class PhpstanRunner:
                 ["composer", "require", "--dev", *dev_packages, "--no-interaction"],
                 cwd=target_path,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=self.timeout_s,
                 check=False,
@@ -61,7 +62,12 @@ class PhpstanRunner:
                     str(target_path),
                 ]
                 completed = subprocess.run(
-                    command, cwd=target_path, capture_output=True, text=True, timeout=self.timeout_s
+                    command,
+                    cwd=target_path,
+                    capture_output=True,
+                    stdin=subprocess.DEVNULL,
+                    text=True,
+                    timeout=self.timeout_s,
                 )
             finally:
                 extension_neon.unlink(missing_ok=True)
@@ -78,6 +84,7 @@ class PhpstanRunner:
                 ["composer", "install", "--no-interaction"],
                 cwd=target_path,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=self.timeout_s,
                 check=False,

@@ -56,6 +56,7 @@ class PytestCoverageRunner:
                     command,
                     cwd=target_path,
                     capture_output=True,
+                    stdin=subprocess.DEVNULL,
                     text=True,
                     timeout=self.timeout_s,
                     env=env,
