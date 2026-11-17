@@ -174,3 +174,4 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] CI-002 - Lancer npm audit sur le dashboard, ajouter un job agrégateur `CI status` pour le ruleset protect-main, et déclencher la CI sur la PR du bot changelog
 - [x] FIX-033 - Lancer les outils d'audit avec un stdin vide, pour que `npx` n'attende plus sa question d'installation jusqu'au timeout de 60 s quand l'audit est lancé depuis un terminal
 - [x] TEST-001 - Combler les fichiers sous 80% de couverture (runners radar-audit, utilitaires et branches radar-dashboard) avec des tests rapides de comportement
+- [x] FIX-034 - Traiter un `clover.xml` Pest corrompu comme une couverture inconnue et une entrée d'avis npm/pnpm/yarn malformée comme un audit échoué, au lieu de faire planter le runner

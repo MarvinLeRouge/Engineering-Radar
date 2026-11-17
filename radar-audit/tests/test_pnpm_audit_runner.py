@@ -468,3 +468,26 @@ def test_failed_audit_with_non_object_json_uses_a_generic_error(tmp_path, fake_t
     result = PnpmAuditRunner().run(_target_with(tmp_path, "pnpm-lock.yaml"), exclude_paths=[])
 
     assert result.raw_output["error"] == "audit produced no usable advisories report"
+
+
+@pytest.mark.parametrize(
+    ("lockfile", "stdout"),
+    [
+        (
+            "package-lock.json",
+            json.dumps({"vulnerabilities": {"pkg": {"via": [{"severity": "high"}]}}}),
+        ),
+        ("pnpm-lock.yaml", json.dumps({"advisories": {"1": {"module_name": "pkg"}}})),
+        (
+            "yarn.lock",
+            '{"type":"auditAdvisory","data":{"advisory":{"id":1}}}\n{"type":"auditSummary"}\n',
+        ),
+    ],
+)
+def test_malformed_advisory_entry_reports_a_failed_audit(tmp_path, fake_tool, lockfile, stdout):
+    fake_tool(pnpm_audit_runner, stdout=stdout, returncode=1)
+
+    result = PnpmAuditRunner().run(_target_with(tmp_path, lockfile), exclude_paths=[])
+
+    assert result.raw_output["error"] == "audit produced no usable advisories report"
+    assert "vulnerabilities" not in result.raw_output

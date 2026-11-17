@@ -88,7 +88,11 @@ class PnpmAuditRunner:
         completed, duration_ms = run_timed(command, self.timeout_s, cwd=target_path)
 
         parser = getattr(self, _PARSER_NAMES[lockfile_name])
-        vulnerabilities = parser(completed.stdout)
+        try:
+            vulnerabilities = parser(completed.stdout)
+        except KeyError, TypeError, AttributeError:
+            # A malformed advisory entry (missing id/module_name/source) means no usable report.
+            vulnerabilities = None
         if vulnerabilities is None:
             return self._failed(command, completed, duration_ms)
 

@@ -77,7 +77,10 @@ class PestRunner:
     def _parse_clover(self, clover_path: Path) -> float | None:
         if not clover_path.exists():
             return None
-        root = ET.parse(clover_path).getroot()
+        try:
+            root = ET.parse(clover_path).getroot()
+        except ET.ParseError:
+            return None
         assert root is not None
         metrics = root.find(".//project/metrics")
         if metrics is None:

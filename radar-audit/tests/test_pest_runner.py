@@ -281,6 +281,17 @@ def test_coverage_is_none_when_clover_file_missing(tmp_path, fake_tool):
     assert result.raw_output["coverage_percent"] is None
 
 
+@pytest.mark.parametrize("clover", ["", "<coverage><project"])
+def test_coverage_is_none_when_clover_file_is_unparseable(tmp_path, fake_tool, clover):
+    repo_path = _fake_local_pest(tmp_path)
+    fake_tool(pest_runner, respond=_write_reports(_read("junit-pass.xml"), clover))
+
+    result = PestRunner().run(repo_path, exclude_paths=[])
+
+    assert result.raw_output["tests"]["passed"] == 1
+    assert result.raw_output["coverage_percent"] is None
+
+
 def test_coverage_is_none_when_clover_has_no_project_metrics(tmp_path, fake_tool):
     repo_path = _fake_local_pest(tmp_path)
     clover = '<?xml version="1.0"?><coverage><project name="x"/></coverage>'

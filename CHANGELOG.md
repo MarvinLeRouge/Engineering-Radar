@@ -280,6 +280,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-audit)* Skip git-ignored paths in every runner (FIX-031)
 - *(ci)* Install the playwright browser without apt dependencies
 - *(audit)* Run audit tools with an empty stdin (FIX-033)
+- *(audit)* Treat unparseable pest coverage and malformed audit advisories as no report (FIX-034)
 
 ### 🚜 Refactor
 
