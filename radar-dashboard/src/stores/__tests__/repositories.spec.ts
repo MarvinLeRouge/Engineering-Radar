@@ -57,6 +57,7 @@ describe('repositories store', () => {
       categories: [],
       risk: [],
       risk_index: 0,
+      global_score: null,
     }
     vi.mocked(client.getRepositoryReport).mockResolvedValueOnce(report)
     const store = useRepositoriesStore()
@@ -87,6 +88,7 @@ describe('repositories store', () => {
       scored_at: '2026-01-01',
       risk: [],
       risk_index: 0,
+      global_score: null,
       categories: [],
     }
     vi.mocked(client.getRepositoryReport).mockResolvedValueOnce(report)

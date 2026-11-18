@@ -22,7 +22,14 @@
         {{ store.reportError }}
       </p>
       <template v-else-if="store.report">
-        <h1 class="page-title repository-detail-view__title">{{ store.report.repository_name }}</h1>
+        <h1 class="page-title repository-detail-view__title">
+          <span>{{ store.report.repository_name }}</span>
+          <ScoreGauge
+            class="repository-detail-view__global-score"
+            :value="store.report.global_score"
+            :status="store.report.global_score === null ? 'not_yet_audited' : 'scored'"
+          />
+        </h1>
         <p class="repository-detail-view__scored-at">
           Scored on {{ formatScoredAt(store.report.scored_at) }}
           <span v-if="activeScoringRunId === null">(latest)</span>
@@ -265,7 +272,16 @@ onMounted(() => {
 }
 
 .repository-detail-view__title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   margin-bottom: var(--space-2);
+}
+
+.repository-detail-view__global-score {
+  min-width: 4rem;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-subtitle);
 }
 
 .repository-detail-view__scored-at {

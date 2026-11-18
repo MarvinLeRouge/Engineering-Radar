@@ -250,6 +250,7 @@ def test_get_repository_report_with_scoring_run_id_returns_that_specific_run(cli
 
     assert response.status_code == 200
     assert response.json()["scored_at"] is not None
+    assert response.json()["global_score"] == 3.0
     # Without the param, the latest run (8.0) would be returned instead.
     default_response = client.get(f"/repositories/{repo.id}/report")
     assert default_response.json() != response.json()
