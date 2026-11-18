@@ -64,6 +64,7 @@ class RepositoryReport(BaseModel):
     commit_sha: str
     audited_at: datetime
     scored_at: datetime
+    global_score: float | None
     categories: list[CategoryReport]
     risk: list[SeverityRiskPoint]
     risk_index: int

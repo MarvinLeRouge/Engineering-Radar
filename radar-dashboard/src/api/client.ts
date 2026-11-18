@@ -65,6 +65,7 @@ export interface RepositoryReport {
   commit_sha: string
   audited_at: string
   scored_at: string
+  global_score: number | null
   categories: CategoryReport[]
   /** Weighted risk of this scoring run, same rule as `ScoreHistoryPoint.risk`. */
   risk: SeverityRiskPoint[]

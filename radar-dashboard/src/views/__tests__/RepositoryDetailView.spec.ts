@@ -66,6 +66,7 @@ describe('RepositoryDetailView', () => {
         scored_at: '2026-01-01',
         risk: [],
         risk_index: 0,
+        global_score: null,
         categories: [
           {
             id: 1,
@@ -150,6 +151,7 @@ describe('RepositoryDetailView', () => {
         scored_at: '2026-01-01',
         risk: [],
         risk_index: 0,
+        global_score: null,
         categories: [
           {
             id: 1,
@@ -207,6 +209,7 @@ describe('RepositoryDetailView', () => {
         scored_at: '2026-03-15',
         risk: [],
         risk_index: 0,
+        global_score: null,
         categories: [],
       }
     })
@@ -230,6 +233,7 @@ describe('RepositoryDetailView', () => {
         scored_at: '2026-03-15',
         risk: [{ severity: 'HIGH', weight: 16, count: 2, excluded: 0, wont_fix: 0, weighted: 32 }],
         risk_index: 32,
+        global_score: null,
         categories: [],
       }
     })
@@ -240,6 +244,31 @@ describe('RepositoryDetailView', () => {
     const bar = wrapper.findComponent({ name: 'RiskBar' })
     expect(bar.props('riskIndex')).toBe(32)
     expect(bar.text()).toContain('High 2 x16 = 32')
+  })
+
+  it('shows the global score as a badge next to the repository name', async () => {
+    const store = useRepositoriesStore()
+    store.fetchReport = vi.fn<(repositoryId: number) => Promise<void>>(async () => {
+      store.report = {
+        repository_id: 1,
+        repository_name: 'repo-a',
+        scoring_run_id: 1,
+        commit_sha: 'a',
+        audited_at: '2026-01-01',
+        scored_at: '2026-03-15',
+        global_score: 7.42,
+        risk: [],
+        risk_index: 0,
+        categories: [],
+      }
+    })
+    store.fetchRoadmap = vi.fn<(repositoryId: number) => Promise<void>>()
+
+    const wrapper = await mountView()
+
+    const title = wrapper.find('h1')
+    expect(title.text()).toContain('repo-a')
+    expect(title.find('.score-gauge').text()).toBe('7.4')
   })
 
   it('does not mark the date as latest when viewing a historical scoring run', async () => {
@@ -262,6 +291,7 @@ describe('RepositoryDetailView', () => {
           scored_at: '2026-02-01',
           risk: [],
           risk_index: 0,
+          global_score: null,
           categories: [],
         }
       },
@@ -296,6 +326,7 @@ describe('RepositoryDetailView', () => {
           scored_at: '2026-02-01',
           risk: [],
           risk_index: 0,
+          global_score: null,
           categories: [
             {
               id: 1,
@@ -346,6 +377,7 @@ describe('RepositoryDetailView', () => {
       scored_at: '2026-01-01',
       risk: [],
       risk_index: 0,
+      global_score: null,
       categories: [
         {
           id: 1,

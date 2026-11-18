@@ -291,6 +291,7 @@ def get_repository_report(
         commit_sha=audit.commit_sha,
         audited_at=audit.audited_at,
         scored_at=scoring_run.scored_at,
+        global_score=scoring_run.global_score,
         categories=category_reports,
         risk=risk,
         risk_index=sum(entry.weighted for entry in risk),

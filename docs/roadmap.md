@@ -131,6 +131,7 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 - [x] DOCS-010 - Refresh the documentation after a month of changes: root and package READMEs (new radar-dashboard README), architecture docs, operations (services, migrations, CI, Docker audit limits), developer guide, CONTRIBUTING (French twin resynced, broken links fixed), product context, and dated amendments in the toolchain and quality framework for adopted candidate tools, FIX-023, FIX-031 and FEAT-034
 - [x] DOCS-011 - Remove em and en dashes from the Markdown docs (about 1,425 rewritten in context across 35 files, double colons smoothed in the user-facing ones); 9 left inside code blocks that quote source code still using them, and the French quality framework gets its missing 6.1 deferral paragraph
 - [x] CHORE-009 - Remove the last em dashes from code: four comments and four taxonomy descriptions (seeded once per methodology version, not exposed by the API, so the live database and display are unchanged), plus the doc code blocks quoting them
+- [x] FEAT-051 - Show the global score of the displayed scoring run as a larger badge next to the repository name in the report (`global_score` added to the report endpoint)
 - [ ] Detect roadmap <-> code divergence
 - [ ] Track system self-metrics (score stability, false-positive rate, reproducibility)
 
