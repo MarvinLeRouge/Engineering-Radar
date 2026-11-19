@@ -541,17 +541,20 @@ _EXCLUDED_SOURCE_DIRNAMES = frozenset(
 )
 
 
-def iter_source_files(target_path: Path) -> Iterator[Path]:
+def iter_source_files(
+    target_path: Path, extensions: frozenset[str] = _SOURCE_EXTENSIONS
+) -> Iterator[Path]:
     """Walk the repo's own source files, pruning vendored/build directories during
     the walk itself (not filtering results after rglob), so node_modules/.venv/vendor
     are never recursed into at all.
 
-    Shared by criteria 9.2 and 9.3, which both grep source text for a simple
-    marker (a DSN assignment, a health-check route path) rather than parsing
-    per-framework routing syntax.
+    Shared by criteria 9.1, 9.2 and 9.3, which grep source text for a simple
+    marker (a JSON log formatter, a DSN assignment, a health-check route path)
+    rather than parsing per-framework syntax. `extensions` selects the file
+    suffixes to yield (9.1 also reads `.env.example` templates).
     """
     for dirpath, dirnames, filenames in target_path.walk(top_down=True):
         dirnames[:] = [name for name in dirnames if name not in _EXCLUDED_SOURCE_DIRNAMES]
         for filename in filenames:
-            if Path(filename).suffix in _SOURCE_EXTENSIONS:
+            if Path(filename).suffix in extensions:
                 yield dirpath / filename
