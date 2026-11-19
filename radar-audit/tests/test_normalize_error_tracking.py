@@ -98,3 +98,54 @@ def test_sentry_without_env_dsn_explains_score_with_a_low_finding(db_session, tm
     normalize_error_tracking(db_session, scoring_run, criterion, [])
 
     assert single_repo_level_finding(db_session, criterion).severity == "LOW"
+
+
+def test_laravel_config_dsn_read_with_env_helper_scores_ten(db_session, tmp_path):
+    (tmp_path / "composer.json").write_text('{"require": {"sentry/sentry-laravel": "^4.0"}}')
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sentry.php").write_text(
+        "<?php\n\nreturn [\n    'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),\n];\n"
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_error_tracking(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+
+
+def test_laravel_config_hardcoded_dsn_scores_five(db_session, tmp_path):
+    (tmp_path / "composer.json").write_text('{"require": {"sentry/sentry-laravel": "^4.0"}}')
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "sentry.php").write_text(
+        "<?php\n\nreturn [\n    'dsn' => 'https://key@o1.ingest.sentry.io/2',\n];\n"
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_error_tracking(db_session, scoring_run, criterion, [])
+
+    assert score.value == 5.0
+
+
+def test_vite_dsn_variable_read_from_import_meta_env_scores_ten(db_session, tmp_path):
+    (tmp_path / "package.json").write_text('{"dependencies": {"@sentry/vue": "^8.0.0"}}')
+    (tmp_path / "observability.js").write_text(
+        "const sentryDsn = import.meta.env.VITE_SENTRY_DSN?.trim();\n"
+        "Sentry.init({ app, dsn: sentryDsn });\n"
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_error_tracking(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+
+
+def test_vite_hardcoded_dsn_scores_five(db_session, tmp_path):
+    (tmp_path / "package.json").write_text('{"dependencies": {"@sentry/vue": "^8.0.0"}}')
+    (tmp_path / "observability.js").write_text(
+        "Sentry.init({ app, dsn: 'https://key@o1.ingest.sentry.io/2' });\n"
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_error_tracking(db_session, scoring_run, criterion, [])
+
+    assert score.value == 5.0

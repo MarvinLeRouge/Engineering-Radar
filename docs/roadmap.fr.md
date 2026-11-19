@@ -133,6 +133,7 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 - [x] DOCS-011 - Retirer les tirets cadratins et demi-cadratins de la doc Markdown (environ 1 425 réécrits selon le contexte dans 35 fichiers, doubles deux-points adoucis dans les docs destinées aux lecteurs) ; 9 restent dans des blocs de code qui recopient du code source qui les utilise encore, et le cadre qualité en français reçoit le paragraphe manquant sur le report de 6.1
 - [x] CHORE-009 - Retirer les derniers tirets cadratins du code : quatre commentaires et quatre descriptions de la taxonomie (insérées une seule fois par version de méthodologie et non exposées par l'API, donc ni la base existante ni l'affichage ne changent), plus les blocs de code de la doc qui les recopient
 - [x] FEAT-051 - Afficher la note globale du scoring run affiché sous forme de badge plus grand à côté du nom du dépôt dans le rapport (`global_score` ajouté à l'endpoint du rapport)
+- [x] FEAT-052 - L'error tracking reconnaît Laravel et Vite : une clé PHP entre guillemets (`'dsn' => env(...)`), un DSN lu dans une variable comme `sentryDsn`, et les marqueurs `env()` et `import.meta.env` donnent désormais 10.0 (Summit-Stats était à 5.0)
 - [ ] Détecter les divergences entre roadmap et code
 - [ ] Suivre les métriques internes du système (stabilité des scores, taux de faux positifs, reproductibilité)
 

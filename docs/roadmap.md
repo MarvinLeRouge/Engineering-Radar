@@ -132,6 +132,7 @@ Not yet decomposed into tasks; task IDs assigned when planning starts for this s
 - [x] DOCS-011 - Remove em and en dashes from the Markdown docs (about 1,425 rewritten in context across 35 files, double colons smoothed in the user-facing ones); 9 left inside code blocks that quote source code still using them, and the French quality framework gets its missing 6.1 deferral paragraph
 - [x] CHORE-009 - Remove the last em dashes from code: four comments and four taxonomy descriptions (seeded once per methodology version, not exposed by the API, so the live database and display are unchanged), plus the doc code blocks quoting them
 - [x] FEAT-051 - Show the global score of the displayed scoring run as a larger badge next to the repository name in the report (`global_score` added to the report endpoint)
+- [x] FEAT-052 - Error tracking recognizes Laravel and Vite: a quoted PHP key (`'dsn' => env(...)`), a DSN read into a variable such as `sentryDsn`, and the `env()` and `import.meta.env` markers now score 10.0 (Summit-Stats scored 5.0)
 - [ ] Detect roadmap <-> code divergence
 - [ ] Track system self-metrics (score stability, false-positive rate, reproducibility)
 

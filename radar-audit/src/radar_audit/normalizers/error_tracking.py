@@ -31,8 +31,11 @@ _SENTRY_PHP_PACKAGE = "sentry/sentry-laravel"
 # before the assignment's, which would otherwise truncate the capture before
 # the env-var marker. Trailing text past the real value is harmless here: the
 # caller only substring-checks the capture for an env-var marker.
-_DSN_PATTERN = re.compile(r"\bdsn\s*[:=]\s*([^\n]+)", re.IGNORECASE)
-_ENV_VAR_MARKERS = ("os.getenv", "os.environ", "process.env", "getenv(")
+# The optional quote admits PHP array keys ('dsn' => env(...)); the \w* prefix
+# admits names like sentryDsn, for a DSN read into a variable on its own line.
+_DSN_PATTERN = re.compile(r"\b\w*dsn['\"]?\s*[:=]\s*([^\n]+)", re.IGNORECASE)
+# "env(" covers both getenv() and Laravel's env() helper.
+_ENV_VAR_MARKERS = ("os.getenv", "os.environ", "process.env", "env(", "import.meta.env")
 
 _DONE_VALUE = 10.0
 _IN_PROGRESS_VALUE = 5.0
@@ -80,8 +83,9 @@ def normalize_error_tracking(
             criterion,
             FindingSeverity.LOW,
             "Sentry SDK is installed but no DSN read from an environment variable was found",
-            "Pass Sentry a DSN read from an environment variable (os.environ, getenv or "
-            "process.env) instead of a hardcoded or missing one.",
+            "Pass Sentry a DSN read from an environment variable (os.environ, getenv, "
+            "Laravel env(), process.env or import.meta.env) instead of a hardcoded or "
+            "missing one.",
             "error-tracking-dsn-not-env-sourced",
         )
 
