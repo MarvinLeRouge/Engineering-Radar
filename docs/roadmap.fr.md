@@ -134,6 +134,7 @@ Pas encore décomposée en tâches ; ID de tâche attribué au démarrage de la 
 - [x] CHORE-009 - Retirer les derniers tirets cadratins du code : quatre commentaires et quatre descriptions de la taxonomie (insérées une seule fois par version de méthodologie et non exposées par l'API, donc ni la base existante ni l'affichage ne changent), plus les blocs de code de la doc qui les recopient
 - [x] FEAT-051 - Afficher la note globale du scoring run affiché sous forme de badge plus grand à côté du nom du dépôt dans le rapport (`global_score` ajouté à l'endpoint du rapport)
 - [x] FEAT-052 - L'error tracking reconnaît Laravel et Vite : une clé PHP entre guillemets (`'dsn' => env(...)`), un DSN lu dans une variable comme `sentryDsn`, et les marqueurs `env()` et `import.meta.env` donnent désormais 10.0 (Summit-Stats était à 5.0)
+- [x] FEAT-053 - Le structured logging reconnaît PHP : un `JsonFormatter` ou `LogstashFormatter` Monolog dans une config `logging.php`, ou défini comme valeur `LOG_*FORMATTER` dans un template `*.env.example`, donne 10.0 (`vendor/` ignoré ; Summit-Stats était à 4.0)
 - [ ] Détecter les divergences entre roadmap et code
 - [ ] Suivre les métriques internes du système (stabilité des scores, taux de faux positifs, reproductibilité)
 

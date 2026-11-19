@@ -109,3 +109,71 @@ def test_detected_creates_no_finding(db_session, tmp_path):
     normalize_structured_logging(db_session, scoring_run, criterion, [])
 
     assert no_findings(db_session, criterion)
+
+
+def _write(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+
+def test_php_json_formatter_in_env_template_scores_ten(db_session, tmp_path):
+    _write(
+        tmp_path / "docker" / "env" / "app.env.example",
+        "LOG_CHANNEL=stderr\nLOG_STDERR_FORMATTER=Monolog\\Formatter\\JsonFormatter\n",
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+
+
+def test_php_json_formatter_in_logging_config_scores_ten(db_session, tmp_path):
+    _write(
+        tmp_path / "config" / "logging.php",
+        "<?php\n\nuse Monolog\\Formatter\\JsonFormatter;\n\n"
+        "return ['channels' => ['stderr' => ['formatter' => JsonFormatter::class]]];\n",
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert score.value == 10.0
+
+
+def test_php_default_logging_config_scores_four(db_session, tmp_path):
+    _write(
+        tmp_path / "config" / "logging.php",
+        "<?php\n\nreturn ['channels' => ['stderr' => "
+        "['formatter' => env('LOG_STDERR_FORMATTER')]]];\n",
+    )
+    _write(tmp_path / ".env.example", "LOG_CHANNEL=stack\nLOG_LEVEL=debug\n")
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert score.value == 4.0
+
+
+def test_php_json_formatter_only_in_vendor_scores_four(db_session, tmp_path):
+    _write(
+        tmp_path / "vendor" / "some" / "package" / "config" / "logging.php",
+        "<?php\n\nreturn ['formatter' => \\Monolog\\Formatter\\JsonFormatter::class];\n",
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert score.value == 4.0
+
+
+def test_php_json_formatter_commented_out_in_env_template_scores_four(db_session, tmp_path):
+    _write(
+        tmp_path / ".env.example",
+        "# LOG_STDERR_FORMATTER=Monolog\\Formatter\\JsonFormatter\n",
+    )
+    scoring_run, criterion = _make_scoring_run_and_criterion(db_session, tmp_path)
+
+    score = normalize_structured_logging(db_session, scoring_run, criterion, [])
+
+    assert score.value == 4.0
