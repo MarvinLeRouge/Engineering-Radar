@@ -166,6 +166,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(radar-api)* Page the findings of large criteria (FEAT-036)
 - Add the publication payload contract and radar-online data model (FEAT-037)
 - *(dashboard)* Show the global score badge next to the repository name (FEAT-051)
+- *(audit)* Recognize laravel and vite sentry dsn configuration (FEAT-052)
 
 ### 🐛 Bug Fixes
 
