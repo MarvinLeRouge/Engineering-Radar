@@ -179,3 +179,4 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] FIX-034 - Treat a corrupt Pest `clover.xml` as unknown coverage and a malformed npm/pnpm/yarn advisory entry as a failed audit, instead of crashing the runner
 - [x] CHORE-015 - Align the dashboard Node runtime on 26 LTS (CI, engines, @types/node, @tsconfig/node26)
 - [x] CI-003 - Move the last GitHub Actions to their current major (create-pull-request 8, pnpm/action-setup 6), changelog workflow on Node 26, single Dependabot actions group
+- [x] CI-004 - Raise the coverage floor from 80% to 85% (gates and docs)

@@ -121,9 +121,9 @@ npm run test:e2e
 
 `.github/workflows/ci.yml` s'exécute à chaque push et pull request vers `main` :
 
-- `radar-core`, `radar-api`, `radar-online` et `radar-audit` (rapide, `-m "not slow"`) lancent les tests avec un seuil de couverture de 80% et bloquent la PR en cas d'échec.
+- `radar-core`, `radar-api`, `radar-online` et `radar-audit` (rapide, `-m "not slow"`) lancent les tests avec un seuil de couverture de 85% et bloquent la PR en cas d'échec.
 - `radar-audit` (lent) lance séparément les tests dépendant de `npx`/`composer` et ne bloque pas la PR.
-- `radar-dashboard` lance Vitest avec un seuil de couverture de 80% et bloque la PR en cas d'échec.
+- `radar-dashboard` lance Vitest avec un seuil de couverture de 85% et bloque la PR en cas d'échec.
 - `radar-dashboard` (e2e) lance la suite Playwright et bloque la PR en cas d'échec ; le rapport HTML est conservé comme artefact en cas d'échec.
 
 ## Gates de qualité du code
