@@ -29,9 +29,9 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.65.0",
-    "@tsconfig/node24": "^24.0.4",
+    "@tsconfig/node26": "^26.0.2",
     "@types/jsdom": "^28.0.3",
-    "@types/node": "^24.13.2",
+    "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.10",
     "@vitest/coverage-v8": "^5.1.0",
     "@vitest/eslint-plugin": "^1.6.28",
@@ -55,7 +55,7 @@
     "vue-tsc": "^3.3.14"
   },
   "engines": {
-    "node": "^22.18.0 || ^23.0.0 || >=24.12.0"
+    "node": ">=26"
   },
   "overrides": {
     "undici": "^7.30.1",

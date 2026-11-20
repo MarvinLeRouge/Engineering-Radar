@@ -177,3 +177,4 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] FIX-033 - Run audit tools with an empty stdin, so `npx` no longer waits on its install prompt until the 60 s timeout when the audit is started from a terminal
 - [x] TEST-001 - Close the per-file coverage gaps below 80% (radar-audit runners, radar-dashboard utilities and branches) with fast behavior tests
 - [x] FIX-034 - Treat a corrupt Pest `clover.xml` as unknown coverage and a malformed npm/pnpm/yarn advisory entry as a failed audit, instead of crashing the runner
+- [x] CHORE-015 - Align the dashboard Node runtime on 26 LTS (CI, engines, @types/node, @tsconfig/node26)

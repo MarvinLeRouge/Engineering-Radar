@@ -477,3 +477,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Scan python dependencies with pip-audit
 - Audit dashboard deps and add a ci-status required-check job
 - Ignore local radar.db backups (CHORE-015)
+- *(runtime)* Align the dashboard node runtime on 26 lts (CHORE-015)
