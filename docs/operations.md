@@ -150,7 +150,7 @@ RADAR_LOG_FORMAT=json uv run radar-audit run some-repo 2>&1 >/dev/null \
 - `CHANGELOG.md` is regenerated primarily by a local `post-commit` hook wired into the `pre-commit` framework (`scripts/changelog-post-commit.sh`, runs git-cliff and folds the result into the same commit), so feature PRs already carry their own changelog entry
 - As a fallback, [`.github/workflows/changelog.yml`](../.github/workflows/changelog.yml) still regenerates `CHANGELOG.md` on every push to `main` and opens a pull request (does not push directly to `main`), in case a commit lands without going through the local hook
 - Pre-commit hooks run locally on every commit: `ruff`, `ruff-format` and `mypy` per Python package, and the dashboard's lint, format and type checks
-- CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) runs on every push and pull request to `main`: the tests of every package with an 80% coverage gate, the dashboard's lint, format and type checks, and its Playwright end-to-end tests. The Python lint and type checks run only in pre-commit. Details in the [developer guide](guides/developer_guide.md#ci-pipeline) and [`CONTRIBUTING.md`](../CONTRIBUTING.md)
+- CI ([`.github/workflows/ci.yml`](../.github/workflows/ci.yml)) runs on every push and pull request to `main`: the tests of every package with an 85% coverage gate, the dashboard's lint, format and type checks, and its Playwright end-to-end tests. The Python lint and type checks run only in pre-commit. Details in the [developer guide](guides/developer_guide.md#ci-pipeline) and [`CONTRIBUTING.md`](../CONTRIBUTING.md)
 
 ## Secrets
 

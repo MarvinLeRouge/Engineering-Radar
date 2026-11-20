@@ -30,7 +30,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           uv run --package radar-core pytest radar-core/tests \
-            --cov=radar_core --cov-report=term-missing --cov-fail-under=80 -q
+            --cov=radar_core --cov-report=term-missing --cov-fail-under=85 -q
 
   radar-audit-fast:
     name: radar-audit (fast)
@@ -49,7 +49,7 @@ jobs:
       - name: Run tests with coverage (excludes slow tests)
         run: |
           uv run --package radar-audit pytest radar-audit/tests -m "not slow" \
-            --cov=radar_audit --cov-report=term-missing --cov-fail-under=80 -q
+            --cov=radar_audit --cov-report=term-missing --cov-fail-under=85 -q
 
   radar-audit-slow:
     name: radar-audit (slow, non-blocking)
@@ -99,7 +99,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           uv run --package radar-api pytest radar-api/tests \
-            --cov=radar_api --cov-report=term-missing --cov-fail-under=80 -q
+            --cov=radar_api --cov-report=term-missing --cov-fail-under=85 -q
 
   radar-online:
     name: radar-online
@@ -118,7 +118,7 @@ jobs:
       - name: Run tests with coverage
         run: |
           uv run --package radar-online pytest radar-online/tests \
-            --cov=radar_online --cov-report=term-missing --cov-fail-under=80 -q
+            --cov=radar_online --cov-report=term-missing --cov-fail-under=85 -q
 
   security:
     name: security (pip-audit)

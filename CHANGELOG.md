@@ -479,3 +479,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Ignore local radar.db backups (CHORE-015)
 - *(runtime)* Align the dashboard node runtime on 26 lts (CHORE-015)
 - *(actions)* Move the last actions to current majors (CI-003)
+- *(coverage)* Raise the coverage floor to 85% (CI-004)
