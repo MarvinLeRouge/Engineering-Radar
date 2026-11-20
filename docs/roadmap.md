@@ -178,3 +178,4 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] TEST-001 - Close the per-file coverage gaps below 80% (radar-audit runners, radar-dashboard utilities and branches) with fast behavior tests
 - [x] FIX-034 - Treat a corrupt Pest `clover.xml` as unknown coverage and a malformed npm/pnpm/yarn advisory entry as a failed audit, instead of crashing the runner
 - [x] CHORE-015 - Align the dashboard Node runtime on 26 LTS (CI, engines, @types/node, @tsconfig/node26)
+- [x] CI-003 - Move the last GitHub Actions to their current major (create-pull-request 8, pnpm/action-setup 6), changelog workflow on Node 26, single Dependabot actions group

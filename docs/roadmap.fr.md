@@ -179,3 +179,4 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] TEST-001 - Combler les fichiers sous 80% de couverture (runners radar-audit, utilitaires et branches radar-dashboard) avec des tests rapides de comportement
 - [x] FIX-034 - Traiter un `clover.xml` Pest corrompu comme une couverture inconnue et une entrée d'avis npm/pnpm/yarn malformée comme un audit échoué, au lieu de faire planter le runner
 - [x] CHORE-015 - Aligner le runtime Node du dashboard sur la 26 LTS (CI, engines, @types/node, @tsconfig/node26)
+- [x] CI-003 - Passer les dernières GitHub Actions sur leur majeure actuelle (create-pull-request 8, pnpm/action-setup 6), workflow changelog sur Node 26, groupe Dependabot actions unique
