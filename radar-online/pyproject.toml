@@ -10,7 +10,11 @@ dependencies = [
     "sqlmodel>=0.0.22",
     "alembic>=1.13",
     "sentry-sdk>=2.73.0",
+    "typer>=0.12",
 ]
+
+[project.scripts]
+radar-online = "radar_online.cli:entrypoint"
 
 [dependency-groups]
 dev = [

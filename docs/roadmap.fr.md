@@ -148,7 +148,7 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] CHORE-010 - Créer le paquet `radar-online` : FastAPI, SQLModel et Alembic sur sa propre base SQLite, Dockerfile (uid 1000, uv épinglé), service compose derrière Traefik, hooks pre-commit et jobs de CI
 - [x] FEAT-037 - Schéma partagé du payload de publication (`radar_core.publication`, v1, champs inconnus refusés) et modèle de données de radar-online : `User`, `ApiKey` (hachée), `ActionToken` (haché, à usage unique, avec expiration), `PublishedRepository`, `PublishedReport` (unique par dépôt et par commit)
 - [x] DOCS-014 - Réordonner la section 9 pour livrer d'abord le badge et le rapport public en lecture seule : comptes créés par une commande d'admin tant que d'autres utilisateurs n'ont pas besoin de l'inscription par e-mail
-- [ ] FEAT-050 - Commande d'admin qui crée un compte actif et sa première clé d'API (affichée une seule fois), pour pouvoir publier avant que l'inscription par e-mail existe
+- [x] FEAT-050 - Commande d'admin qui crée un compte actif et sa première clé d'API (affichée une seule fois), pour pouvoir publier avant que l'inscription par e-mail existe
 - [ ] FEAT-042 - Envoi des rapports : `POST /api/reports` authentifié par clé d'API, validation stricte, dépôt créé au premier envoi, rapport remplacé si le commit est déjà publié
 - [ ] FEAT-043 - API publique de lecture et badge : profil, dernier rapport, historique (un point par commit), badge shields.io marqué auto-déclaré, en-têtes de cache
 - [ ] FEAT-045 - Construction et aperçu du payload en local : payload v1 construit depuis un scoring run (score global et scores par catégorie uniquement, test prouvant qu'aucun autre champ ne part), `GET /repositories/{id}/publish-preview` dans radar-api

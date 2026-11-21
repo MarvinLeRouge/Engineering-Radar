@@ -12,15 +12,17 @@ badge, without any finding. Decisions in
 
 **Status:** data model in place (FEAT-037): users, hashed API keys, single-use
 action tokens, published repositories and reports, plus the shared payload
-contract `radar_core.publication`. The app only answers `GET /api/health` so
-far; accounts, publication, public pages and the badge are the next tasks of
+contract `radar_core.publication`; accounts are created by an admin command
+(FEAT-050). The app only answers `GET /api/health` so far; publication, public
+pages and the badge are the next tasks of
 [roadmap Section 9](../docs/roadmap.md).
 
 ## Layout
 
 - `src/radar_online/`: FastAPI app (`main.py`), configuration, database session,
-  `models/` (its own tables only, never radar-core's audit data) and `tokens.py`
-  (random keys and tokens, stored as SHA-256 hashes).
+  `models/` (its own tables only, never radar-core's audit data), `tokens.py`
+  (random keys and tokens, stored as SHA-256 hashes), `accounts.py` and
+  `cli.py` (the `radar-online` admin command).
 - `alembic/`: radar-online's own migrations, on its own SQLite database.
 - `tests/`: each test runs on a throwaway, migrated SQLite file.
 
@@ -44,6 +46,19 @@ From the repository root:
 Tests:
 
     uv run --package radar-online pytest radar-online/tests --cov=radar_online
+
+## Create an account
+
+Until the email registration flow exists, the admin creates each account,
+active at once, with its first API key:
+
+    uv run --package radar-online radar-online create-account \
+        --email ada@example.com --display-name "Ada" --slug ada
+
+In Docker: `docker compose exec radar-online radar-online create-account ...`.
+The key is printed once and only its hash is stored: hand it to its owner and
+do not keep it elsewhere. The slug is the public namespace (1 to 64 lowercase
+letters, digits or hyphens); email and slug must be unused.
 
 ## Docker
 
