@@ -12,17 +12,19 @@ l'[ADR 0014](../docs/adr/0014-radar-online-public-reports.md), conception dans
 
 **Statut :** modèle de données en place (FEAT-037) : utilisateurs, clés d'API
 hachées, jetons d'action à usage unique, dépôts et rapports publiés, plus le
-contrat de payload partagé `radar_core.publication`. L'application ne répond
-encore qu'à `GET /api/health` ; les comptes, la publication, les pages
-publiques et le badge sont les prochaines tâches de la
+contrat de payload partagé `radar_core.publication` ; les comptes sont créés
+par une commande admin (FEAT-050). L'application ne répond encore qu'à
+`GET /api/health` ; la publication, les pages publiques et le badge sont les
+prochaines tâches de la
 [section 9 de la roadmap](../docs/roadmap.fr.md).
 
 ## Organisation
 
 - `src/radar_online/` : application FastAPI (`main.py`), configuration, session
   de base de données, `models/` (ses propres tables uniquement, jamais les
-  données d'audit de radar-core) et `tokens.py` (clés et jetons aléatoires,
-  stockés sous forme de hachages SHA-256).
+  données d'audit de radar-core), `tokens.py` (clés et jetons aléatoires,
+  stockés sous forme de hachages SHA-256), `accounts.py` et `cli.py` (la
+  commande admin `radar-online`).
 - `alembic/` : les migrations propres à radar-online, sur sa propre base SQLite.
 - `tests/` : chaque test tourne sur un fichier SQLite jetable et migré.
 
@@ -48,6 +50,20 @@ Depuis la racine du dépôt :
 Tests :
 
     uv run --package radar-online pytest radar-online/tests --cov=radar_online
+
+## Créer un compte
+
+Tant que l'inscription par email n'existe pas, l'admin crée chaque compte,
+actif d'emblée, avec sa première clé d'API :
+
+    uv run --package radar-online radar-online create-account \
+        --email ada@example.com --display-name "Ada" --slug ada
+
+Sous Docker : `docker compose exec radar-online radar-online create-account ...`.
+La clé est affichée une seule fois et seul son hachage est stocké : la
+transmettre à son propriétaire sans la conserver ailleurs. Le slug est l'espace
+de noms public (1 à 64 lettres minuscules, chiffres ou tirets) ; l'email et le
+slug doivent être libres.
 
 ## Docker
 
