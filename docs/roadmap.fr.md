@@ -181,3 +181,4 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] CHORE-015 - Aligner le runtime Node du dashboard sur la 26 LTS (CI, engines, @types/node, @tsconfig/node26)
 - [x] CI-003 - Passer les dernières GitHub Actions sur leur majeure actuelle (create-pull-request 8, pnpm/action-setup 6), workflow changelog sur Node 26, groupe Dependabot actions unique
 - [x] CI-004 - Relever le seuil de couverture de 80 % à 85 % (seuils et docs)
+- [x] CI-005 - Analyser les modifications indexées avec gitleaks dans le hook pre-commit

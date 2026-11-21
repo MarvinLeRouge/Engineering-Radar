@@ -11,6 +11,7 @@ Il s'agit principalement d'un projet personnel. Les contributions externes (sign
 - Python 3.14 (épinglé dans `.python-version`, uv l'installe s'il manque)
 - [`uv`](https://docs.astral.sh/uv/) pour la gestion des dépendances
 - Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (le champ `engines` de `radar-dashboard/package.json` ; la CI utilise la 24) et npm, pour le dashboard
+- [gitleaks](https://github.com/gitleaks/gitleaks) : le hook pre-commit analyse les modifications indexées à la recherche de secrets et refuse de committer s'il est absent
 
 ## Installation locale
 
