@@ -11,6 +11,7 @@ This is primarily a personal project. External contributions (bug reports, fixes
 - Python 3.14 (pinned in `.python-version`, uv installs it if missing)
 - [`uv`](https://docs.astral.sh/uv/) for dependency management
 - Node.js `^22.18.0 || ^23.0.0 || >=24.12.0` (the `engines` field of `radar-dashboard/package.json`; CI uses 24) and npm, for the dashboard
+- [gitleaks](https://github.com/gitleaks/gitleaks): the pre-commit hook scans staged changes for secrets and refuses to commit without it
 
 ## Local setup
 
