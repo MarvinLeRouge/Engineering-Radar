@@ -151,7 +151,7 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] FEAT-050 - Commande d'admin qui crée un compte actif et sa première clé d'API (affichée une seule fois), pour pouvoir publier avant que l'inscription par e-mail existe
 - [x] FEAT-042 - Envoi des rapports : `POST /api/reports` authentifié par clé d'API, validation stricte, dépôt créé au premier envoi, rapport remplacé si le commit est déjà publié
 - [x] FEAT-043 - API publique de lecture et badge : profil, dernier rapport, historique (un point par commit), badge shields.io marqué auto-déclaré, en-têtes de cache
-- [ ] FEAT-045 - Construction et aperçu du payload en local : payload v1 construit depuis un scoring run (score global et scores par catégorie uniquement, test prouvant qu'aucun autre champ ne part), `GET /repositories/{id}/publish-preview` dans radar-api
+- [x] FEAT-045 - Construction et aperçu du payload en local : payload v1 construit depuis un scoring run (score global et scores par catégorie uniquement, test prouvant qu'aucun autre champ ne part), `GET /repositories/{id}/publish-preview` dans radar-api
 - [ ] FEAT-046 - Publication locale : `POST /repositories/{id}/publish` dans radar-api (de serveur à serveur, `RADAR_ONLINE_URL` et `RADAR_ONLINE_API_KEY` lus dans `.env`) et `radar-audit publish <repo>`
 - [ ] FEAT-047 - Bouton « Upload report » du dashboard : modale d'aperçu avec confirmation, lien vers la page publique en cas de succès, états d'erreur
 - [ ] FEAT-048 - Mode de build online du dashboard : routeur et client API dédiés, rapport limité aux jauges globale et par catégorie, tendances, mention auto-déclaré, sans roadmap, findings, verdicts ni réglages

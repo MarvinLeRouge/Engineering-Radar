@@ -40,6 +40,7 @@ endpoint.
 - `GET /repositories/{repository_id}/report/criteria/{criterion_id}/findings?scoring_run_id=&offset=`: the next pages of a criterion's findings, 1000 at a time, in the same order (latest scoring run when `scoring_run_id` is omitted).
 - `GET /repositories/{repository_id}/score-history`: one point per scoring run, oldest first, with the global score, category scores (each with `implemented`), `risk` and `risk_index`.
 - `GET /repositories/{repository_id}/badge`: shields.io-compatible badge payload for the latest global score.
+- `GET /repositories/{repository_id}/publish-preview`: the exact payload publishing the latest scoring run to radar-online would send (global and category scores only, `radar_core.publication` v1), with `is_dirty` when that audit scored a modified working tree.
 - `GET /repositories/{repository_id}/findings`: findings for the latest scoring run, optionally filtered by `status` and `severity` query params.
 - `GET /repositories/{repository_id}/roadmap`: roadmap items linked to the repository's findings, sorted by category, criterion, priority (highest first) and title.
 - `GET /roadmap-items/{roadmap_item_id}/evidence-candidates`: evidence rows of the findings linked to a roadmap item, usable as its `done_evidence_id`.
