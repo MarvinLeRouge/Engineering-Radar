@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, FastAPI
 from radar_core.observability import configure_logging, init_error_tracking
+from radar_core.request_logging import log_requests
 
 from radar_online.routers import public, reports
 
@@ -16,6 +17,7 @@ app = FastAPI(
     docs_url="/api/docs",
     redoc_url=None,
 )
+app.middleware("http")(log_requests)
 api = APIRouter(prefix="/api")
 
 

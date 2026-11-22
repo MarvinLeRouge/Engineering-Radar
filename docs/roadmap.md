@@ -154,7 +154,7 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] FEAT-046 - Local publishing: `POST /repositories/{id}/publish` in radar-api (server to server, `RADAR_ONLINE_URL` and `RADAR_ONLINE_API_KEY` from `.env`) and `radar-audit publish <repo>`
 - [x] FEAT-047 - Dashboard "Upload report" button: preview modal with confirmation, success link to the public page, error states
 - [x] FEAT-048 - Dashboard online build mode: online router and API client, report with global and category gauges only, trends, self-assessed note, no roadmap, findings, verdicts or settings
-- [ ] CHORE-011 - Harden radar-online: rate limits, keys and tokens kept out of logs and Sentry, daily SQLite backup
+- [x] CHORE-011 - Harden radar-online: rate limits, keys and tokens kept out of logs and Sentry, daily SQLite backup
 - [ ] CHORE-012 - Deploy radar-online on the VPS behind Traefik (`radar.marvinlerouge.dev`, HTTPS), server `.env`, Brevo sender verified, backups scheduled
 
 **Second milestone: self-service accounts.** Email registration with admin approval, key regeneration, unpublishing and deletion, the public registration pages and the user guide.

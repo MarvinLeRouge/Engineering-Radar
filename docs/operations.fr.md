@@ -117,7 +117,9 @@ Sentry est optionnel et désactivé tant qu'aucun DSN n'est défini (voir
 `radar-audit` ne remonte que les crashs inattendus : les échecs d'outils et
 les erreurs gérées par la CLI ne sont jamais envoyés. Aucune donnée
 utilisateur, en-tête, corps de requête, query string ni variable de pile
-n'est collectée.
+n'est collectée, et un hook `before_send` réduit le bloc requête de chaque
+événement à sa méthode : une clé d'API ou un token dans une URL ne peut jamais
+atteindre Sentry. radar-online lit le même `SENTRY_DSN`.
 
 Dans Docker, Compose transmet `SENTRY_BACKEND_DSN` à `radar-api` et
 `radar-audit` sous le nom `SENTRY_DSN`, la variable que lit le code. Un
@@ -127,15 +129,15 @@ lui-même est exporté dans le shell : sourcer le `.env` définit
 
 ## Logs
 
-`radar-api` et `radar-audit` écrivent des **logs structurés** avec structlog : chaque ligne est un événement avec des champs nommés, écrit sur **stderr** (stdout reste réservé à l'affichage propre à la CLI, comme les plans `--dry-run` et les rapports).
+`radar-api`, `radar-online` et `radar-audit` écrivent des **logs structurés** avec structlog : chaque ligne est un événement avec des champs nommés, écrit sur **stderr** (stdout reste réservé à l'affichage propre à la CLI, comme les plans `--dry-run` et les rapports).
 
 - **Format** : lignes JSON dans Docker ou toute sortie qui n'est pas un terminal, texte coloré lisible dans un terminal. Forcer l'un ou l'autre avec `RADAR_LOG_FORMAT=json` ou `RADAR_LOG_FORMAT=console`.
 - **Niveau** : `RADAR_LOG_LEVEL` (`debug`, `info`, `warning`, `error`), `info` par défaut.
-- **Jamais journalisés** : les paramètres de requête, les en-têtes (la clé d'API passe dans l'un d'eux), les corps de requête.
+- **Jamais journalisés** : les paramètres de requête, les en-têtes (la clé d'API passe dans l'un d'eux), les corps de requête. `path` est le modèle de la route reconnue (`/repositories/{repository_id}`, `/api/users/{user_slug}`), jamais le chemin brut : un identifiant ou un token présent dans une URL n'est pas écrit ; une requête sans route (404) garde son chemin brut.
 
 | Événement | Émis par | Champs |
 |---|---|---|
-| `request_handled` | radar-api, un par requête HTTP (niveau error pour les 5xx) | `method`, `path`, `status`, `duration_ms` |
+| `request_handled` | radar-api et radar-online, un par requête HTTP (niveau error pour les 5xx) | `method`, `path`, `status`, `duration_ms` |
 | `audit_started` | radar-audit `run` | `repo`, `subprojects` |
 | `tool_finished` | radar-audit, un par exécution d'outil | `tool`, `subproject`, `exit_code`, `duration_ms`, `audit_id` |
 | `tool_crashed` | radar-audit, niveau error, quand un outil lève une exception | `tool`, `target`, `error`, `audit_id` |

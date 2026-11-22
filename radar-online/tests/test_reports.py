@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 from radar_online.accounts import create_active_account
 from radar_online.main import app
 from radar_online.models import ApiKey, PublishedReport, PublishedRepository, User, UserStatus
+from radar_online.routers import reports
 from sqlmodel import select
 
 
@@ -36,6 +37,8 @@ def _payload(commit_sha="a" * 40, global_score=7.4, repo_slug="summit-stats", **
 @pytest.fixture
 def client(database_url, monkeypatch):
     monkeypatch.setenv("RADAR_ONLINE_DATABASE_URL", database_url)
+    # The upload limiter lives for the process: each test starts with empty quotas.
+    reports.upload_limiter.reset()
     return TestClient(app)
 
 
@@ -160,3 +163,19 @@ def test_body_over_64_kib_is_rejected(client, api_key, session):
 
     assert response.status_code == 413
     assert session.exec(select(PublishedRepository)).all() == []
+
+
+def test_uploads_are_limited_per_account(client, api_key, session):
+    other_key = create_active_account(
+        session, email="bob@example.com", display_name="Bob", slug="bob"
+    )
+    for index in range(reports.UPLOADS_PER_HOUR):
+        commit = f"{index:040x}"
+        assert _post(client, api_key, _payload(commit_sha=commit)).status_code == 201
+
+    refused = _post(client, api_key, _payload(commit_sha="f" * 40))
+
+    assert refused.status_code == 429
+    assert int(refused.headers["retry-after"]) > 0
+    assert _post(client, other_key, _payload()).status_code == 201
+    assert len(session.exec(select(PublishedReport)).all()) == reports.UPLOADS_PER_HOUR + 1

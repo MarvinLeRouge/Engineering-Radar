@@ -488,3 +488,4 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(actions)* Move the last actions to current majors (CI-003)
 - *(coverage)* Raise the coverage floor to 85% (CI-004)
 - *(security)* Scan staged changes for secrets with gitleaks (CI-005)
+- *(online)* Harden radar-online logs, sentry, uploads and backups (CHORE-011)

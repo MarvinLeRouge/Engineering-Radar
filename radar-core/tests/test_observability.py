@@ -39,6 +39,7 @@ def test_init_error_tracking_uses_development_environment_by_default(monkeypatch
         environment="development",
         data_collection=observability.SENTRY_DATA_COLLECTION,
         traces_sample_rate=0.0,
+        before_send=observability.scrub_request,
     )
 
 
@@ -56,6 +57,7 @@ def test_init_error_tracking_uses_configured_environment(monkeypatch):
         environment="staging",
         data_collection=observability.SENTRY_DATA_COLLECTION,
         traces_sample_rate=0.0,
+        before_send=observability.scrub_request,
     )
 
 
@@ -73,4 +75,33 @@ def test_init_error_tracking_with_blank_environment(monkeypatch):
         environment="development",
         data_collection=observability.SENTRY_DATA_COLLECTION,
         traces_sample_rate=0.0,
+        before_send=observability.scrub_request,
     )
+
+
+def test_events_never_carry_the_request_url_headers_or_body():
+    """A key in a header or a token in a path must not reach Sentry, whatever the SDK collects."""
+    event = {
+        "message": "boom",
+        "request": {
+            "url": "https://radar.example.dev/api/reviews/secret-token",
+            "method": "POST",
+            "query_string": "token=secret-token",
+            "headers": {"X-API-Key": "secret-key"},
+            "data": {"key": "secret-key"},
+            "cookies": {"session": "secret"},
+        },
+    }
+
+    scrubbed = observability.scrub_request(event, {})
+
+    assert scrubbed is not None
+    assert scrubbed["request"] == {"method": "POST"}
+    assert "secret" not in str(scrubbed)
+    assert scrubbed["message"] == "boom"
+
+
+def test_events_without_a_request_pass_unchanged():
+    event = {"message": "boom"}
+
+    assert observability.scrub_request(event, {}) == {"message": "boom"}

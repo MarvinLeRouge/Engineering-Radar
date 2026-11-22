@@ -13,9 +13,14 @@ from sqlmodel import Session, select
 from radar_online.auth import require_user
 from radar_online.dependencies import get_db_session
 from radar_online.models import PublishedReport, PublishedRepository, User
+from radar_online.rate_limit import SlidingWindowLimiter
 
 # Design section 3: a v1 payload is a few KiB; anything larger is not a report.
 MAX_BODY_BYTES = 64 * 1024
+
+# A publish follows a local audit and scoring run: a handful per hour is the real ceiling.
+UPLOADS_PER_HOUR = 20
+upload_limiter = SlidingWindowLimiter(limit=UPLOADS_PER_HOUR, window_seconds=3600)
 
 router = APIRouter(tags=["reports"])
 
@@ -34,6 +39,7 @@ class UploadResult(BaseModel):
         200: {"description": "The report of this commit was replaced", "model": UploadResult},
         401: {"description": "Invalid or missing API key"},
         413: {"description": "Body larger than 64 KiB"},
+        429: {"description": "More than 20 uploads in the last hour for this account"},
         422: {"description": "Payload does not match the v1 publication contract"},
     },
     openapi_extra={
@@ -52,6 +58,13 @@ async def upload_report(
     """Publish one commit's scores: create the repository on first upload, replace the
     report when this commit is already published. Only the validated payload is stored,
     never the raw body."""
+    retry_after = upload_limiter.hit(str(persisted_id(user)))
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"upload limit reached: {UPLOADS_PER_HOUR} per hour",
+            headers={"Retry-After": str(retry_after)},
+        )
     payload = _parse(await request.body())
     repository = _get_or_create_repository(session, user, payload)
     report = session.exec(

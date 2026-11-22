@@ -32,5 +32,6 @@ USER 1000
 
 EXPOSE 8000
 
-# Keeps uvicorn's access log until a structured request-logging middleware is added (CHORE-011).
-CMD ["uvicorn", "radar_online.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# --no-access-log: the request-logging middleware writes one structured line per request,
+# by route template, so a token in a path is never logged (uvicorn's would log it).
+CMD ["uvicorn", "radar_online.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
