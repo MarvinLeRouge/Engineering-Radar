@@ -171,6 +171,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(online)* Add an admin command creating an active account and its first api key (FEAT-050)
 - *(online)* Accept report uploads authenticated by api key (FEAT-042)
 - *(online)* Serve public profiles, reports, history and badges (FEAT-043)
+- *(api)* Build the publication payload and preview it locally (FEAT-045)
 
 ### 🐛 Bug Fixes
 

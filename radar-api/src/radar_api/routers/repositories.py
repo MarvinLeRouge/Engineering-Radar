@@ -1,4 +1,4 @@
-"""Repository endpoints: listing, detail, scored report and README badge."""
+"""Repository endpoints: listing, detail, scored report, README badge and publish preview."""
 
 from __future__ import annotations
 
@@ -13,11 +13,13 @@ from radar_core.models.finding import Finding, Recommendation
 from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
+from radar_core.publication_builder import build_publication_payload
 from sqlalchemy import func
 from sqlmodel import Session, col, select
 
 from radar_api.dependencies import get_db_session
 from radar_api.risk import compute_risk
+from radar_api.schemas.publication import PublishPreview
 from radar_api.schemas.report import (
     CategoryReport,
     CriterionReport,
@@ -327,4 +329,22 @@ def get_repository_badge(
         label=BADGE_LABEL,
         message=f"{scoring_run.global_score:.1f}/10",
         color=badge_color(scoring_run.global_score),
+    )
+
+
+@router.get("/{repository_id}/publish-preview", response_model=PublishPreview)
+def get_publish_preview(
+    repository_id: int,
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> PublishPreview:
+    """Return the exact payload publishing the latest scoring run would send to radar-online."""
+    if session.get(Repository, repository_id) is None:
+        raise HTTPException(status_code=404, detail="repository not found")
+    scoring_run = _latest_scoring_run(session, repository_id)
+    if scoring_run is None:
+        raise HTTPException(status_code=404, detail="no score found for this repository")
+    audit = session.get(Audit, scoring_run.audit_id)
+    assert audit is not None
+    return PublishPreview(
+        is_dirty=audit.is_dirty, payload=build_publication_payload(session, scoring_run)
     )
