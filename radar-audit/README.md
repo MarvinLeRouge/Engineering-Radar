@@ -64,6 +64,7 @@ it cannot run a full audit.
     uv run --package radar-audit radar-audit run <repo-name> --dry-run
     uv run --package radar-audit radar-audit score <repo-name>
     uv run --package radar-audit radar-audit report <repo-name>
+    uv run --package radar-audit radar-audit publish <repo-name>
 
 - `run` stores the raw tool results only. `--all` audits every repository of
   `portfolio.yaml`, `--config` points at another portfolio file. `--dry-run`
@@ -74,6 +75,9 @@ it cannot run a full audit.
 - `report` writes a Markdown report of the latest score, by default to
   `radar-audit/reports/<repo-name>/latest.md` (git-ignored, `--output-dir` to
   change it).
+- `publish` sends the latest score's global and category scores to
+  radar-online and prints the public page URL. It needs `RADAR_ONLINE_URL` and
+  `RADAR_ONLINE_API_KEY` (see `.env.example`) and refuses a dirty audit.
 
 Repository scope and the local checkout root (`repos_root: ~/projets`) are
 configured in `portfolio.yaml` (versioned in this directory).

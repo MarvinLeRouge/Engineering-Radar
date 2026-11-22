@@ -1,4 +1,4 @@
-"""Repository endpoints: listing, detail, scored report, README badge and publish preview."""
+"""Repository endpoints: listing, detail, report, badge, publish preview and publishing."""
 
 from __future__ import annotations
 
@@ -14,12 +14,20 @@ from radar_core.models.methodology import Category, Criterion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
 from radar_core.publication_builder import build_publication_payload
+from radar_core.publishing import (
+    DirtyAuditError,
+    PublishError,
+    PublishFailedError,
+    PublishingNotConfiguredError,
+    publish_scoring_run,
+)
 from sqlalchemy import func
 from sqlmodel import Session, col, select
 
+from radar_api.auth import require_api_key
 from radar_api.dependencies import get_db_session
 from radar_api.risk import compute_risk
-from radar_api.schemas.publication import PublishPreview
+from radar_api.schemas.publication import PublishPreview, PublishResult
 from radar_api.schemas.report import (
     CategoryReport,
     CriterionReport,
@@ -348,3 +356,40 @@ def get_publish_preview(
     return PublishPreview(
         is_dirty=audit.is_dirty, payload=build_publication_payload(session, scoring_run)
     )
+
+
+_PUBLISH_ERROR_STATUSES: dict[type[PublishError], int] = {
+    DirtyAuditError: 409,
+    PublishingNotConfiguredError: 503,
+    PublishFailedError: 502,
+}
+
+
+@router.post(
+    "/{repository_id}/publish",
+    response_model=PublishResult,
+    dependencies=[Depends(require_api_key)],
+    responses={
+        401: {"description": "Invalid or missing local API key"},
+        404: {"description": "Unknown repository, or no scoring run"},
+        409: {"description": "The latest audit scored a modified working tree"},
+        502: {"description": "radar-online refused the report or could not be reached"},
+        503: {"description": "RADAR_ONLINE_URL or RADAR_ONLINE_API_KEY is not set"},
+    },
+)
+def publish_repository(
+    repository_id: int,
+    session: Session = Depends(get_db_session),  # noqa: B008
+) -> PublishResult:
+    """Send the latest scoring run's global and category scores to radar-online."""
+    if session.get(Repository, repository_id) is None:
+        raise HTTPException(status_code=404, detail="repository not found")
+    scoring_run = _latest_scoring_run(session, repository_id)
+    if scoring_run is None:
+        raise HTTPException(status_code=404, detail="no score found for this repository")
+    try:
+        return PublishResult(report_url=publish_scoring_run(session, scoring_run))
+    except PublishError as exc:
+        raise HTTPException(
+            status_code=_PUBLISH_ERROR_STATUSES[type(exc)], detail=str(exc)
+        ) from exc

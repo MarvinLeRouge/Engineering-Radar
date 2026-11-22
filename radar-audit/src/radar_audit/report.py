@@ -19,9 +19,10 @@ class NoScoringRunFoundError(ValueError):
     """Raised when a Repository has no ScoringRun row yet."""
 
 
-def _get_latest_scoring_run(
+def get_latest_scoring_run(
     session: Session, repository_id: int, repository_name: str
 ) -> ScoringRun:
+    """Return the most recent scoring run of a repository, raising if it was never scored."""
     scoring_run = session.exec(
         select(ScoringRun)
         .join(Audit, Audit.id == ScoringRun.audit_id)  # type: ignore[arg-type]
@@ -41,7 +42,7 @@ def render_report(session: Session, repo_name: str) -> str:
     """Render a repository's latest scoring run as Markdown, grouped by category and criterion."""
     repository = get_repository_by_name(session, repo_name)
     assert repository.id is not None
-    scoring_run = _get_latest_scoring_run(session, repository.id, repository.name)
+    scoring_run = get_latest_scoring_run(session, repository.id, repository.name)
     audit = session.get(Audit, scoring_run.audit_id)
     assert audit is not None
 

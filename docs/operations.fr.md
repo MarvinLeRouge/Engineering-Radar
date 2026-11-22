@@ -34,6 +34,10 @@ docker compose up -d
 - **Clé d'API** : les endpoints PATCH exigent `RADAR_API_KEY` dans
   l'en-tête `X-API-Key` ; la saisir dans la page Settings du dashboard
   (conservée pour la session du navigateur).
+- **Publication** : `RADAR_ONLINE_URL` et `RADAR_ONLINE_API_KEY` (la clé
+  affichée par `radar-online create-account`) activent la publication
+  depuis radar-api et `radar-audit publish` ; Compose les passe aux deux
+  conteneurs. Vides, la publication est désactivée.
 
 ## Lancer l'audit
 

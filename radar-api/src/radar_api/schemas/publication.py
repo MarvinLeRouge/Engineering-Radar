@@ -15,3 +15,9 @@ class PublishPreview(BaseModel):
 
     is_dirty: bool
     payload: PublicationPayload
+
+
+class PublishResult(BaseModel):
+    """Where the published report can be seen on radar-online."""
+
+    report_url: str

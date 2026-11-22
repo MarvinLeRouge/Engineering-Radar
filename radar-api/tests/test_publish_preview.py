@@ -1,8 +1,15 @@
+import pytest
+from radar_api.routers import repositories
 from radar_core.enums import Confidence, ScoreLevel, ScoringModel
 from radar_core.models.audit import Audit
 from radar_core.models.methodology import Category, Criterion, MethodologyVersion
 from radar_core.models.repository import Repository
 from radar_core.models.scoring import Score, ScoringRun
+from radar_core.publishing import (
+    DirtyAuditError,
+    PublishFailedError,
+    PublishingNotConfiguredError,
+)
 
 
 def _add(db_session, row):
@@ -90,3 +97,72 @@ def test_preview_of_an_unscored_repository_is_not_found(client, db_session):
     repository = _add(db_session, Repository(name="fresh", path="/tmp/fresh"))
 
     assert client.get(f"/repositories/{repository.id}/publish-preview").status_code == 404
+
+
+_LOCAL = {"X-API-Key": "local-secret"}
+
+
+@pytest.fixture
+def publishing(monkeypatch):
+    monkeypatch.setenv("RADAR_API_KEY", "local-secret")
+    calls = []
+
+    def fake_publish(session, scoring_run):
+        calls.append(scoring_run.id)
+        return "https://radar.example.dev/u/ada/summit-stats"
+
+    monkeypatch.setattr(repositories, "publish_scoring_run", fake_publish)
+    return calls
+
+
+def _fail_publish(monkeypatch, error):
+    def fake_publish(session, scoring_run):
+        raise error
+
+    monkeypatch.setattr(repositories, "publish_scoring_run", fake_publish)
+
+
+def test_publish_sends_the_latest_run_and_returns_its_public_url(client, db_session, publishing):
+    repository = _scored_repository(db_session)
+
+    response = client.post(f"/repositories/{repository.id}/publish", headers=_LOCAL)
+
+    assert response.status_code == 200
+    assert response.json() == {"report_url": "https://radar.example.dev/u/ada/summit-stats"}
+    assert len(publishing) == 1
+
+
+def test_publish_requires_the_local_api_key(client, db_session, publishing):
+    repository = _scored_repository(db_session)
+
+    response = client.post(f"/repositories/{repository.id}/publish")
+
+    assert response.status_code == 401
+    assert publishing == []
+
+
+def test_publish_of_an_unknown_or_unscored_repository_is_not_found(client, db_session, publishing):
+    fresh = _add(db_session, Repository(name="fresh", path="/tmp/fresh"))
+
+    assert client.post("/repositories/999/publish", headers=_LOCAL).status_code == 404
+    assert client.post(f"/repositories/{fresh.id}/publish", headers=_LOCAL).status_code == 404
+
+
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [
+        (DirtyAuditError("dirty"), 409),
+        (PublishingNotConfiguredError("not configured"), 503),
+        (PublishFailedError("refused (422): bad value"), 502),
+    ],
+)
+def test_publish_errors_map_to_http_statuses(
+    client, db_session, publishing, monkeypatch, error, status
+):
+    _fail_publish(monkeypatch, error)
+    repository = _scored_repository(db_session)
+
+    response = client.post(f"/repositories/{repository.id}/publish", headers=_LOCAL)
+
+    assert response.status_code == status
+    assert response.json()["detail"] == str(error)
