@@ -70,7 +70,8 @@ letters, digits or hyphens); email and slug must be unused.
 namespace; uploading a commit already published replaces its report (200),
 otherwise the report is added (201). The answer gives the public page path,
 e.g. `{"report_path": "/u/ada/summit-stats"}`. A missing, unknown or revoked
-key, or an account that is not active, gets a 401.
+key, or an account that is not active, gets a 401. Each account may upload 20
+reports per hour; beyond that the answer is a 429 with `Retry-After` (seconds).
 
 ## Public read API
 
@@ -99,3 +100,13 @@ database at `<RADAR_PROJECT_PATH>/radar-online.db` (the shared `radar-data`
 bind mount). The container does not migrate on start: run the Alembic command
 above first. The hosted deployment at `radar.marvinlerouge.dev` comes with
 CHORE-012.
+
+## Backups
+
+    uv run --package radar-online radar-online backup <folder> [--keep 14]
+
+Writes `radar-online-<UTC timestamp>.db`, a consistent copy made with SQLite's
+online backup API (safe while the service writes, no `sqlite3` binary needed),
+and keeps only the 14 most recent copies in the folder. In Docker:
+`docker compose exec radar-online radar-online backup /data/backups`. Run it
+daily into a folder outside the container (cron on the server, CHORE-012).

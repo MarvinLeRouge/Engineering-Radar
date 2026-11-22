@@ -75,7 +75,9 @@ plus. Le dépôt est créé au premier envoi, dans l'espace de noms du propriét
 de la clé ; renvoyer un commit déjà publié remplace son rapport (200), sinon le
 rapport est ajouté (201). La réponse donne le chemin de la page publique, par
 exemple `{"report_path": "/u/ada/summit-stats"}`. Une clé absente, inconnue ou
-révoquée, ou un compte inactif, reçoit une 401.
+révoquée, ou un compte inactif, reçoit une 401. Chaque compte peut envoyer 20
+rapports par heure ; au-delà, la réponse est une 429 avec `Retry-After`
+(secondes).
 
 ## API publique en lecture
 
@@ -104,3 +106,14 @@ base dans `<RADAR_PROJECT_PATH>/radar-online.db` (le bind mount partagé
 `radar-data`). Le conteneur ne migre pas au démarrage : lancer d'abord la
 commande Alembic ci-dessus. Le déploiement hébergé sur `radar.marvinlerouge.dev`
 arrive avec CHORE-012.
+
+## Sauvegardes
+
+    uv run --package radar-online radar-online backup <dossier> [--keep 14]
+
+Écrit `radar-online-<horodatage UTC>.db`, une copie cohérente faite avec l'API
+de sauvegarde à chaud de SQLite (sûre pendant que le service écrit, sans besoin
+du binaire `sqlite3`), et ne garde que les 14 copies les plus récentes du
+dossier. Sous Docker : `docker compose exec radar-online radar-online backup
+/data/backups`. À lancer chaque jour vers un dossier hors du conteneur (cron
+sur le serveur, CHORE-012).

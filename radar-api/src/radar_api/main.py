@@ -2,8 +2,8 @@
 
 from fastapi import FastAPI
 from radar_core.observability import configure_logging, init_error_tracking
+from radar_core.request_logging import log_requests
 
-from radar_api.request_logging import log_requests
 from radar_api.routers import findings, history, repositories, roadmap
 
 configure_logging()

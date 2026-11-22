@@ -109,7 +109,9 @@ Sentry is optional and disabled unless a DSN is set (see `.env.example`).
 build time, so changing it requires a rebuild. `radar-audit` only reports
 unexpected crashes: tool failures and handled CLI errors are never sent.
 No user data, headers, bodies, query strings or stack-frame variables are
-collected.
+collected, and a `before_send` hook strips every event's request block down to
+its method, so an API key or a token in a URL can never reach Sentry. radar-online
+reads the same `SENTRY_DSN`.
 
 In Docker, Compose passes `SENTRY_BACKEND_DSN` to `radar-api` and
 `radar-audit` as `SENTRY_DSN`, the variable the code reads. A local
@@ -119,15 +121,15 @@ exported in the shell: sourcing `.env` sets `SENTRY_BACKEND_DSN`, not
 
 ## Logging
 
-`radar-api` and `radar-audit` write **structured logs** with structlog: each line is one event with named fields, written to **stderr** (stdout stays reserved for the CLI's own output, such as `--dry-run` plans and reports).
+`radar-api`, `radar-online` and `radar-audit` write **structured logs** with structlog: each line is one event with named fields, written to **stderr** (stdout stays reserved for the CLI's own output, such as `--dry-run` plans and reports).
 
 - **Format**: JSON lines in Docker or any non-terminal output, readable colored text in a terminal. Force one with `RADAR_LOG_FORMAT=json` or `RADAR_LOG_FORMAT=console`.
 - **Level**: `RADAR_LOG_LEVEL` (`debug`, `info`, `warning`, `error`), `info` by default.
-- **Never logged**: query strings, headers (the API key travels in one), request bodies.
+- **Never logged**: query strings, headers (the API key travels in one), request bodies. `path` is the matched route template (`/repositories/{repository_id}`, `/api/users/{user_slug}`), never the raw path, so an identifier or token in a URL is not written; an unmatched request (404) keeps its raw path.
 
 | Event | Emitted by | Fields |
 |---|---|---|
-| `request_handled` | radar-api, one per HTTP request (error level for 5xx) | `method`, `path`, `status`, `duration_ms` |
+| `request_handled` | radar-api and radar-online, one per HTTP request (error level for 5xx) | `method`, `path`, `status`, `duration_ms` |
 | `audit_started` | radar-audit `run` | `repo`, `subprojects` |
 | `tool_finished` | radar-audit, one per tool run | `tool`, `subproject`, `exit_code`, `duration_ms`, `audit_id` |
 | `tool_crashed` | radar-audit, error level, when a tool raises | `tool`, `target`, `error`, `audit_id` |

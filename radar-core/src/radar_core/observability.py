@@ -11,7 +11,7 @@ import sentry_sdk
 import structlog
 
 if TYPE_CHECKING:
-    from sentry_sdk._types import DataCollectionUserOptions
+    from sentry_sdk._types import DataCollectionUserOptions, Event, Hint
 
 SENTRY_DATA_COLLECTION: DataCollectionUserOptions = {
     "user_info": False,
@@ -26,6 +26,19 @@ SENTRY_DATA_COLLECTION: DataCollectionUserOptions = {
     "stack_frame_variables": False,
     "frame_context_lines": 0,
 }
+
+
+# Kept from an event's request block: everything else (URL, query string, headers,
+# cookies, body) can carry an API key or a token, whatever the SDK is set to collect.
+_KEPT_REQUEST_FIELDS = ("method",)
+
+
+def scrub_request(event: Event, hint: Hint) -> Event | None:
+    """Sentry `before_send`: strip the request block of an event down to its method."""
+    request = event.get("request")
+    if request is not None:
+        event["request"] = {key: request[key] for key in _KEPT_REQUEST_FIELDS if key in request}
+    return event
 
 
 def init_error_tracking() -> bool:
@@ -44,6 +57,7 @@ def init_error_tracking() -> bool:
         environment=os.environ.get("SENTRY_ENVIRONMENT", "").strip() or "development",
         data_collection=SENTRY_DATA_COLLECTION,
         traces_sample_rate=0.0,
+        before_send=scrub_request,
     )
 
     return True

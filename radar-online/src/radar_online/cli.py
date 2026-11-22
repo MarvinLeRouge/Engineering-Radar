@@ -1,7 +1,8 @@
-"""Admin command line for radar-online: `radar-online create-account`."""
+"""Admin command line for radar-online: `create-account` and `backup`."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 
 import sentry_sdk
@@ -10,6 +11,7 @@ from radar_core.db import get_engine, get_session
 from radar_core.observability import configure_logging, init_error_tracking
 
 from radar_online.accounts import AccountCreationError, create_active_account
+from radar_online.backup import DEFAULT_KEEP, BackupError, backup_database
 from radar_online.config import get_database_url
 
 app = typer.Typer(no_args_is_help=True)
@@ -39,6 +41,20 @@ def create_account(
         engine.dispose()
     typer.echo(f"Account {slug!r} created. API key (shown once, store it now):")
     typer.echo(key)
+
+
+@app.command()
+def backup(
+    target_dir: Annotated[Path, typer.Argument(help="Folder receiving the backups")],
+    keep: Annotated[int, typer.Option(min=1, help="Backups kept in the folder")] = DEFAULT_KEEP,
+) -> None:
+    """Write a consistent copy of the database and keep only the most recent backups."""
+    try:
+        written = backup_database(get_database_url(), target_dir, keep=keep)
+    except BackupError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(1) from exc
+    typer.echo(f"Backup written to {written}")
 
 
 def entrypoint() -> None:

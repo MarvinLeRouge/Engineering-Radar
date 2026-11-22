@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from radar_api.request_logging import log_requests
+from radar_core.request_logging import log_requests
 from structlog.testing import capture_logs
 
 
@@ -42,3 +42,20 @@ def test_logs_client_errors_at_info_level(client):
     [entry] = [log for log in logs if log["event"] == "request_handled"]
     assert entry["status"] == 404
     assert entry["log_level"] == "info"
+
+
+def test_logs_the_route_template_rather_than_the_raw_path(client):
+    with capture_logs() as logs:
+        client.get("/repositories/4242")
+
+    [entry] = [log for log in logs if log["event"] == "request_handled"]
+    assert entry["path"] == "/repositories/{repository_id}"
+    assert "4242" not in str(entry)
+
+
+def test_logs_the_raw_path_of_an_unmatched_request(client):
+    with capture_logs() as logs:
+        client.get("/no-such-route")
+
+    [entry] = [log for log in logs if log["event"] == "request_handled"]
+    assert entry["path"] == "/no-such-route"
