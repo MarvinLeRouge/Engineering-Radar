@@ -173,6 +173,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(online)* Serve public profiles, reports, history and badges (FEAT-043)
 - *(api)* Build the publication payload and preview it locally (FEAT-045)
 - *(api)* Publish the latest scoring run to radar-online (FEAT-046)
+- *(dashboard)* Preview and publish the latest report to radar-online (FEAT-047)
 
 ### 🐛 Bug Fixes
 

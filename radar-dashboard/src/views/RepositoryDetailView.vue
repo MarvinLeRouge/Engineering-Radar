@@ -30,10 +30,17 @@
             :status="store.report.global_score === null ? 'not_yet_audited' : 'scored'"
           />
         </h1>
-        <p class="repository-detail-view__scored-at">
-          Scored on {{ formatScoredAt(store.report.scored_at) }}
-          <span v-if="activeScoringRunId === null">(latest)</span>
-        </p>
+        <div class="repository-detail-view__meta">
+          <p class="repository-detail-view__scored-at">
+            Scored on {{ formatScoredAt(store.report.scored_at) }}
+            <span v-if="activeScoringRunId === null">(latest)</span>
+          </p>
+          <!-- Publishing always sends the latest run, so only the latest report offers it. -->
+          <PublishReportDialog
+            v-if="activeScoringRunId === null"
+            :repository-id="store.report.repository_id"
+          />
+        </div>
         <RiskBar :risk="store.report.risk" :risk-index="store.report.risk_index" />
         <ReportSeveritySummary :categories="store.report.categories" />
         <div v-for="category in store.report.categories" :key="category.id" class="category">
@@ -142,6 +149,7 @@ import { useRoute, useRouter } from 'vue-router'
 import ScoreGauge from '@/components/ScoreGauge.vue'
 import CriterionFindings from '@/components/CriterionFindings.vue'
 import ReportSeveritySummary from '@/components/ReportSeveritySummary.vue'
+import PublishReportDialog from '@/components/PublishReportDialog.vue'
 import RiskBar from '@/components/RiskBar.vue'
 import RoadmapItemRow from '@/components/RoadmapItemRow.vue'
 import ScoreHistoryChart from '@/components/ScoreHistoryChart.vue'
@@ -284,10 +292,18 @@ onMounted(() => {
   font-size: var(--text-subtitle);
 }
 
+.repository-detail-view__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
 .repository-detail-view__scored-at {
   font-size: var(--text-meta);
   color: var(--color-ink-soft);
-  margin-bottom: var(--space-6);
 }
 
 .category {

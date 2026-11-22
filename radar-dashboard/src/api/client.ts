@@ -124,6 +124,38 @@ export interface EvidenceCandidate {
   created_at: string
 }
 
+/** One category as sent to radar-online: never a criterion, finding or severity count. */
+export interface PublishedCategory {
+  name: string
+  order: number
+  weight: number
+  status: 'scored' | 'not_yet_audited'
+  implemented: boolean
+  value: number | null
+  confidence: string | null
+}
+
+/** The v1 publication payload (radar_core.publication), exactly as it would be sent. */
+export interface PublicationPayload {
+  schema_version: number
+  repository: { slug: string; display_name: string }
+  commit_sha: string
+  scored_at: string
+  methodology_version: string
+  global_score: number | null
+  categories: PublishedCategory[]
+}
+
+export interface PublishPreview {
+  /** The audit scored a modified working tree: radar-api refuses to publish it. */
+  is_dirty: boolean
+  payload: PublicationPayload
+}
+
+export interface PublishResult {
+  report_url: string
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api${path}`, init)
 
@@ -229,5 +261,18 @@ export function updateRoadmapItemStatus(
     method: 'PATCH',
     headers: writeHeaders(),
     body: JSON.stringify(body),
+  })
+}
+
+/** The exact payload publishing the latest scoring run would send to radar-online. */
+export function getPublishPreview(repositoryId: number): Promise<PublishPreview> {
+  return request<PublishPreview>(`/repositories/${repositoryId}/publish-preview`)
+}
+
+/** Publish the latest scoring run to radar-online; resolves to the public page URL. */
+export function publishRepository(repositoryId: number): Promise<PublishResult> {
+  return request<PublishResult>(`/repositories/${repositoryId}/publish`, {
+    method: 'POST',
+    headers: writeHeaders(),
   })
 }

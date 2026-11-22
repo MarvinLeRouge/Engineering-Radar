@@ -219,6 +219,7 @@ describe('RepositoryDetailView', () => {
 
     expect(wrapper.text()).toContain(new Date('2026-03-15').toLocaleDateString())
     expect(wrapper.text()).toContain('(latest)')
+    expect(wrapper.findComponent({ name: 'PublishReportDialog' }).props('repositoryId')).toBe(1)
   })
 
   it('shows the weighted risk bar of the displayed run at the top of the report', async () => {
@@ -304,6 +305,8 @@ describe('RepositoryDetailView', () => {
 
     expect(wrapper.text()).toContain(new Date('2026-02-01').toLocaleDateString())
     expect(wrapper.text()).not.toContain('(latest)')
+    // Publishing always sends the latest run, so a historical report must not offer it.
+    expect(wrapper.findComponent({ name: 'PublishReportDialog' }).exists()).toBe(false)
   })
 
   it('refetches the scoring run being viewed after a finding is updated on a historical report', async () => {
