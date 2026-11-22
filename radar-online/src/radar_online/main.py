@@ -3,7 +3,7 @@
 from fastapi import APIRouter, FastAPI
 from radar_core.observability import configure_logging, init_error_tracking
 
-from radar_online.routers import reports
+from radar_online.routers import public, reports
 
 configure_logging()
 init_error_tracking()
@@ -26,4 +26,5 @@ def health() -> dict[str, str]:
 
 
 api.include_router(reports.router)
+api.include_router(public.router)
 app.include_router(api)

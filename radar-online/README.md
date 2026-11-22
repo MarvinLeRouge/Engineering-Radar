@@ -13,8 +13,9 @@ badge, without any finding. Decisions in
 **Status:** data model in place (FEAT-037): users, hashed API keys, single-use
 action tokens, published repositories and reports, plus the shared payload
 contract `radar_core.publication`; accounts are created by an admin command
-(FEAT-050) and reports are uploaded through `POST /api/reports` (FEAT-042).
-Public pages and the badge are the next tasks of
+(FEAT-050), reports are uploaded through `POST /api/reports` (FEAT-042) and
+read back by the public API and badge (FEAT-043). Local publishing, the online
+dashboard and the deployment are the next tasks of
 [roadmap Section 9](../docs/roadmap.md).
 
 ## Layout
@@ -70,6 +71,24 @@ namespace; uploading a commit already published replaces its report (200),
 otherwise the report is added (201). The answer gives the public page path,
 e.g. `{"report_path": "/u/ada/summit-stats"}`. A missing, unknown or revoked
 key, or an account that is not active, gets a 401.
+
+## Public read API
+
+No authentication; only active accounts are visible and no email is ever sent
+back. Every answer carries `Cache-Control: public, max-age=300`.
+
+| Path | Answer |
+|---|---|
+| `GET /api/users/{user}` | profile and its repositories, with the latest global score of each |
+| `GET /api/users/{user}/repositories/{repo}/report` | report of the most recently scored commit (the stored v1 payload) |
+| `GET /api/users/{user}/repositories/{repo}/history` | one point per commit, oldest first: global and category scores |
+| `GET /api/users/{user}/repositories/{repo}/badge` | shields.io endpoint JSON |
+
+An unknown or inactive user, or an unknown repository, gets a 404, except for
+the badge: it always answers 200, grey "not published", so a README image never
+breaks. In a README:
+
+    ![quality](https://img.shields.io/endpoint?url=https://radar.marvinlerouge.dev/api/users/ada/repositories/summit-stats/badge)
 
 ## Docker
 

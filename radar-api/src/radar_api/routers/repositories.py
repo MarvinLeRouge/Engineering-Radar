@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from radar_core.badge import BADGE_LABEL, BadgeResponse, badge_color
 from radar_core.enums import HumanVerdict, ScoreLevel
 from radar_core.finding_ordering import PRIORITY_ORDER_BY
 from radar_core.models.audit import Audit
@@ -17,7 +18,6 @@ from sqlmodel import Session, col, select
 
 from radar_api.dependencies import get_db_session
 from radar_api.risk import compute_risk
-from radar_api.schemas.badge import BadgeResponse
 from radar_api.schemas.report import (
     CategoryReport,
     CriterionReport,
@@ -39,21 +39,6 @@ def _latest_scoring_run(session: Session, repository_id: int) -> ScoringRun | No
         .where(Audit.repository_id == repository_id)
         .order_by(col(ScoringRun.scored_at).desc())
     ).first()
-
-
-_BADGE_LABEL = "quality"
-
-
-def _badge_color(score: float) -> str:
-    if score >= 8:
-        return "brightgreen"
-    if score >= 6:
-        return "green"
-    if score >= 4:
-        return "yellow"
-    if score >= 2:
-        return "orange"
-    return "red"
 
 
 def _resolve_scoring_run(
@@ -336,10 +321,10 @@ def get_repository_badge(
 
     scoring_run = _latest_scoring_run(session, repository_id)
     if scoring_run is None or scoring_run.global_score is None:
-        return BadgeResponse(label=_BADGE_LABEL, message="not yet audited", color="lightgrey")
+        return BadgeResponse(label=BADGE_LABEL, message="not yet audited", color="lightgrey")
 
     return BadgeResponse(
-        label=_BADGE_LABEL,
+        label=BADGE_LABEL,
         message=f"{scoring_run.global_score:.1f}/10",
-        color=_badge_color(scoring_run.global_score),
+        color=badge_color(scoring_run.global_score),
     )
