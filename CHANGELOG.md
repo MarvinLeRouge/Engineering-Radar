@@ -174,6 +174,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(api)* Build the publication payload and preview it locally (FEAT-045)
 - *(api)* Publish the latest scoring run to radar-online (FEAT-046)
 - *(dashboard)* Preview and publish the latest report to radar-online (FEAT-047)
+- *(dashboard)* Add the public online build mode for radar-online (FEAT-048)
 
 ### 🐛 Bug Fixes
 

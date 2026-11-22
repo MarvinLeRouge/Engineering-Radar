@@ -154,7 +154,7 @@ Publication hébergée et multi-utilisateur du score global et des scores par ca
 - [x] FEAT-045 - Construction et aperçu du payload en local : payload v1 construit depuis un scoring run (score global et scores par catégorie uniquement, test prouvant qu'aucun autre champ ne part), `GET /repositories/{id}/publish-preview` dans radar-api
 - [x] FEAT-046 - Publication locale : `POST /repositories/{id}/publish` dans radar-api (de serveur à serveur, `RADAR_ONLINE_URL` et `RADAR_ONLINE_API_KEY` lus dans `.env`) et `radar-audit publish <repo>`
 - [x] FEAT-047 - Bouton « Upload report » du dashboard : modale d'aperçu avec confirmation, lien vers la page publique en cas de succès, états d'erreur
-- [ ] FEAT-048 - Mode de build online du dashboard : routeur et client API dédiés, rapport limité aux jauges globale et par catégorie, tendances, mention auto-déclaré, sans roadmap, findings, verdicts ni réglages
+- [x] FEAT-048 - Mode de build online du dashboard : routeur et client API dédiés, rapport limité aux jauges globale et par catégorie, tendances, mention auto-déclaré, sans roadmap, findings, verdicts ni réglages
 - [ ] CHORE-011 - Durcir radar-online : limites de débit, clés et jetons tenus hors des logs et de Sentry, sauvegarde quotidienne de la base SQLite
 - [ ] CHORE-012 - Déployer radar-online sur le VPS derrière Traefik (`radar.marvinlerouge.dev`, HTTPS), `.env` du serveur, expéditeur Brevo vérifié, sauvegardes planifiées
 
