@@ -13,8 +13,8 @@ l'[ADR 0014](../docs/adr/0014-radar-online-public-reports.md), conception dans
 **Statut :** modèle de données en place (FEAT-037) : utilisateurs, clés d'API
 hachées, jetons d'action à usage unique, dépôts et rapports publiés, plus le
 contrat de payload partagé `radar_core.publication` ; les comptes sont créés
-par une commande admin (FEAT-050). L'application ne répond encore qu'à
-`GET /api/health` ; la publication, les pages publiques et le badge sont les
+par une commande admin (FEAT-050) et les rapports sont envoyés par
+`POST /api/reports` (FEAT-042). Les pages publiques et le badge sont les
 prochaines tâches de la
 [section 9 de la roadmap](../docs/roadmap.fr.md).
 
@@ -24,7 +24,8 @@ prochaines tâches de la
   de base de données, `models/` (ses propres tables uniquement, jamais les
   données d'audit de radar-core), `tokens.py` (clés et jetons aléatoires,
   stockés sous forme de hachages SHA-256), `accounts.py` et `cli.py` (la
-  commande admin `radar-online`).
+  commande admin `radar-online`), `auth.py` (vérification de la clé d'API) et
+  `routers/` (les endpoints de l'API).
 - `alembic/` : les migrations propres à radar-online, sur sa propre base SQLite.
 - `tests/` : chaque test tourne sur un fichier SQLite jetable et migré.
 
@@ -64,6 +65,16 @@ La clé est affichée une seule fois et seul son hachage est stocké : la
 transmettre à son propriétaire sans la conserver ailleurs. Le slug est l'espace
 de noms public (1 à 64 lettres minuscules, chiffres ou tirets) ; l'email et le
 slug doivent être libres.
+
+## Envoyer un rapport
+
+`POST /api/reports` avec l'en-tête `X-API-Key` et, en corps JSON, un payload de
+publication v1 (`radar_core.publication`, champs inconnus refusés) de 64 Kio au
+plus. Le dépôt est créé au premier envoi, dans l'espace de noms du propriétaire
+de la clé ; renvoyer un commit déjà publié remplace son rapport (200), sinon le
+rapport est ajouté (201). La réponse donne le chemin de la page publique, par
+exemple `{"report_path": "/u/ada/summit-stats"}`. Une clé absente, inconnue ou
+révoquée, ou un compte inactif, reçoit une 401.
 
 ## Docker
 

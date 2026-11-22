@@ -148,7 +148,7 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] FEAT-037 - Shared publication payload schema (`radar_core.publication`, v1, unknown fields rejected) and the radar-online data model: `User`, `ApiKey` (hashed), `ActionToken` (hashed, single use, expiring), `PublishedRepository`, `PublishedReport` (unique per repository and commit)
 - [x] DOCS-014 - Reorder Section 9 to ship the badge and the read-only public report first: accounts created by an admin command until other users need the email registration flow
 - [x] FEAT-050 - Admin command creating an active account and its first API key (shown once), so publishing works before the email registration flow exists
-- [ ] FEAT-042 - Report upload: `POST /api/reports` authenticated by API key, strict validation, repository created on first upload, report replaced when the commit is already published
+- [x] FEAT-042 - Report upload: `POST /api/reports` authenticated by API key, strict validation, repository created on first upload, report replaced when the commit is already published
 - [ ] FEAT-043 - Public read API and badge: profile, latest report, history (one point per commit), shields.io badge marked self-assessed, cache headers
 - [ ] FEAT-045 - Local payload builder and preview: build the v1 payload from a scoring run (global and category scores only, test proving no other field leaves), `GET /repositories/{id}/publish-preview` in radar-api
 - [ ] FEAT-046 - Local publishing: `POST /repositories/{id}/publish` in radar-api (server to server, `RADAR_ONLINE_URL` and `RADAR_ONLINE_API_KEY` from `.env`) and `radar-audit publish <repo>`

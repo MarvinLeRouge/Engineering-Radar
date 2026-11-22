@@ -13,8 +13,8 @@ badge, without any finding. Decisions in
 **Status:** data model in place (FEAT-037): users, hashed API keys, single-use
 action tokens, published repositories and reports, plus the shared payload
 contract `radar_core.publication`; accounts are created by an admin command
-(FEAT-050). The app only answers `GET /api/health` so far; publication, public
-pages and the badge are the next tasks of
+(FEAT-050) and reports are uploaded through `POST /api/reports` (FEAT-042).
+Public pages and the badge are the next tasks of
 [roadmap Section 9](../docs/roadmap.md).
 
 ## Layout
@@ -22,7 +22,8 @@ pages and the badge are the next tasks of
 - `src/radar_online/`: FastAPI app (`main.py`), configuration, database session,
   `models/` (its own tables only, never radar-core's audit data), `tokens.py`
   (random keys and tokens, stored as SHA-256 hashes), `accounts.py` and
-  `cli.py` (the `radar-online` admin command).
+  `cli.py` (the `radar-online` admin command), `auth.py` (API key check) and
+  `routers/` (the API endpoints).
 - `alembic/`: radar-online's own migrations, on its own SQLite database.
 - `tests/`: each test runs on a throwaway, migrated SQLite file.
 
@@ -59,6 +60,16 @@ In Docker: `docker compose exec radar-online radar-online create-account ...`.
 The key is printed once and only its hash is stored: hand it to its owner and
 do not keep it elsewhere. The slug is the public namespace (1 to 64 lowercase
 letters, digits or hyphens); email and slug must be unused.
+
+## Upload a report
+
+`POST /api/reports` with the header `X-API-Key` and a v1 publication payload
+(`radar_core.publication`, unknown fields rejected) as the JSON body, at most
+64 KiB. The repository is created on the first upload under the key owner's
+namespace; uploading a commit already published replaces its report (200),
+otherwise the report is added (201). The answer gives the public page path,
+e.g. `{"report_path": "/u/ada/summit-stats"}`. A missing, unknown or revoked
+key, or an account that is not active, gets a 401.
 
 ## Docker
 

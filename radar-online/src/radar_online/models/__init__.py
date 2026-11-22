@@ -154,7 +154,7 @@ class PublishedReport(SQLModel, table=True):
     commit_sha: str = Field(max_length=40)
     scored_at: datetime = Field(sa_column=Column(UTCDateTime(), nullable=False))
     uploaded_at: datetime = _created_at()
-    methodology_version: str = Field(max_length=20)
+    methodology_version: str = Field(max_length=50)
     schema_version: int
     global_score: float | None = None
     # The validated radar_core.publication.PublicationPayload, as JSON.
