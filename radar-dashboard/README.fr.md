@@ -21,7 +21,10 @@ roadmap.
     prévus repliés), findings groupés par sévérité puis par fichier, bouton
     "More" qui charge 1000 findings à la fois, section des findings écartés,
     listes de verdict et de statut, et note de verdict avec raisons
-    prédéfinies.
+    prédéfinies. Sur le dernier rapport, "Publish online" montre exactement ce
+    qui partirait vers radar-online (score global et scores par catégorie
+    uniquement, audit dirty refusé), publie après confirmation et donne le lien
+    de la page publique.
   - Roadmap : éléments de roadmap, leur statut, la preuve de réalisation, et
     un export Markdown.
   - Trends : graphiques d'historique des scores et du risque pondéré, les

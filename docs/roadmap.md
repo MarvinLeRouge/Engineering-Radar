@@ -152,7 +152,7 @@ Hosted, multi-user publication of the global and category scores, with public re
 - [x] FEAT-043 - Public read API and badge: profile, latest report, history (one point per commit), shields.io badge marked self-assessed, cache headers
 - [x] FEAT-045 - Local payload builder and preview: build the v1 payload from a scoring run (global and category scores only, test proving no other field leaves), `GET /repositories/{id}/publish-preview` in radar-api
 - [x] FEAT-046 - Local publishing: `POST /repositories/{id}/publish` in radar-api (server to server, `RADAR_ONLINE_URL` and `RADAR_ONLINE_API_KEY` from `.env`) and `radar-audit publish <repo>`
-- [ ] FEAT-047 - Dashboard "Upload report" button: preview modal with confirmation, success link to the public page, error states
+- [x] FEAT-047 - Dashboard "Upload report" button: preview modal with confirmation, success link to the public page, error states
 - [ ] FEAT-048 - Dashboard online build mode: online router and API client, report with global and category gauges only, trends, self-assessed note, no roadmap, findings, verdicts or settings
 - [ ] CHORE-011 - Harden radar-online: rate limits, keys and tokens kept out of logs and Sentry, daily SQLite backup
 - [ ] CHORE-012 - Deploy radar-online on the VPS behind Traefik (`radar.marvinlerouge.dev`, HTTPS), server `.env`, Brevo sender verified, backups scheduled

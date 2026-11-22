@@ -18,7 +18,10 @@ human record verdicts, statuses and notes on findings and roadmap items.
     score gauges, "Not implemented yet" markers (planned criteria collapsed),
     findings grouped by severity then file, a "More" button loading 1000
     findings at a time, a dismissed section, verdict and status selects, and a
-    verdict note with preset reasons.
+    verdict note with preset reasons. On the latest report, "Publish online"
+    previews exactly what would go to radar-online (global and category scores
+    only, a dirty audit refused), publishes on confirmation and links to the
+    public page.
   - Roadmap: roadmap items, their status, done evidence, and a Markdown export.
   - Trends: score history and weighted risk history charts, unimplemented
     categories greyed out.
