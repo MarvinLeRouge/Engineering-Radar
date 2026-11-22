@@ -169,6 +169,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - *(audit)* Recognize laravel and vite sentry dsn configuration (FEAT-052)
 - *(audit)* Detect a monolog json formatter as php structured logging (FEAT-053)
 - *(online)* Add an admin command creating an active account and its first api key (FEAT-050)
+- *(online)* Accept report uploads authenticated by api key (FEAT-042)
 
 ### 🐛 Bug Fixes
 
