@@ -41,6 +41,7 @@ point d'accès de health check.
 - `GET /repositories/{repository_id}/score-history` : un point par run de scoring, du plus ancien au plus récent, avec le score global, les scores par catégorie (chacun avec `implemented`), `risk` et `risk_index`.
 - `GET /repositories/{repository_id}/badge` : payload de badge compatible shields.io pour le dernier score global.
 - `GET /repositories/{repository_id}/publish-preview` : le payload exact qu'enverrait la publication du dernier run de scoring vers radar-online (score global et scores par catégorie uniquement, `radar_core.publication` v1), avec `is_dirty` quand cet audit a scoré un working tree modifié.
+- `POST /repositories/{repository_id}/publish` (clé d'API locale) : envoie ce payload à radar-online (`RADAR_ONLINE_URL`, `RADAR_ONLINE_API_KEY`) et renvoie `report_url`, la page publique. 404 si le dépôt est inconnu ou non scoré, 409 pour un audit dirty, 503 si la publication n'est pas configurée, 502 si radar-online refuse le rapport ou est injoignable.
 - `GET /repositories/{repository_id}/findings` : findings du dernier run de scoring, filtrables via les paramètres de requête `status` et `severity`.
 - `GET /repositories/{repository_id}/roadmap` : éléments de roadmap liés aux findings du dépôt, triés par catégorie, critère, priorité (la plus haute d'abord) et titre.
 - `GET /roadmap-items/{roadmap_item_id}/evidence-candidates` : lignes `Evidence` des findings liés à un élément de roadmap, utilisables comme `done_evidence_id`.

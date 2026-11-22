@@ -69,6 +69,7 @@ profil Docker `cli` est une image Python simple, sans les outils d'analyse
     uv run --package radar-audit radar-audit run <repo-name> --dry-run
     uv run --package radar-audit radar-audit score <repo-name>
     uv run --package radar-audit radar-audit report <repo-name>
+    uv run --package radar-audit radar-audit publish <repo-name>
 
 - `run` enregistre uniquement les résultats bruts des outils. `--all` audite
   tous les dépôts de `portfolio.yaml`, `--config` pointe vers un autre
@@ -80,6 +81,10 @@ profil Docker `cli` est une image Python simple, sans les outils d'analyse
 - `report` écrit un rapport Markdown du dernier score, par défaut dans
   `radar-audit/reports/<repo-name>/latest.md` (ignoré par git, `--output-dir`
   pour le changer).
+- `publish` envoie le score global et les scores par catégorie du dernier
+  score vers radar-online et affiche l'URL de la page publique. Il faut
+  `RADAR_ONLINE_URL` et `RADAR_ONLINE_API_KEY` (voir `.env.example`) ; un audit
+  dirty est refusé.
 
 Le périmètre des dépôts et la racine locale de checkout
 (`repos_root: ~/projets`) sont configurés dans `portfolio.yaml` (versionné

@@ -10,10 +10,16 @@ import sentry_sdk
 import typer
 from radar_core.db import get_engine, get_session
 from radar_core.observability import configure_logging, init_error_tracking
+from radar_core.publishing import PublishError, publish_scoring_run
 
 from radar_audit.config import PortfolioConfigError, load_portfolio_config
 from radar_audit.orchestrator import AuditPlan, execute_audit, plan_audit, planned_runs
-from radar_audit.report import NoScoringRunFoundError, render_report, write_report
+from radar_audit.report import (
+    NoScoringRunFoundError,
+    get_latest_scoring_run,
+    render_report,
+    write_report,
+)
 from radar_audit.runner import ToolRunner
 from radar_audit.runners.actionlint_runner import ActionlintRunner
 from radar_audit.runners.ci_workflow_runner import CiWorkflowRunner
@@ -49,7 +55,12 @@ from radar_audit.runners.trivy_image_runner import TrivyImageRunner
 from radar_audit.runners.typescript_runner import TypeScriptRunner
 from radar_audit.runners.vitest_runner import VitestRunner
 from radar_audit.runners.vulture_runner import VultureRunner
-from radar_audit.scoring import NoAuditFoundError, RepositoryNotFoundError, score_repository
+from radar_audit.scoring import (
+    NoAuditFoundError,
+    RepositoryNotFoundError,
+    get_repository_by_name,
+    score_repository,
+)
 
 app = typer.Typer()
 
@@ -115,6 +126,7 @@ _EXPECTED_ERRORS = (
     RepositoryNotFoundError,
     NoAuditFoundError,
     NoScoringRunFoundError,
+    PublishError,
 )
 
 
@@ -208,6 +220,27 @@ def report(
             markdown = render_report(session, repo_name)
             written_path = write_report(markdown, repo_name, output_dir)
             typer.echo(f"Report written to {written_path}")
+        finally:
+            session.close()
+            engine.dispose()
+    except _EXPECTED_ERRORS as exc:
+        typer.secho(f"Error: {exc}", err=True, fg=typer.colors.RED)
+        raise typer.Exit(1) from exc
+
+
+@app.command()
+def publish(
+    repo_name: str = typer.Argument(..., help="Repository name (must already have a score)"),
+) -> None:
+    """Send a repository's latest global and category scores to radar-online."""
+    try:
+        engine = get_engine(_database_url())
+        session = get_session(engine)
+        try:
+            repository = get_repository_by_name(session, repo_name)
+            assert repository.id is not None
+            scoring_run = get_latest_scoring_run(session, repository.id, repository.name)
+            typer.echo(f"Published: {publish_scoring_run(session, scoring_run)}")
         finally:
             session.close()
             engine.dispose()
