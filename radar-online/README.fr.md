@@ -13,9 +13,10 @@ l'[ADR 0014](../docs/adr/0014-radar-online-public-reports.md), conception dans
 **Statut :** modèle de données en place (FEAT-037) : utilisateurs, clés d'API
 hachées, jetons d'action à usage unique, dépôts et rapports publiés, plus le
 contrat de payload partagé `radar_core.publication` ; les comptes sont créés
-par une commande admin (FEAT-050) et les rapports sont envoyés par
-`POST /api/reports` (FEAT-042). Les pages publiques et le badge sont les
-prochaines tâches de la
+par une commande admin (FEAT-050), les rapports sont envoyés par
+`POST /api/reports` (FEAT-042) et relus par l'API publique et le badge
+(FEAT-043). La publication locale, le dashboard online et le déploiement sont
+les prochaines tâches de la
 [section 9 de la roadmap](../docs/roadmap.fr.md).
 
 ## Organisation
@@ -75,6 +76,24 @@ de la clé ; renvoyer un commit déjà publié remplace son rapport (200), sinon
 rapport est ajouté (201). La réponse donne le chemin de la page publique, par
 exemple `{"report_path": "/u/ada/summit-stats"}`. Une clé absente, inconnue ou
 révoquée, ou un compte inactif, reçoit une 401.
+
+## API publique en lecture
+
+Sans authentification ; seuls les comptes actifs sont visibles et aucun email
+n'est jamais renvoyé. Chaque réponse porte `Cache-Control: public, max-age=300`.
+
+| Chemin | Réponse |
+|---|---|
+| `GET /api/users/{user}` | profil et ses dépôts, avec la dernière note globale de chacun |
+| `GET /api/users/{user}/repositories/{repo}/report` | rapport du commit scoré le plus récent (le payload v1 stocké) |
+| `GET /api/users/{user}/repositories/{repo}/history` | un point par commit, du plus ancien au plus récent : note globale et notes par catégorie |
+| `GET /api/users/{user}/repositories/{repo}/badge` | JSON d'endpoint shields.io |
+
+Un utilisateur inconnu ou inactif, ou un dépôt inconnu, reçoit une 404, sauf
+pour le badge : il répond toujours 200, gris « not published », pour qu'une
+image de README ne casse jamais. Dans un README :
+
+    ![quality](https://img.shields.io/endpoint?url=https://radar.marvinlerouge.dev/api/users/ada/repositories/summit-stats/badge)
 
 ## Docker
 
