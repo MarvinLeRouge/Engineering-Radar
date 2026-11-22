@@ -3,8 +3,11 @@ WORKDIR /app
 
 ARG VITE_SENTRY_DSN=""
 ARG VITE_SENTRY_ENVIRONMENT="development"
+# "online" builds the public radar-online dashboard; empty builds the local one.
+ARG VITE_RADAR_MODE=""
 ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
 ENV VITE_SENTRY_ENVIRONMENT=${VITE_SENTRY_ENVIRONMENT}
+ENV VITE_RADAR_MODE=${VITE_RADAR_MODE}
 
 COPY package*.json ./
 RUN npm ci

@@ -82,3 +82,24 @@ with nginx (SPA fallback to `index.html`). Traefik exposes it at
 Sentry is optional: the `VITE_SENTRY_DSN` (from `SENTRY_FRONTEND_DSN`) and
 `VITE_SENTRY_ENVIRONMENT` build args are baked in at build time, so changing
 them needs a rebuild. See [`docs/operations.md`](../docs/operations.md).
+
+## Online mode
+
+The same code builds the public radar-online dashboard when `VITE_RADAR_MODE`
+is `online` (build argument of the image). It reads the public radar-online
+API and holds no local view: the bundler drops the local routes, and the
+online ones are never in the local build.
+
+- `/`: what radar-online is, and a link to Engineering-Radar.
+- `/u/<user>`: a profile and its published repositories with their latest
+  score.
+- `/u/<user>/<repository>`: Report tab (global and category scores of the
+  latest commit, its date and methodology, a self-assessed note) and Trends tab
+  (score history; picking a commit shows its scores in the Report tab).
+
+No findings, risk, roadmap, verdicts, publishing or settings. Locally,
+`scripts/rebuild.sh radar-online-dashboard` serves it at
+`radar-online.marvinlerouge.local`, next to the radar-online API on `/api`.
+In development:
+
+    VITE_RADAR_MODE=online RADAR_API_URL=http://localhost:8010/api npm run dev

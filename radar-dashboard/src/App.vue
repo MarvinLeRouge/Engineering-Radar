@@ -1,8 +1,10 @@
 <template>
   <div class="app-shell">
     <header class="app-shell__header">
-      <RouterLink to="/" class="app-shell__brand">radar-dashboard</RouterLink>
-      <RouterLink to="/settings" class="app-shell__nav-link">Settings</RouterLink>
+      <RouterLink to="/" class="app-shell__brand">{{
+        online ? 'Engineering-Radar' : 'radar-dashboard'
+      }}</RouterLink>
+      <RouterLink v-if="!online" to="/settings" class="app-shell__nav-link">Settings</RouterLink>
     </header>
     <main class="app-shell__main">
       <RouterView />
@@ -12,6 +14,9 @@
 
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { isOnlineMode } from '@/mode'
+
+const online = isOnlineMode()
 </script>
 
 <style scoped>

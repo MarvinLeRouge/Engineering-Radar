@@ -91,3 +91,24 @@ est optionnel : les build args `VITE_SENTRY_DSN` (issu de
 `SENTRY_FRONTEND_DSN`) et `VITE_SENTRY_ENVIRONMENT` sont intégrés au moment du
 build, les changer demande donc une reconstruction. Voir
 [`docs/operations.fr.md`](../docs/operations.fr.md).
+
+## Mode online
+
+Le même code construit le dashboard public de radar-online quand
+`VITE_RADAR_MODE` vaut `online` (build arg de l'image). Il lit l'API publique
+de radar-online et ne contient aucune vue locale : le bundler écarte les routes
+locales, et les routes online ne figurent jamais dans le build local.
+
+- `/` : ce qu'est radar-online, et un lien vers Engineering-Radar.
+- `/u/<user>` : un profil et ses dépôts publiés, avec leur dernière note.
+- `/u/<user>/<repository>` : onglet Report (note globale et notes par
+  catégorie du dernier commit, sa date et sa méthodologie, une mention
+  self-assessed) et onglet Trends (historique des notes ; choisir un commit
+  affiche ses notes dans l'onglet Report).
+
+Ni findings, ni risque, ni roadmap, ni verdicts, ni publication, ni réglages.
+En local, `scripts/rebuild.sh radar-online-dashboard` le sert sur
+`radar-online.marvinlerouge.local`, à côté de l'API radar-online sur `/api`.
+En développement :
+
+    VITE_RADAR_MODE=online RADAR_API_URL=http://localhost:8010/api npm run dev

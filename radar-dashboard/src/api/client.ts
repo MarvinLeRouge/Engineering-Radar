@@ -156,7 +156,7 @@ export interface PublishResult {
   report_url: string
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api${path}`, init)
 
   if (!response.ok) {
