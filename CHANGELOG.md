@@ -431,6 +431,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 - Plan radar-online, public sanitized reports and badges (DOCS-012)
 - Update python version and tick CHORE-013
 - Ship the radar-online badge before self-service accounts (DOCS-014)
+- Refresh node range and python inventory note (DOCS-015)
 
 ### 🎨 Styling
 
