@@ -63,6 +63,8 @@ No analysis/security tool is installed globally: **ruff, mypy, eslint, phpstan, 
 | temp | 2026-03-12 | none | Same remote as Summit-Stats.git, named `temp`: stale local clone | Excluded |
 | Training | 2026-06-11 | none | Appears to hold coding exercises (e.g. `backtracking/`) | Excluded |
 
+**Update 2026-11-26:** the markers above are the Phase 0 observation. Since the 2026-11 Python homogenization, every in-scope Python repository (JobFlow and Trello-Board-Init included) uses `pyproject.toml` + `uv.lock`; none relies on `requirements.txt` any more.
+
 **DECIDED, confirmed portfolio scope (D1):** the audited portfolio is exactly these 10 repositories: **CC-Beacon, GeoChallenge-Tracker, HexaRot, HiveMind, JobFlow, Stamped, Summit-Stats, Trello-Board-Init, Triton, and Engineering-Radar itself (self-audit, included from the start).** All other repositories listed above are out of scope. This also resolves D2 (duplicates excluded), D3 (`Recherche emploi` excluded), and D4 (CC-Beacon confirmed in scope); see `docs/open-decisions.md`.
 
 ---
