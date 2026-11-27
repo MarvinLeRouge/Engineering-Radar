@@ -437,6 +437,7 @@ To regenerate locally, run `npx --yes git-cliff --config cliff.toml --output CHA
 
 - *(radar-dashboard)* Format the dashboard with prettier (CHORE-007)
 - Apply ruff 0.17 and py314 autofixes
+- *(dashboard)* Apply prettier 3.10 formatting
 
 ### 🧪 Testing
 

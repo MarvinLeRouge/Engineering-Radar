@@ -39,8 +39,8 @@
       <p class="online-report__meta">
         <!-- One span: the flex gap would otherwise split "abc1234," from its comma. -->
         <span
-          >Commit <code :title="shown.commit_sha">{{ shown.commit_sha.slice(0, 7) }}</code
-          >, scored on {{ formatDate(shown.scored_at) }}</span
+          >Commit <code :title="shown.commit_sha">{{ shown.commit_sha.slice(0, 7) }}</code>, scored
+          on {{ formatDate(shown.scored_at) }}</span
         >
         <span v-if="selectedIndex === null">(latest)</span>
         <button
